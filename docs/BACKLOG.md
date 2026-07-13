@@ -92,17 +92,24 @@ Invariants 12,13,16,17 are enforced by later epics/audit, not P1 unit coverage: 
 
 ---
 
-## Epic P2 — ADR skills, wave 1  (Acc 11–14, 26, 27)
+## Epic P2 — ADR skills, wave 1  (Acc 11–14, 26, 27) ✅ DONE — 53/53 unit + 6/6 integration green; verified live against `ai-factory@2.17.0`
 
-| ID | Task | Refs |
-|---|---|---|
-| P2.1 | `skills/aif-adr-propose/SKILL.md` — dup/conflict scan, gen ID, create `proposals/`, `status: proposed` | §19.1 |
-| P2.2 | `skills/aif-adr-refine/SKILL.md` — proposed→draft on first refine; ADR-specific criteria (not `aif-improve`) | §19.2 |
-| P2.3 | `skills/aif-adr-accept/SKILL.md` — preconditions, audit, draft→accepted atomic move | §19.3 |
-| P2.4 | `skills/aif-adr-status/SKILL.md` — wraps `adr status` | §19.8 |
-| P2.5 | Integration: installed + runnable for Claude and Codex (`$aif-*`) | §30.2 |
+| ID | Task | Refs | Status |
+|---|---|---|---|
+| P2.0 | `adr new <topic>` deterministic proposal scaffold — `slugToId` + dup-id guard + template → `proposals/adr-<slug>.md` `status: proposed` (fills the `none>proposed` gap; skills wrap it, don't hand-write files) | §19.1, §6.5 | ✅ `src/artifacts/create.js` + `commands/adr.js` |
+| P2.1 | `skills/aif-adr-propose/SKILL.md` — dup/conflict scan, `adr new` scaffold, `status: proposed` | §19.1 | ✅ |
+| P2.2 | `skills/aif-adr-refine/SKILL.md` — proposed→draft on first refine; ADR-specific criteria (not `aif-improve`) | §19.2 | ✅ |
+| P2.3 | `skills/aif-adr-accept/SKILL.md` — preconditions, audit, draft→accepted atomic move | §19.3 | ✅ |
+| P2.4 | `skills/aif-adr-status/SKILL.md` — wraps `adr status` | §19.8 | ✅ |
+| P2.5 | Integration: installed + runnable for Claude and Codex (`$aif-*`); propose→draft→accept e2e | §30.2 | ✅ |
 
 Skill body rule: show slash form, note Codex `$` form; no nested-skill-call assumptions (§6.5, §9).
+
+**Delivered:** `src/artifacts/create.js` (`createProposal`, reuses `slugToId`/`atomicWrite`/`resolveInside`/template); `adr new` subcommand in `commands/adr.js`; 4 authored skill bodies (`aif-adr-{propose,refine,accept,status}`); `test/create.test.js` (3 unit); extended `test/integration/extension-lifecycle.test.js` with a wave-1 lifecycle e2e (propose→draft→accept via real CLI, per-runtime skill install, `status --check` exit 0).
+
+**Live verification (against `ai-factory@2.17.0`):** `adr new "test decision"` → `proposals/adr-test-decision.md` `status: proposed`; re-run → §27 dup-id error, no file written; `transition draft`→drafts/, `transition accepted`→accepted/; `adr status --json` → `acceptedNoPlan: [adr-test-decision]`, 0 issues; `adr status --check` exit 0. Skill bodies install for both runtimes, no `Placeholder` text.
+
+**Note for later:** `adr new` fills only the topic-specific id; the Context/Decision authoring is the agent's job in propose/refine. Accepted ADRs must clear inv-6 sentinels (`not created`/`not implemented`) — an accepted-no-plan ADR uses non-sentinel Implementation text (e.g. `Plan: none`, `Evidence: pending`).
 
 ---
 

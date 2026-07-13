@@ -56,6 +56,61 @@ test('add installs all 8 skills for each configured runtime and registers `adr` 
   assert.ok(existsSync(path.join(dir, 'docs/adr/active')), 'adr init created the structure');
 });
 
+test('wave-1 lifecycle: propose → refine (draft) → accept, driven by the real CLI (Acc 11,12,13,26,27)', opts, async () => {
+  const dir = await newProject('claude,codex');
+  aif(['extension', 'add', EXT_ROOT], dir);
+  aif(['adr', 'init'], dir);
+
+  // Skills authored (no longer placeholders) and installed for both runtimes.
+  assert.equal((await adrSkills(dir, 'claude')).length, 8, 'claude skills');
+  assert.equal((await adrSkills(dir, 'codex')).length, 8, 'codex skills');
+  const acceptSkill = await readFile(
+    path.join(skillsDir(dir, 'claude'), 'aif-adr-accept', 'SKILL.md'),
+    'utf8',
+  );
+  assert.doesNotMatch(acceptSkill, /Placeholder/, 'skill body authored');
+
+  // propose: adr new scaffolds a proposed ADR with a stable id.
+  aif(['adr', 'new', 'test decision'], dir);
+  const proposed = path.join(dir, 'docs/adr/proposals/adr-test-decision.md');
+  assert.ok(existsSync(proposed), 'proposal created');
+  assert.match(await readFile(proposed, 'utf8'), /status: proposed/);
+
+  // Duplicate id is rejected, leaving the proposal untouched (Acc 27).
+  assert.throws(() => aif(['adr', 'new', 'test decision'], dir), /already exists|Error/);
+
+  // Stand in for refine's content-authoring: replace the template placeholders with real content
+  // (keep status: proposed) so the ADR validates clean once accepted (inv 6).
+  await writeFile(proposed, [
+    '---', 'id: adr-test-decision', 'type: adr', 'status: proposed', 'owners: [maintainer]',
+    'depends_on: []', 'affects: []', 'supersedes: []', '---', '',
+    '# Test decision', '',
+    '## Context', '', '- **Problem:** We need a documented test decision.',
+    '- **Constraints:** None material.', '- **Decision drivers:** Simplicity.', '',
+    '## Decision', '', 'We will use option A for the test scope because it is simplest.', '',
+    '## Alternatives considered', '', '- **Option B** — rejected because it is more complex.', '',
+    '## Consequences', '', '- **Positive:** Simple.', '- **Negative:** Limited.', '- **Risks:** None.', '',
+    '## Implementation', '', '- **Plan:** none', '- **Evidence:** pending', '',
+  ].join('\n'), 'utf8');
+
+  // refine (first): proposed → draft.
+  aif(['adr', 'transition', 'docs/adr/proposals/adr-test-decision.md', 'draft'], dir);
+  assert.ok(!existsSync(proposed), 'left proposals/');
+  const draft = path.join(dir, 'docs/adr/drafts/adr-test-decision.md');
+  assert.ok(existsSync(draft), 'moved to drafts/ (Acc 12)');
+
+  // accept: draft → accepted.
+  aif(['adr', 'transition', 'docs/adr/drafts/adr-test-decision.md', 'accepted'], dir);
+  const accepted = path.join(dir, 'docs/adr/accepted/adr-test-decision.md');
+  assert.ok(existsSync(accepted), 'moved to accepted/ (Acc 13)');
+
+  // status overview sees exactly one accepted ADR; --check passes on a clean tree.
+  const overview = JSON.parse(aif(['adr', 'status', '--json'], dir));
+  assert.deepEqual(overview.acceptedNoPlan, ['adr-test-decision']);
+  assert.equal(overview.issues.length, 0, 'no status-directory mismatches (Acc 26)');
+  assert.doesNotThrow(() => aif(['adr', 'status', '--check'], dir), 'clean tree → exit 0');
+});
+
 test('re-adding does not duplicate skills or extension entries (Acc 7)', opts, async () => {
   const dir = await newProject('claude');
   aif(['extension', 'add', EXT_ROOT], dir);

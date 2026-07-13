@@ -8,6 +8,7 @@ import { finalize } from '../src/lifecycle/finalize.js';
 import { supersede } from '../src/lifecycle/supersede.js';
 import { buildStatus, buildFileStatus } from '../src/status.js';
 import { runAudit } from '../src/audit.js';
+import { createProposal } from '../src/artifacts/create.js';
 
 /**
  * Registered by AI Factory via the `commands` manifest entry: `mod.register(program)` where
@@ -28,6 +29,15 @@ export function register(program) {
         const created = items.filter((i) => i.status === 'created').length;
         console.log(created ? `ADR structure ready (${created} created).` : 'ADR structure already present.');
       });
+    }));
+
+  adr
+    .command('new <topic>')
+    .description('Scaffold a new ADR proposal (generates a stable ID; status: proposed)')
+    .option('--json', 'Machine-readable output')
+    .action((topic, opts) => guard(opts, async () => {
+      const res = await createProposal(topic, { projectDir: process.cwd() });
+      out(opts, { command: 'new', ...res }, () => console.log(`Created ${res.id}: ${res.path}`));
     }));
 
   adr
