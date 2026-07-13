@@ -1,0 +1,90 @@
+# ai-factory-adr-extension
+
+Architecture Decision Record (ADR) lifecycle for [AI Factory](https://github.com/lee-to/ai-factory).
+
+Adds an audited, Git-native ADR workflow to an AI Factory project: eight
+lifecycle skills for the agent (`propose → refine → accept → plan → implement →
+finalize`, plus `supersede` and `status`), an overview skill that maps the flow,
+and a deterministic `ai-factory adr` command that does the file mechanics
+(status moves, reciprocal links, artifact audit).
+
+The source of truth is always the Markdown ADR files in Git. Any external index
+is advisory, never authoritative.
+
+## Requirements
+
+- AI Factory `>=2.0.0 <3.0.0`
+- Node.js `>=18`
+
+## Install
+
+Install into an initialized AI Factory project from npm, a git URL, or a local
+path:
+
+```bash
+ai-factory extension add ai-factory-adr-extension        # npm
+# ai-factory extension add https://github.com/VirtualMaestro/ai-factory-adr-extension.git
+# ai-factory extension add ../ai-factory-adr-extension    # local checkout
+```
+
+This installs the nine skills into each configured runtime (`.claude/skills/`,
+`.codex/skills/`) and registers the `adr` command. Then scaffold the ADR
+directories:
+
+```bash
+ai-factory adr init
+```
+
+## Upgrade
+
+The extension is fetched fresh from its source on every add/update — there is no
+stale-version caching. To move to a newer release:
+
+```bash
+ai-factory extension update ai-factory-adr-extension     # pulls the new version
+ai-factory extension update --force                       # refresh even if version is unchanged
+```
+
+Updating **preserves** your ADR documents and `.ai-factory/adr-extension.yaml`.
+Re-running `add` does not duplicate skills or extension entries.
+
+## Lifecycle
+
+```text
+propose ─▶ refine ─▶ accept ─▶ plan ─▶ implement ─▶ finalize ─▶ (active)
+proposed    draft    accepted                          active
+                                                          │
+                                                    supersede ─▶ superseded
+```
+
+For the agent, start with the **`/aif-adr-overview`** skill (Codex:
+`$aif-adr-overview`) — it maps every stage to its skill and states the
+retrieval/immutability rules. The stage skills are `aif-adr-{propose, refine,
+accept, plan, implement, finalize, supersede, status}`.
+
+## `ai-factory adr` subcommands
+
+| Command | Purpose |
+|---|---|
+| `init` | Scaffold the ADR directory structure (idempotent) |
+| `new <topic>` | Scaffold a `proposed` ADR from the template |
+| `validate <file>` | Check one ADR against the lifecycle invariants |
+| `transition <file> <status>` | Atomic status move (with rollback) |
+| `link-plan <adr> <plan>` | Write reciprocal ADR↔plan links |
+| `resolve-plan <adr>` | Resolve the plan(s) implementing an ADR |
+| `finalize <file>` | Activate an ADR; archive its plan |
+| `supersede <old> <new>` | Replace an ADR, preserving history |
+| `status [file]` | Overview / diagnostics; `--check` exits non-zero on blocking errors (CI) |
+
+The lifecycle skills wrap these commands — prefer the skills for authoring work
+and reserve raw commands for scripting and CI.
+
+## Documentation
+
+- [Product requirements](./docs/ai-factory-adr-extension-PRD.md)
+- [Implementation backlog](./docs/BACKLOG.md)
+- [Changelog](./CHANGELOG.md)
+
+## License
+
+MIT — see [LICENSE](./LICENSE).

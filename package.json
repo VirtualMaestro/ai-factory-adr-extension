@@ -1,14 +1,32 @@
 {
   "name": "ai-factory-adr-extension",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Architecture Decision Record lifecycle for AI Factory",
   "type": "module",
   "license": "MIT",
   "aiFactoryCompatibility": ">=2.0.0 <3.0.0",
+  "keywords": [
+    "ai-factory",
+    "adr",
+    "architecture-decision-record",
+    "extension"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/VirtualMaestro/ai-factory-adr-extension.git"
+  },
+  "bugs": {
+    "url": "https://github.com/VirtualMaestro/ai-factory-adr-extension/issues"
+  },
+  "homepage": "https://github.com/VirtualMaestro/ai-factory-adr-extension#readme",
+  "engines": {
+    "node": ">=18"
+  },
   "scripts": {
     "test": "node --test"
   },
   "files": [
+    "CHANGELOG.md",
     "extension.json",
     "skills",
     "commands",

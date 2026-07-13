@@ -44,12 +44,12 @@ const adrSkills = async (dir, runtime) =>
     ? (await readdir(skillsDir(dir, runtime))).filter((n) => n.startsWith('aif-adr-'))
     : [];
 
-test('add installs all 8 skills for each configured runtime and registers `adr` (Acc 2,3,4,6)', opts, async () => {
+test('add installs all 9 skills for each configured runtime and registers `adr` (Acc 2,3,4,6)', opts, async () => {
   const dir = await newProject('claude,codex');
   aif(['extension', 'add', EXT_ROOT], dir);
 
-  assert.equal((await adrSkills(dir, 'claude')).length, 8, 'claude skills');
-  assert.equal((await adrSkills(dir, 'codex')).length, 8, 'codex skills');
+  assert.equal((await adrSkills(dir, 'claude')).length, 9, 'claude skills');
+  assert.equal((await adrSkills(dir, 'codex')).length, 9, 'codex skills');
   assert.match(aif(['adr', '--help'], dir), /init/);
 
   aif(['adr', 'init'], dir);
@@ -62,8 +62,8 @@ test('wave-1 lifecycle: propose → refine (draft) → accept, driven by the rea
   aif(['adr', 'init'], dir);
 
   // Skills authored (no longer placeholders) and installed for both runtimes.
-  assert.equal((await adrSkills(dir, 'claude')).length, 8, 'claude skills');
-  assert.equal((await adrSkills(dir, 'codex')).length, 8, 'codex skills');
+  assert.equal((await adrSkills(dir, 'claude')).length, 9, 'claude skills');
+  assert.equal((await adrSkills(dir, 'codex')).length, 9, 'codex skills');
   const acceptSkill = await readFile(
     path.join(skillsDir(dir, 'claude'), 'aif-adr-accept', 'SKILL.md'),
     'utf8',
@@ -249,7 +249,7 @@ test('re-adding does not duplicate skills or extension entries (Acc 7)', opts, a
   aif(['extension', 'add', EXT_ROOT], dir);
   aif(['extension', 'add', EXT_ROOT], dir); // second add
 
-  assert.equal((await adrSkills(dir, 'claude')).length, 8);
+  assert.equal((await adrSkills(dir, 'claude')).length, 9);
   const cfg = JSON.parse(await readFile(path.join(dir, '.ai-factory.json'), 'utf8'));
   const entries = (cfg.extensions ?? []).filter((e) => e.name === 'ai-factory-adr-extension');
   assert.equal(entries.length, 1, 'exactly one extension entry');

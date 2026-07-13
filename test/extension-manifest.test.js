@@ -23,7 +23,7 @@ test('commands use the corrected object shape (not string paths)', async () => {
   assert.deepEqual(Object.keys(cmd).sort(), ['description', 'module', 'name']);
 });
 
-test('all eight ADR skills are listed', async () => {
+test('all nine ADR skills are listed', async () => {
   const manifest = await load('extension.json');
-  assert.equal(manifest.skills.length, 8);
+  assert.equal(manifest.skills.length, 9);
 });
