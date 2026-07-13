@@ -4,6 +4,16 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and the project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.1.0] — 2026-07-13
+
+### Added
+
+- **Legacy migration.** New `aif-adr-migrate` skill to bring a project's
+  pre-existing/homegrown ADRs into the lifecycle (map status, rewrite into the
+  template on a branch, repoint `AGENTS.md`-type instruction files), backed by a
+  new `ai-factory adr import <topic> --status <s> [--id <id>]` command that
+  scaffolds a conformant skeleton at any status. `adr new` now delegates to it.
+
 ## [1.0.1] — 2026-07-13
 
 ### Fixed

@@ -31,7 +31,7 @@ ai-factory extension add ai-factory-adr-extension        # npm
 The extension requires the valid `.ai-factory.json` marker created by
 `ai-factory init`; a directory named `.ai-factory/` alone is not sufficient.
 
-This installs the nine skills into each configured runtime (`.claude/skills/`,
+This installs the ten skills into each configured runtime (`.claude/skills/`,
 `.codex/skills/`) and registers the `adr` command. Then scaffold the ADR
 directories:
 
@@ -72,12 +72,22 @@ For the agent, start with the **`/aif-adr-overview`** skill (Codex:
 retrieval/immutability rules. The stage skills are `aif-adr-{propose, refine,
 accept, plan, implement, finalize, supersede, status}`.
 
+### Migrating an existing ADR workflow
+
+Installing into a project that already kept ADRs its own way? Run
+**`/aif-adr-migrate`** (Codex: `$aif-adr-migrate`) once. On a branch, it maps each
+legacy ADR to a lifecycle status, rewrites it into the template under the right
+status directory (`git mv` preserves history), validates the set with
+`ai-factory adr status --check`, and repoints stale ADR instructions in
+`AGENTS.md`/`CLAUDE.md`/`CONTRIBUTING.md` to `/aif-adr-overview`.
+
 ## `ai-factory adr` subcommands
 
 | Command | Purpose |
 |---|---|
 | `init` | Scaffold the ADR directory structure (idempotent) |
 | `new <topic>` | Scaffold a `proposed` ADR from the template |
+| `import <topic> --status <s> [--id <id>]` | Scaffold a conformant ADR skeleton at any status (used by migration) |
 | `validate <file>` | Check one ADR against the lifecycle invariants |
 | `transition <file> <status>` | Atomic move between non-terminal lifecycle states |
 | `link-plan <adr> <plan>` | Write reciprocal ADR↔plan links |

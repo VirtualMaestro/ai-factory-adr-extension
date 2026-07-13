@@ -9,6 +9,7 @@ import { supersede } from '../src/lifecycle/supersede.js';
 import { buildStatus, buildFileStatus } from '../src/status.js';
 import { runAudit } from '../src/audit.js';
 import { createProposal } from '../src/artifacts/create.js';
+import { importAdr } from '../src/artifacts/import.js';
 
 /**
  * Registered by AI Factory via the `commands` manifest entry: `mod.register(program)` where
@@ -38,6 +39,17 @@ export function register(program) {
     .action((topic, opts) => guard(opts, async () => {
       const res = await createProposal(topic, { projectDir: process.cwd() });
       out(opts, { command: 'new', ...res }, () => console.log(`Created ${res.id}: ${res.path}`));
+    }));
+
+  adr
+    .command('import <topic>')
+    .description('Scaffold a conformant ADR skeleton at a chosen status (for migrating existing decisions)')
+    .requiredOption('--status <status>', 'Target lifecycle status (proposed|draft|accepted|active|superseded)')
+    .option('--id <id>', 'Explicit ADR id (defaults to a slug derived from the topic)')
+    .option('--json', 'Machine-readable output')
+    .action((topic, opts) => guard(opts, async () => {
+      const res = await importAdr(topic, { status: opts.status, id: opts.id, projectDir: process.cwd() });
+      out(opts, { command: 'import', ...res }, () => console.log(`Imported ${res.id} [${res.status}]: ${res.path}`));
     }));
 
   adr

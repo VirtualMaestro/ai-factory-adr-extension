@@ -49,12 +49,13 @@ const adrSkills = async (dir, runtime) =>
     ? (await readdir(skillsDir(dir, runtime))).filter((n) => n.startsWith('aif-adr-'))
     : [];
 
-test('add installs all 9 skills for each configured runtime and registers `adr` (Acc 2,3,4,6)', opts, async () => {
+test('add installs all 10 skills for each configured runtime and registers `adr` (Acc 2,3,4,6)', opts, async () => {
   const dir = await newProject('claude,codex');
   aif(['extension', 'add', EXT_ROOT], dir);
 
-  assert.equal((await adrSkills(dir, 'claude')).length, 9, 'claude skills');
-  assert.equal((await adrSkills(dir, 'codex')).length, 9, 'codex skills');
+  assert.equal((await adrSkills(dir, 'claude')).length, 10, 'claude skills');
+  assert.equal((await adrSkills(dir, 'codex')).length, 10, 'codex skills');
+  assert.ok((await adrSkills(dir, 'claude')).includes('aif-adr-migrate'), 'migration skill installed');
   assert.match(aif(['adr', '--help'], dir), /init/);
 
   aif(['adr', 'init'], dir);
@@ -96,8 +97,8 @@ test('wave-1 lifecycle: propose → refine (draft) → accept, driven by the rea
   aif(['adr', 'init'], dir);
 
   // Skills authored (no longer placeholders) and installed for both runtimes.
-  assert.equal((await adrSkills(dir, 'claude')).length, 9, 'claude skills');
-  assert.equal((await adrSkills(dir, 'codex')).length, 9, 'codex skills');
+  assert.equal((await adrSkills(dir, 'claude')).length, 10, 'claude skills');
+  assert.equal((await adrSkills(dir, 'codex')).length, 10, 'codex skills');
   const acceptSkill = await readFile(
     path.join(skillsDir(dir, 'claude'), 'aif-adr-accept', 'SKILL.md'),
     'utf8',
@@ -143,6 +144,20 @@ test('wave-1 lifecycle: propose → refine (draft) → accept, driven by the rea
   assert.deepEqual(overview.acceptedNoPlan, ['adr-test-decision']);
   assert.equal(overview.issues.length, 0, 'no status-directory mismatches (Acc 26)');
   assert.doesNotThrow(() => aif(['adr', 'status', '--check'], dir), 'clean tree → exit 0');
+});
+
+test('adr import scaffolds a conformant skeleton at a chosen status via the real CLI', opts, async () => {
+  const dir = await newProject('claude');
+  aif(['extension', 'add', EXT_ROOT], dir);
+  aif(['adr', 'init'], dir);
+
+  const res = JSON.parse(aif(['adr', 'import', 'cache layer', '--status', 'active', '--id', 'adr-cache-layer', '--json'], dir));
+  assert.equal(res.id, 'adr-cache-layer');
+  assert.equal(res.status, 'active');
+
+  const file = path.join(dir, 'docs/adr/active/adr-cache-layer.md');
+  assert.ok(existsSync(file), 'skeleton written to active/');
+  assert.match(await readFile(file, 'utf8'), /status: active/);
 });
 
 // Author an accepted ADR at docs/adr/accepted/<id>.md with inv-6-clean content (Evidence non-sentinel).
@@ -282,7 +297,7 @@ test('re-adding does not duplicate skills or extension entries (Acc 7)', opts, a
   aif(['extension', 'add', EXT_ROOT], dir);
   aif(['extension', 'add', EXT_ROOT], dir); // second add
 
-  assert.equal((await adrSkills(dir, 'claude')).length, 9);
+  assert.equal((await adrSkills(dir, 'claude')).length, 10);
   const cfg = JSON.parse(await readFile(path.join(dir, '.ai-factory.json'), 'utf8'));
   const entries = (cfg.extensions ?? []).filter((e) => e.name === 'ai-factory-adr-extension');
   assert.equal(entries.length, 1, 'exactly one extension entry');
