@@ -17,12 +17,12 @@ Run `ai-factory adr status` (add `--json` for machine-readable output). Report:
 - proposals; drafts;
 - accepted ADRs without plans; accepted ADRs with active plans;
 - active ADRs; superseded ADRs;
-- status-directory mismatches; duplicate IDs; broken artifact references;
-- multiple non-archived plans for one ADR;
-- stale optional-memory index state (when a memory adapter is configured).
+- status-directory mismatches and ADR validation errors;
+- multiple non-archived plans for one ADR.
 
-For CI, `ai-factory adr status --check` exits non-zero on blocking errors (also runs the
-strict artifact audit).
+For duplicate IDs, broken artifact references, and other cross-artifact diagnostics, run
+`ai-factory adr status --check`; it also runs the strict artifact audit and exits non-zero on
+blocking errors. Optional-memory diagnostics are post-MVP and are not currently reported.
 
 ### Single ADR (`@adr-file`)
 

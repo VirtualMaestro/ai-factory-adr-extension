@@ -1,5 +1,4 @@
 import { readFile } from 'node:fs/promises';
-import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -48,22 +47,29 @@ async function readCompatRange() {
  */
 export async function detectAif(projectDir = process.cwd(), { warn = console.warn } = {}) {
   const marker = path.join(projectDir, '.ai-factory.json');
-  if (!existsSync(marker) && !existsSync(path.join(projectDir, '.ai-factory'))) {
+  let metadata;
+  try {
+    metadata = JSON.parse(await readFile(marker, 'utf8'));
+  } catch (err) {
+    const missing = err.code === 'ENOENT';
     throw new AifError(
-      'Not an AI Factory project.\n' +
-        `  expected: .ai-factory.json or .ai-factory/ in ${projectDir}\n` +
-        '  detected: neither marker present\n' +
+      `${missing ? 'Not an AI Factory project.' : 'Invalid AI Factory project marker.'}\n` +
+        `  expected: a valid .ai-factory.json in ${projectDir}\n` +
+        `  detected: ${missing ? 'marker is missing' : `JSON parse failed (${err.message})`}\n` +
         '  files:    nothing was changed\n' +
-        '  next:     run `ai-factory init` in the project root first',
+        `  next:     ${missing ? 'run `ai-factory init` in the project root first' : 'repair .ai-factory.json or re-run `ai-factory init`'}`,
     );
   }
-
-  let version = null;
-  try {
-    version = JSON.parse(await readFile(marker, 'utf8')).version ?? null;
-  } catch {
-    version = null; // corrupted/absent .ai-factory.json → treat version as unknown
+  if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata)) {
+    throw new AifError(
+      'Invalid AI Factory project marker.\n' +
+        '  expected: .ai-factory.json to contain a JSON object\n' +
+        `  detected: ${metadata === null ? 'null' : typeof metadata}\n` +
+        '  files:    nothing was changed\n' +
+        '  next:     repair .ai-factory.json or re-run `ai-factory init`',
+    );
   }
+  const version = metadata.version ?? null;
 
   const range = await readCompatRange();
   const result = range ? satisfies(version, range) : null;

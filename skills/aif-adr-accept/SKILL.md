@@ -12,7 +12,7 @@ Declare the decision complete enough to guide implementation (PRD §19.3): move 
 
 Do not accept unless **all** hold:
 
-- the file is in `docs/adr/drafts` and its status is `draft`;
+- the file is in the configured ADR root's `drafts/` directory and its status is `draft`;
 - exactly one primary decision is stated;
 - Context describes the problem;
 - relevant constraints are present;
@@ -28,14 +28,14 @@ If any precondition fails, stop and recommend `aif-adr-refine` — do not accept
 ## Workflow
 
 1. **Validate.** `ai-factory adr validate <file>`.
-2. **Audit** the ADR root and `.ai-factory`:
+2. **Audit** the configured ADR root and `.ai-factory`:
 
    ```text
-   ai-factory audit-artifacts docs/adr .ai-factory
+   ai-factory adr status --check
    ```
 
-   Pass the relocated ADR root instead of `docs/adr` if the project moved it. Resolve any
-   failures before continuing.
+   The command resolves `adr.root` and passes it to the artifact audit. Resolve any failures
+   before continuing.
 3. **Accept** — single atomic move (status edit + `drafts/` → `accepted/`):
 
    ```text
@@ -44,7 +44,7 @@ If any precondition fails, stop and recommend `aif-adr-refine` — do not accept
 
 4. **Report** warnings and the resulting `accepted/` path.
 
-Optional memory synchronization is a later-phase concern (not part of wave 1).
+Optional memory synchronization is post-MVP and is not provided by this skill.
 
 ## Invocation
 

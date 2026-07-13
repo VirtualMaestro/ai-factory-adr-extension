@@ -23,7 +23,8 @@ Do not plan unless **all** hold:
 ## Workflow
 
 1. **Inspect** the accepted ADR and any relevant active decisions.
-2. **Create the plan** following `aif-plan full` planning semantics. AI Factory owns plan
+2. **Create the plan** by applying `aif-plan full` planning semantics in this run; do not
+   invoke `aif-plan` as a nested skill. AI Factory owns plan
    creation, the plans directory (`paths.plans`), and the filename format (including
    sequential `NNNN_` numbering when configured) — do **not** hand-place the file or guess
    its path. Give the plan frontmatter:
@@ -49,8 +50,8 @@ Do not plan unless **all** hold:
    literal `not implemented` — that is a blocking placeholder sentinel (inv 6) and will fail
    `adr validate` / `status --check` on an accepted ADR. Use a neutral value such as
    `- **Evidence:** pending`; `aif-adr-finalize` flips it to `implemented` later.
-5. **Audit** — `ai-factory adr status --check` (or `audit-artifacts docs/adr .ai-factory`,
-   passing the relocated ADR root if the project moved it). Resolve any failures.
+5. **Audit** — `ai-factory adr status --check`. It honors the configured ADR root; resolve
+   any failures.
 6. **Leave the ADR `accepted`.** Creating a plan never advances the decision.
 
 ## Invocation

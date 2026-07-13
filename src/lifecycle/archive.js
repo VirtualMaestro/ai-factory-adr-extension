@@ -9,6 +9,12 @@ export function todayUTC() {
   return new Date().toISOString().slice(0, 10); // YYYY-MM-DD
 }
 
+export async function archivePlanTarget(planFile, { projectDir = process.cwd() } = {}) {
+  const source = resolveInside(projectDir, planFile);
+  const { archivePlans } = await readAifPaths(projectDir);
+  return path.join(archivePlans, path.basename(source));
+}
+
 /**
  * Archive a plan following `aif-archive` semantics (§19.6): `status: done`, add `archived: DATE`,
  * move to `paths.archive/plans/` keeping the filename. Atomic with rollback (inv 15).
@@ -16,8 +22,7 @@ export function todayUTC() {
  */
 export async function archivePlan(planFile, { projectDir = process.cwd(), note = null } = {}) {
   const source = resolveInside(projectDir, planFile);
-  const { archivePlans } = await readAifPaths(projectDir);
-  const target = path.join(archivePlans, path.basename(source));
+  const target = await archivePlanTarget(source, { projectDir });
   if (existsSync(target)) {
     throw new Error(
       'Archived plan already exists.\n' +

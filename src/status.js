@@ -60,6 +60,7 @@ export async function buildFileStatus(file, projectDir = process.cwd()) {
   const { active, plans } = await resolvePlans(data.id, { projectDir });
   const { errors, warnings } = await validateAdr(file, { projectDir });
   const evidence = body.match(/- \*\*Evidence:\*\* (.*)/)?.[1]?.trim() ?? null;
+  const replacedBy = body.match(/- \*\*Replaced by:\*\* (.*)/)?.[1]?.trim() ?? null;
   return {
     id: data.id,
     status: data.status,
@@ -67,6 +68,7 @@ export async function buildFileStatus(file, projectDir = process.cwd()) {
     activePlan: active[0]?.id ?? null,
     archivedPlans: plans.filter((p) => p.archived).map((p) => p.id),
     evidence,
+    replacedBy,
     depends_on: data.depends_on ?? [],
     affects: data.affects ?? [],
     supersedes: data.supersedes ?? [],

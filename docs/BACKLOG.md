@@ -53,7 +53,7 @@ Verified end-to-end against real `ai-factory@2.17.0`; 15/15 tests green (10 unit
 
 | ID | Task | Refs | Test | Status |
 |---|---|---|---|---|
-| P0.1 | `package.json` (`type:module`, `aiFactoryCompatibility`) + `extension.json` (8 skill paths, **corrected** `commands` objects) | §6.1–6.2 | Acc 1 | ✅ |
+| P0.1 | `package.json` (`type:module`, `aiFactoryCompatibility`) + `extension.json` (9 skill paths, **corrected** `commands` objects) | §6.1–6.2 | Acc 1 | ✅ |
 | P0.2 | Validate `extension.json` against `schemas/extension.schema.json` (ajv) | §6.2 | unit | ✅ |
 | P0.3 | `commands/adr.js` → `register(program)` adds `adr` command with working `adr init` (idempotent, reports created/skipped) | §7, §8 | Acc 4,10 | ✅ |
 | P0.4 | AIF project detection + version-compat gate: read `.ai-factory.json`, warn-unknown / stop-incompatible; actionable error when non-initialized | §7, §29 | Acc 5 | ✅ |
@@ -86,7 +86,7 @@ Fixtures (§30.3): Claude-only, Codex-only, both, existing-install, relocated `p
 
 **Boundary held:** P1 `finalize`/`supersede` commands do the deterministic file mechanics only. Agent orchestration (strict `aif-verify`, dup/conflict scans, refinement) lands as skills in P2–P4.
 
-**Live verification (against `ai-factory@2.17.0`):** `extension add` (local) installs 8 skills + registers `adr`; `adr init` → 6 created; `validate` → Valid; `transition proposed→draft` real move; live `audit-artifacts docs/adr .ai-factory` → `PASS, 0 fail 0 warn`; `status --check` exit 0 on clean, **exit 1** on a blocking error (inv 6 placeholder in an accepted ADR) → Acc 30 confirmed.
+**Live verification (against `ai-factory@2.17.0`):** `extension add` (local) installs 9 skills + registers `adr`; `adr init` → 6 created; `validate` → Valid; `transition proposed→draft` real move; live `adr status --check` → `PASS, 0 fail 0 warn`; `status --check` exit 0 on clean, **exit 1** on a blocking error (inv 6 placeholder in an accepted ADR) → Acc 30 confirmed.
 
 Invariants 12,13,16,17 are enforced by later epics/audit, not P1 unit coverage: 12 (reciprocal `supersedes`) via `supersede.js`+audit; 13 (no material in-place rewrite) is a skill/editing-rule concern (§18); 16 (memory-sync safety) is Phase 5; 17 (no active plan on superseded) via supersede plan-disposition.
 

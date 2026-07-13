@@ -4,6 +4,7 @@ import path from 'node:path';
 import { read, serialize } from '../artifacts/frontmatter.js';
 import { DIR_BY_STATUS, isValidStatus, validateDirStatus } from './status.js';
 import { isLegal, legalTargets } from './transitions.js';
+import { resolveActivePlan } from '../artifacts/plan.js';
 import { resolveInside, atomicWrite } from '../util/safe-path.js';
 
 class TransitionError extends Error {}
@@ -13,7 +14,15 @@ class TransitionError extends Error {}
  * on any failure no partial state remains (source stays; target removed).
  * Returns { id, from, to, source, target }.
  */
-export async function transition(file, toStatus, { projectDir = process.cwd() } = {}) {
+export function transitionTarget(file, toStatus, { projectDir = process.cwd() } = {}) {
+  const source = resolveInside(projectDir, file);
+  return resolveInside(
+    projectDir,
+    path.join(path.dirname(path.dirname(source)), DIR_BY_STATUS[toStatus], path.basename(source)),
+  );
+}
+
+export async function transition(file, toStatus, { projectDir = process.cwd(), managed = false } = {}) {
   const source = resolveInside(projectDir, file);
 
   if (!isValidStatus(toStatus)) {
@@ -56,10 +65,30 @@ export async function transition(file, toStatus, { projectDir = process.cwd() } 
     );
   }
 
-  const target = resolveInside(
-    projectDir,
-    path.join(path.dirname(path.dirname(source)), DIR_BY_STATUS[toStatus], path.basename(source)),
-  );
+  if (!managed && (toStatus === 'active' || toStatus === 'superseded')) {
+    const command = toStatus === 'active' ? 'finalize' : 'supersede';
+    throw new TransitionError(
+      `The ${toStatus} status is managed by adr ${command}.\n` +
+        `  expected: use \`ai-factory adr ${command} ...\`\n` +
+        `  detected: direct transition ${from} → ${toStatus}\n` +
+        '  files:    nothing was changed\n' +
+        `  next:     run the ${command} workflow so its cross-file checks are applied`,
+    );
+  }
+  if (from === 'accepted' && toStatus === 'draft') {
+    const plan = await resolveActivePlan(data.id, { projectDir });
+    if (plan) {
+      throw new TransitionError(
+        'Accepted ADR has an active plan.\n' +
+          `  expected: no non-archived plan before returning ${data.id} to draft\n` +
+          `  detected: active plan ${plan.id}\n` +
+          '  files:    nothing was changed\n' +
+          '  next:     archive or remove the plan explicitly, then retry',
+      );
+    }
+  }
+
+  const target = transitionTarget(source, toStatus, { projectDir });
   if (existsSync(target)) {
     throw new TransitionError(
       'Target already exists.\n' +

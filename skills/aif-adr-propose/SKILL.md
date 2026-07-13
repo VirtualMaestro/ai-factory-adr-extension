@@ -26,7 +26,7 @@ an accepted project rule.
    ai-factory adr new "<topic>"
    ```
 
-   This generates the stable ID, creates `docs/adr/proposals/adr-<slug>.md` with
+   This generates the stable ID, creates `<configured-adr-root>/proposals/adr-<slug>.md` with
    `status: proposed` from the template, and refuses if that ID already exists. Do not
    hand-write the file or invent the ID — the command owns ID generation and the filename.
 5. **Fill known Context** in the created file: Problem, Constraints, Decision drivers.

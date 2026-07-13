@@ -19,6 +19,11 @@ function aif(args, cwd) {
   return execFileSync('ai-factory', quoted, { cwd, encoding: 'utf8', stdio: 'pipe', shell: WIN });
 }
 
+function npm(args, cwd) {
+  const quoted = WIN ? args.map((a) => (/\s/.test(a) ? `"${a}"` : a)) : args;
+  return execFileSync('npm', quoted, { cwd, encoding: 'utf8', stdio: 'pipe', shell: WIN });
+}
+
 let available = false;
 try {
   aif(['--version']);
@@ -54,6 +59,35 @@ test('add installs all 9 skills for each configured runtime and registers `adr` 
 
   aif(['adr', 'init'], dir);
   assert.ok(existsSync(path.join(dir, 'docs/adr/active')), 'adr init created the structure');
+});
+
+test('packed extension bundles yaml and loads in a clean initialized project', opts, async () => {
+  const packDir = await mkdtemp(path.join(os.tmpdir(), 'adr-pack-'));
+  const packed = JSON.parse(npm(['pack', '--json', '--pack-destination', packDir], EXT_ROOT))[0];
+  assert.ok(packed.files.some((f) => f.path === 'node_modules/yaml/package.json'), 'yaml is bundled');
+
+  const stage = await mkdtemp(path.join(os.tmpdir(), 'adr-packed-install-'));
+  npm(['install', '--ignore-scripts', '--prefix', stage, path.join(packDir, packed.filename)], EXT_ROOT);
+  const unpacked = path.join(stage, 'node_modules', 'ai-factory-adr-extension');
+
+  const dir = await newProject('claude');
+  assert.ok(!path.resolve(dir).startsWith(path.resolve(EXT_ROOT)), 'fixture is outside the repository tree');
+  aif(['extension', 'add', unpacked], dir);
+  assert.match(aif(['adr', '--help'], dir), /init/);
+  aif(['adr', 'init'], dir);
+  assert.ok(existsSync(path.join(dir, 'docs/adr/active')));
+});
+
+test('extension add refuses a project without .ai-factory.json', opts, async () => {
+  const bare = await mkdtemp(path.join(os.tmpdir(), 'adr-no-marker-'));
+  await mkdir(path.join(bare, '.ai-factory'), { recursive: true });
+  assert.throws(() => aif(['extension', 'add', EXT_ROOT], bare));
+});
+
+test('extension add refuses a malformed .ai-factory.json', opts, async () => {
+  const dir = await newProject('claude');
+  await writeFile(path.join(dir, '.ai-factory.json'), '{broken', 'utf8');
+  assert.throws(() => aif(['extension', 'add', EXT_ROOT], dir));
 });
 
 test('wave-1 lifecycle: propose → refine (draft) → accept, driven by the real CLI (Acc 11,12,13,26,27)', opts, async () => {
@@ -121,7 +155,8 @@ async function seedAccepted(dir, id, title) {
     `# ${title}`, '',
     '## Context', '', '- **Problem:** We need a documented decision.', '',
     '## Decision', '', 'We will use option A because it is simplest.', '',
-    '## Consequences', '', '- **Negative:** Limited.', '', '## Implementation', '', '',
+    '## Consequences', '', '- **Negative:** Limited.', '', '## Implementation', '',
+    '- **Plan:** none', '- **Evidence:** pending', '',
     '## References', '', '- **Replaced by:** —', '',
   ].join('\n'), 'utf8');
   return file;
@@ -143,9 +178,6 @@ test('wave-2 lifecycle: plan → finalize activates the ADR and archives the pla
   const id = 'adr-cache-layer';
   await seedAccepted(dir, id, 'Cache layer');
   const adrFile = `docs/adr/accepted/${id}.md`;
-  await writeFile(path.join(dir, 'docs/adr/accepted', `${id}.md`), (
-    await readFile(path.join(dir, adrFile), 'utf8')
-  ) + '- **Plan:** pending\n- **Evidence:** pending\n', 'utf8');
 
   // Stand in for `aif-plan full`: place the plan artifact AIF would create in paths.plans.
   const planId = `plan-${id}`;
@@ -186,9 +218,9 @@ test('wave-2: a documentation-only ADR finalizes to active without a plan (Acc 2
   const id = 'adr-naming-convention';
   await seedAccepted(dir, id, 'Naming convention');
   const adrFile = `docs/adr/accepted/${id}.md`;
-  await writeFile(path.join(dir, adrFile), (
-    await readFile(path.join(dir, adrFile), 'utf8')
-  ) + '- **Plan:** not required\n- **Evidence:** documentation-only decision\n', 'utf8');
+  await writeFile(path.join(dir, adrFile), (await readFile(path.join(dir, adrFile), 'utf8'))
+    .replace('- **Plan:** none', '- **Plan:** not required')
+    .replace('- **Evidence:** pending', '- **Evidence:** documentation-only decision'), 'utf8');
 
   aif(['adr', 'finalize', adrFile], dir);
   const active = path.join(dir, 'docs/adr/active', `${id}.md`);
@@ -233,6 +265,7 @@ test('wave-3 lifecycle: supersede moves the old ADR to superseded and archives i
   assert.ok(existsSync(superseded), 'old ADR moved to superseded/ (Acc 24)');
   assert.match(await readFile(superseded, 'utf8'), new RegExp(`- \\*\\*Replaced by:\\*\\* .*${newId}\\.md`));
   assert.match(await readFile(path.join(dir, newFile), 'utf8'), new RegExp(`supersedes:[\\s\\S]*${oldId}`));
+  assert.match(JSON.parse(aif(['adr', 'status', superseded, '--json'], dir)).replacedBy, new RegExp(`${newId}\\.md$`));
 
   // Plan archived with the superseded note (Acc 25, §19.7 step 5).
   const archived = path.join(dir, '.ai-factory/archive/plans', `${planId}.md`);
@@ -293,4 +326,14 @@ test('adr commands refuse to run in a non-initialized project (Acc 5)', opts, as
   assert.doesNotThrow(() => {
     try { aif(['--help'], bare); } catch { /* CLI help still works */ }
   });
+});
+
+test('adr commands reject a known-incompatible project version', opts, async () => {
+  const dir = await newProject('claude');
+  aif(['extension', 'add', EXT_ROOT], dir);
+  const marker = path.join(dir, '.ai-factory.json');
+  const metadata = JSON.parse(await readFile(marker, 'utf8'));
+  metadata.version = '3.1.0';
+  await writeFile(marker, JSON.stringify(metadata), 'utf8');
+  assert.throws(() => aif(['adr', 'status'], dir), /Incompatible|Error/);
 });

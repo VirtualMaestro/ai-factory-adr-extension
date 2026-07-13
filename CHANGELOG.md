@@ -4,6 +4,16 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and the project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.0.1] — 2026-07-13
+
+### Fixed
+
+- Bundle the runtime `yaml` dependency in the npm package.
+- Reject missing or malformed AI Factory project markers.
+- Roll back multi-file lifecycle operations on failure and protect managed transitions.
+- Restrict documentation-only detection to structured Implementation fields.
+- Align status output, skills, and MVP documentation with delivered behavior.
+
 ## [1.0.0] — 2026-07-13
 
 First stable release. MVP (Phases 0–4) complete; all acceptance criteria
@@ -32,4 +42,5 @@ First stable release. MVP (Phases 0–4) complete; all acceptance criteria
 - Phase 5 (optional Cognee memory) and Phase 6 (optional code-intelligence) are
   post-MVP and do not block this release.
 
+[1.0.1]: https://github.com/VirtualMaestro/ai-factory-adr-extension/releases/tag/v1.0.1
 [1.0.0]: https://github.com/VirtualMaestro/ai-factory-adr-extension/releases/tag/v1.0.0

@@ -25,10 +25,11 @@ AI Factory 2.x ships a first-class extension system (`ai-factory extension add|l
 
 This product therefore does **not** implement its own installer, provider adapters, file-ownership manifest, or update/uninstall machinery. It delivers:
 
-1. Eight ADR skills in the standard Agent Skills (`SKILL.md`) format, installed by AI Factory into each selected runtime.
+1. Nine ADR skills (one overview plus eight lifecycle skills) in the standard Agent Skills (`SKILL.md`) format, installed by AI Factory into each selected runtime.
 2. A deterministic ADR lifecycle helper registered as custom CLI commands (`ai-factory adr …`).
 3. An ADR template and directory conventions.
-4. Optional memory (Cognee) and code-intelligence adapters.
+
+Optional memory (Cognee) and code-intelligence adapters are specified for post-MVP phases but are not delivered by the current package.
 
 The extension must not fork, bundle, or modify AI Factory itself. It reuses AI Factory's artifact frontmatter schema, plan files, `audit-artifacts`, and runtime installation machinery.
 
@@ -100,8 +101,8 @@ The product must:
 13. Register the lifecycle helper as `ai-factory adr …` CLI commands.
 14. Support safe repeatable installation and updates through `ai-factory extension update`.
 15. Keep lifecycle behavior identical across runtimes (behavior lives in shared skill content and the deterministic helper, not per-runtime code).
-16. Allow optional semantic memory through Cognee.
-17. Allow optional code-impact enrichment through one configured code-intelligence provider.
+16. Post-MVP: allow optional semantic memory through Cognee.
+17. Post-MVP: allow optional code-impact enrichment through one configured code-intelligence provider.
 
 ---
 
@@ -157,9 +158,10 @@ An optional thin `npx ai-factory-adr-extension` bin may exist for discoverabilit
 {
   "$schema": "https://raw.githubusercontent.com/lee-to/ai-factory/2.x/schemas/extension.schema.json",
   "name": "ai-factory-adr-extension",
-  "version": "0.1.0",
+  "version": "1.0.1",
   "description": "Architecture Decision Record lifecycle for AI Factory",
   "skills": [
+    "skills/aif-adr-overview",
     "skills/aif-adr-propose",
     "skills/aif-adr-refine",
     "skills/aif-adr-accept",
@@ -169,11 +171,13 @@ An optional thin `npx ai-factory-adr-extension` bin may exist for discoverabilit
     "skills/aif-adr-supersede",
     "skills/aif-adr-status"
   ],
-  "commands": ["commands/adr.js"]
+  "commands": [
+    { "name": "adr", "description": "ADR lifecycle", "module": "commands/adr.js" }
+  ]
 }
 ```
 
-Optional later additions: an `mcpServers` template for `cognee-mcp` (Phase 6) and `injections` that teach `aif-plan` / `aif-implement` to consult active ADRs (post-MVP, opt-in).
+Optional later additions: an `mcpServers` template for `cognee-mcp` (Phase 5) and `injections` that teach `aif-plan` / `aif-implement` to consult active ADRs (post-MVP, opt-in).
 
 ### 6.3 Package ownership
 
@@ -182,8 +186,8 @@ The package owns:
 - all `aif-adr-*` skill sources (standard Agent Skills format: directory + `SKILL.md`, optional references/templates/scripts);
 - the deterministic ADR lifecycle helper (Commander.js command modules);
 - the ADR template;
-- optional memory adapters;
-- optional code-intelligence adapters;
+- post-MVP optional memory adapters;
+- post-MVP optional code-intelligence adapters;
 - tests for lifecycle and command behavior.
 
 The package does **not** own installation bookkeeping: file tracking lives in `.ai-factory.json` under `extensions`, maintained by AI Factory.
@@ -235,7 +239,7 @@ What AI Factory does (existing machinery, not built by this product):
 
 1. Copies extension files to `.ai-factory/extensions/ai-factory-adr-extension/`.
 2. Records the extension in `.ai-factory.json` under `extensions`.
-3. Installs the eight ADR skills into every configured agent runtime's skills directory (e.g. `.claude/skills/`, `.codex/skills/`), converting content for Codex-style runtimes automatically.
+3. Installs the nine ADR skills into every configured agent runtime's skills directory (e.g. `.claude/skills/`, `.codex/skills/`), converting content for Codex-style runtimes automatically.
 4. Registers the `ai-factory adr` CLI commands.
 5. Re-applies all of the above after `ai-factory update`.
 
@@ -247,7 +251,7 @@ What the extension itself must do (first-use initialization, performed lazily by
 
 An explicit `ai-factory adr init` command performs the same initialization eagerly and prints what was created, skipped, or already present. It must be safe to run repeatedly.
 
-Requirements on failure: if the project has not been initialized by AI Factory, `ai-factory extension add` itself fails; the extension's own commands must additionally verify AI Factory project markers (`.ai-factory.json` / `.ai-factory/`) and produce a clear actionable error when run in a non-initialized directory.
+Requirements on failure: if the project has not been initialized by AI Factory, `ai-factory extension add` itself fails; the extension's own commands must additionally require a valid `.ai-factory.json` and produce a clear actionable error when it is missing or malformed.
 
 ---
 
@@ -673,7 +677,7 @@ Actions:
 1. Run ADR validation.
 2. Run `ai-factory audit-artifacts` over the ADR root and `.ai-factory`.
 3. Change status to `accepted` and move the file atomically to `docs/adr/accepted` (single helper call).
-4. Trigger optional memory synchronization.
+4. Post-MVP only: trigger optional memory synchronization when Phase 5 is implemented.
 5. Report warnings and resulting path.
 
 ### 19.4 `aif-adr-plan @adr-file`
@@ -762,7 +766,7 @@ For a plan-backed ADR:
 8. Change status to `active` and move the ADR atomically to `docs/adr/active`.
 9. Archive the completed plan following `aif-archive` semantics: move it to `paths.archive/plans/`, preserve its filename, set plan `status: done`, add `archived: YYYY-MM-DD` to its frontmatter.
 10. Run artifact auditing.
-11. Trigger optional memory synchronization.
+11. Post-MVP only: trigger optional memory synchronization when Phase 5 is implemented.
 
 Example evidence:
 
@@ -821,7 +825,7 @@ The relative path must reflect the actual new ADR location.
 5. If the old ADR has a non-archived plan, require explicit user choice: archive it with a superseded note, or delete it.
 6. Validate reciprocal relationships.
 7. Run artifact auditing.
-8. Trigger optional memory synchronization.
+8. Post-MVP only: trigger optional memory synchronization when Phase 5 is implemented.
 
 The old ADR must not be superseded before the replacement is accepted.
 
@@ -838,10 +842,9 @@ Without an argument, report:
 - active ADRs;
 - superseded ADRs;
 - status-directory mismatches;
-- duplicate IDs;
-- broken artifact references;
 - multiple non-archived plans for one ADR;
-- stale optional memory index state.
+
+In `--check` mode, the strict artifact audit additionally reports duplicate IDs and broken artifact references. Optional-memory index diagnostics are post-MVP.
 
 With one ADR file, report:
 
@@ -876,7 +879,7 @@ Responsibilities:
 - prevent target-path collisions;
 - update references after moves (e.g. `Replaced by` relative paths);
 - invoke `ai-factory audit-artifacts` (passing the ADR root explicitly when it is outside default discovery);
-- call the configured optional memory adapter;
+- post-MVP only, call the configured optional memory adapter;
 - produce machine-readable (`--json`) and human-readable results.
 
 The helper must not make architectural choices. It enforces decisions already made by the user and agent workflow.
@@ -902,7 +905,7 @@ The system must enforce:
 13. Active ADRs are not materially rewritten in place.
 14. An external index never becomes authoritative.
 15. A failed filesystem transition leaves no partial state.
-16. A failed optional memory synchronization does not corrupt Markdown state.
+16. Post-MVP: a failed optional memory synchronization does not corrupt Markdown state.
 17. A superseded ADR has no plan that still resolves as active.
 
 ---
@@ -967,7 +970,7 @@ AI runtimes must apply the following retrieval order:
 
 ---
 
-## 24. Optional Cognee Integration
+## 24. Optional Cognee Integration (Post-MVP)
 
 Cognee integration is disabled by default.
 
@@ -1001,7 +1004,7 @@ Indexed statuses: `accepted`, `active`, `superseded`. Not indexed: `proposed`, `
 
 Retrieval priority: `active → accepted → superseded`.
 
-### MVP synchronization strategy
+### Planned synchronization strategy
 
 For a small ADR corpus, the Cognee adapter performs a complete dataset rebuild:
 
@@ -1010,7 +1013,7 @@ For a small ADR corpus, the Cognee adapter performs a complete dataset rebuild:
 3. ingest accepted, active, and superseded ADRs;
 4. attach ADR ID, status, source path, and project metadata.
 
-A per-document synchronization database is not required in the MVP.
+A per-document synchronization database is not required in the planned first memory release.
 
 Cognee failures:
 
@@ -1023,7 +1026,7 @@ The agent must open the source Markdown ADR before making a final architectural 
 
 ---
 
-## 25. Optional Code-Intelligence Integration
+## 25. Optional Code-Intelligence Integration (Post-MVP)
 
 Code intelligence is not required for lifecycle operations.
 
@@ -1218,7 +1221,7 @@ The MVP is complete when all of the following are true.
 
 1. `ai-factory-adr-extension` is publishable to npm with valid `extension.json` and `package.json`.
 2. `ai-factory extension add ai-factory-adr-extension` installs it into an initialized project.
-3. All eight ADR skills are installed for every configured runtime, beside existing AI Factory skills.
+3. All nine ADR skills are installed for every configured runtime, beside existing AI Factory skills.
 4. `ai-factory adr` commands are registered and runnable after installation.
 5. Running `ai-factory adr` commands in a non-initialized project produces a clear actionable error.
 6. Lifecycle behavior is identical across runtimes (single shared skill source; AI Factory performs runtime conversion).
@@ -1250,7 +1253,7 @@ The MVP is complete when all of the following are true.
 29. Failed transitions leave no partial filesystem state.
 30. `ai-factory adr status --check` returns a non-zero exit code on blocking errors.
 
-### Optional integrations
+### Post-MVP optional integrations (not required for MVP completion)
 
 31. The complete lifecycle works with no memory provider.
 32. Cognee can be enabled without changing lifecycle semantics.
@@ -1309,7 +1312,7 @@ The MVP is complete when all of the following are true.
 - active-decision protection;
 - historical retrieval behavior.
 
-### Phase 5 — Optional memory
+### Phase 5 — Optional memory (deferred post-MVP)
 
 - memory provider interface;
 - no-op provider;
@@ -1318,7 +1321,7 @@ The MVP is complete when all of the following are true.
 - stale-index reporting;
 - source-file readback rule.
 
-### Phase 6 — Optional code intelligence
+### Phase 6 — Optional code intelligence (deferred post-MVP)
 
 - provider interface;
 - CodeGraph adapter or `codebase-memory-mcp` adapter;
@@ -1489,10 +1492,10 @@ Markdown ADRs in Git
 Required components:
 
 - npm package with `extension.json` + `package.json`;
-- eight ADR skills in Agent Skills format;
+- nine ADR skills (overview plus eight lifecycle skills) in Agent Skills format;
 - `ai-factory adr` lifecycle commands (Commander.js command module);
 - ADR template;
 - validation built on the AI Factory artifact schema and `audit-artifacts`;
 - plan creation, implementation, verification, and archival integration.
 
-Cognee and code-intelligence tools remain optional adapters and must not delay the core release.
+Cognee and code-intelligence tools remain deferred post-MVP adapters and are not part of the current release.

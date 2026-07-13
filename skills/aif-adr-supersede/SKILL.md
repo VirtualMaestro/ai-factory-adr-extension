@@ -55,7 +55,7 @@ of rewriting an active decision.
    ADR must appear under `superseded` and the reciprocal links must validate.
 
 If a precondition fails the command changes nothing (§27) — fix the cause and
-retry. Optional memory synchronization is a later-phase concern (§24).
+retry. Optional memory synchronization is post-MVP and is not provided by this skill.
 
 ## After superseding — retrieval order (§23)
 

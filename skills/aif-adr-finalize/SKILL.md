@@ -19,9 +19,9 @@ and the contradiction check — that must pass first.
 
 1. **Resolve the plan.** `ai-factory adr resolve-plan <adr-file>` — verification must target
    this plan unambiguously.
-2. **Verify strictly.** Follow strict `aif-verify` semantics and require a **non-blocking
-   pass**. Check that the implementation matches the ADR **Decision** and, where testable, its
-   known Consequences and risks.
+2. **Verify strictly.** Apply strict `aif-verify` semantics in this run; do not invoke
+   `aif-verify` as a nested skill. Require a **non-blocking pass**. Check that the implementation
+   matches the ADR **Decision** and, where testable, its known Consequences and risks.
 3. **On a verification failure, stop** and leave the ADR `accepted`. Report what failed.
 4. **If the implementation contradicts the accepted Decision, finalization must fail.**
    Recommend returning the ADR to draft via `aif-adr-refine` — **never** silently rewrite the
@@ -49,7 +49,7 @@ and the contradiction check — that must pass first.
    `archived: YYYY-MM-DD`, filename preserved).
 7. **Audit** — `ai-factory adr status --check`. Resolve any failures.
 
-Optional memory synchronization is a later-phase concern (§24) — not part of P3.
+Optional memory synchronization is post-MVP and is not provided by this skill.
 
 ## Documentation-only ADRs
 

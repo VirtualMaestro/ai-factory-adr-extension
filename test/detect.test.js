@@ -25,6 +25,19 @@ test('known-incompatible version stops with an error', async () => {
   await assert.rejects(detectAif(dir, { warn: () => {} }), (e) => e instanceof AifError && /Incompatible/.test(e.message));
 });
 
+test('malformed marker stops instead of becoming an unknown version', async () => {
+  const dir = await tmp();
+  await writeFile(path.join(dir, '.ai-factory.json'), '{broken', 'utf8');
+  await assert.rejects(detectAif(dir, { warn: () => {} }), (e) => e instanceof AifError && /Invalid AI Factory project marker/.test(e.message));
+});
+
+test('an .ai-factory directory without the JSON marker is not initialized', async () => {
+  const dir = await tmp();
+  const { mkdir } = await import('node:fs/promises');
+  await mkdir(path.join(dir, '.ai-factory'));
+  await assert.rejects(detectAif(dir), (e) => e instanceof AifError && /marker is missing/.test(e.message));
+});
+
 test('unknown version warns and proceeds', async () => {
   const dir = await tmp();
   await marker(dir, { name: 'proj' }); // no version field

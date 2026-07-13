@@ -25,7 +25,7 @@ record is a different task from validating an implementation plan.
    |------|--------|
    | `proposed` (first refine) | `ai-factory adr transition <file> draft` — moves it to `drafts/` |
    | `draft` (repeat refines) | no transition — it stays `draft` |
-   | `accepted` → `draft` | only on **explicit user intent**; it invalidates the accepted state |
+   | `accepted` → `draft` | only on **explicit user intent** and after its active plan is explicitly archived or removed |
 
    The transition command owns the atomic move and legality check (§17); do not move files
    by hand.

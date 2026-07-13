@@ -2,9 +2,9 @@ import { unlink } from 'node:fs/promises';
 import { read } from '../artifacts/frontmatter.js';
 import { resolveActivePlan } from '../artifacts/plan.js';
 import { supersedeLink } from '../artifacts/links.js';
-import { transition } from './move.js';
-import { archivePlan } from './archive.js';
-import { resolveInside } from '../util/safe-path.js';
+import { transition, transitionTarget } from './move.js';
+import { archivePlan, archivePlanTarget } from './archive.js';
+import { resolveInside, withFileRollback } from '../util/safe-path.js';
 
 const REPLACEABLE = ['accepted', 'active'];
 
@@ -31,17 +31,24 @@ export async function supersede(oldFile, newFile, { projectDir = process.cwd(), 
     fail('Superseding an ADR with a non-archived plan needs an explicit disposition.', `plan ${plan.id} is active; pass --archive-plan or --delete-plan`);
   }
 
-  await supersedeLink(oldAbs, newAbs, { projectDir });
+  const supersededTarget = transitionTarget(oldAbs, 'superseded', { projectDir });
+  const files = [oldAbs, newAbs, supersededTarget];
+  if (plan) files.push(plan.file);
+  if (plan && planDisposition === 'archive') files.push(await archivePlanTarget(plan.file, { projectDir }));
 
-  let disposed = null;
-  if (plan) {
-    if (planDisposition === 'archive') disposed = { action: 'archived', ...(await archivePlan(plan.file, { projectDir, note: `superseded by ${newAdr.data.id}` })) };
-    else if (planDisposition === 'delete') {
-      await unlink(plan.file);
-      disposed = { action: 'deleted', file: plan.file };
+  return withFileRollback(files, async () => {
+    await supersedeLink(oldAbs, newAbs, { projectDir });
+
+    let disposed = null;
+    if (plan) {
+      if (planDisposition === 'archive') disposed = { action: 'archived', ...(await archivePlan(plan.file, { projectDir, note: `superseded by ${newAdr.data.id}` })) };
+      else if (planDisposition === 'delete') {
+        await unlink(plan.file);
+        disposed = { action: 'deleted', file: plan.file };
+      }
     }
-  }
 
-  const moved = await transition(oldAbs, 'superseded', { projectDir });
-  return { oldId: oldAdr.data.id, newId: newAdr.data.id, superseded: moved.target, plan: disposed };
+    const moved = await transition(oldAbs, 'superseded', { projectDir, managed: true });
+    return { oldId: oldAdr.data.id, newId: newAdr.data.id, superseded: moved.target, plan: disposed };
+  });
 }

@@ -1,4 +1,4 @@
-import { writeFile, rename, mkdir, unlink } from 'node:fs/promises';
+import { readFile, writeFile, rename, mkdir, unlink } from 'node:fs/promises';
 import path from 'node:path';
 
 /**
@@ -30,6 +30,35 @@ export async function atomicWrite(file, data) {
     await rename(tmp, file);
   } catch (err) {
     await unlink(tmp).catch(() => {});
+    throw err;
+  }
+}
+
+/** Restore every listed file to its original bytes when `action` fails. */
+export async function withFileRollback(files, action) {
+  const snapshots = [];
+  for (const file of new Set(files)) {
+    try {
+      snapshots.push([file, await readFile(file, 'utf8')]);
+    } catch (err) {
+      if (err.code !== 'ENOENT') throw err;
+      snapshots.push([file, null]);
+    }
+  }
+
+  try {
+    return await action();
+  } catch (err) {
+    const rollbackErrors = [];
+    for (const [file, content] of snapshots) {
+      try {
+        if (content === null) await unlink(file).catch((e) => { if (e.code !== 'ENOENT') throw e; });
+        else await atomicWrite(file, content);
+      } catch (rollbackError) {
+        rollbackErrors.push(rollbackError);
+      }
+    }
+    if (rollbackErrors.length) throw new AggregateError([err, ...rollbackErrors], `Operation failed and rollback was incomplete: ${err.message}`);
     throw err;
   }
 }

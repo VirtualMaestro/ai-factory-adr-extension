@@ -7,7 +7,7 @@ import { DIR_BY_STATUS, STATUS_BY_DIR, validateDirStatus } from '../src/lifecycl
 import { isLegal, legalTargets } from '../src/lifecycle/transitions.js';
 import { transition } from '../src/lifecycle/move.js';
 import { read } from '../src/artifacts/frontmatter.js';
-import { mkProject, writeAdr } from './helpers.js';
+import { mkProject, writeAdr, writePlan } from './helpers.js';
 
 test('status↔directory maps are inverse and cover all five statuses (inv 4)', () => {
   assert.equal(DIR_BY_STATUS.proposed, 'proposals');
@@ -51,6 +51,23 @@ test('transition rejects an illegal jump and leaves the file untouched', async (
   const src = await writeAdr(dir, { id: 'adr-illegal', status: 'proposed' });
   await assert.rejects(() => transition(src, 'active', { projectDir: dir }), /Illegal lifecycle transition/);
   assert.ok(existsSync(src), 'source must remain');
+});
+
+test('transition reserves active and superseded for their managed workflows', async () => {
+  const dir = await mkProject();
+  const accepted = await writeAdr(dir, { id: 'adr-managed-active', status: 'accepted' });
+  const active = await writeAdr(dir, { id: 'adr-managed-supersede', status: 'active' });
+  await assert.rejects(() => transition(accepted, 'active', { projectDir: dir }), /adr finalize/);
+  await assert.rejects(() => transition(active, 'superseded', { projectDir: dir }), /adr supersede/);
+  assert.ok(existsSync(accepted) && existsSync(active));
+});
+
+test('accepted ADR cannot return to draft while its plan is active', async () => {
+  const dir = await mkProject();
+  const accepted = await writeAdr(dir, { id: 'adr-rework', status: 'accepted' });
+  await writePlan(dir, { id: 'plan-adr-rework', implements: ['adr-rework'] });
+  await assert.rejects(() => transition(accepted, 'draft', { projectDir: dir }), /active plan plan-adr-rework/);
+  assert.ok(existsSync(accepted));
 });
 
 test('transition refuses a target collision and leaves both files intact (inv 15)', async () => {
