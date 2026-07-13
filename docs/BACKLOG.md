@@ -33,14 +33,17 @@ Derived from [`ai-factory-adr-extension-PRD.md`](./ai-factory-adr-extension-PRD.
 
 ---
 
-## STEP 0 — Verification spike (do FIRST, blocks nothing else being trusted)
-Build throwaway extension skeleton + fixture AI Factory project; run `ai-factory extension add ./<ext>` and confirm:
-- 8 skills install into each configured runtime (`.claude/skills/`, `.codex/skills/`) with Codex `$aif-*` conversion done by AIF;
-- `ai-factory adr` registers and runs;
-- re-add → no duplicates.
+## STEP 0 — Verification spike ✅ DONE (all assumptions passed against `ai-factory@2.17.0`)
+Ran throwaway extension (`extension.json` corrected shape + 2 skills + `commands/adr.js`) into a fixture project (`ai-factory init --agents claude,codex --no-skills --config`). Confirmed:
+- ✅ skills install into **both** runtimes (`.claude/skills/`, `.codex/skills/`);
+- ✅ Codex conversion done by AIF — skill body `/aif-adr-propose` → `$aif-adr-propose` on disk;
+- ✅ `commands` objects + `register(program)` → `ai-factory adr init` registered and runnable; `adr --help` lists subcommands;
+- ✅ re-add → **no duplicates** (single ext entry, skills not doubled);
+- ✅ `extension remove` deletes skills but **preserves** user ADR docs (`docs/adr/active/adr-test.md` survived);
+- ✅ live `config.yaml`: `paths.plans: .ai-factory/plans/`, `paths.archive: .ai-factory/archive/`, `workflow.plan_id_format: slug` (sequential opt-in) — matches §26/§15;
+- ✅ artifact statuses/relations (`accepted`, type `adr`, `implements`/`affects`/`supersedes`) present in installed audit code.
 
-Spot-check live `.ai-factory/config.yaml` key names + frontmatter statuses vs §14/§16.
-**If any assumption fails, revise P0/P2 before proceeding.**
+**No backlog revisions required.**
 
 ---
 
