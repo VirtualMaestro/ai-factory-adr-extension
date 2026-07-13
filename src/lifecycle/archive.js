@@ -12,8 +12,9 @@ export function todayUTC() {
 /**
  * Archive a plan following `aif-archive` semantics (§19.6): `status: done`, add `archived: DATE`,
  * move to `paths.archive/plans/` keeping the filename. Atomic with rollback (inv 15).
+ * `note` (optional) records why in `archived_reason` — used by supersede (§19.7 step 5).
  */
-export async function archivePlan(planFile, { projectDir = process.cwd() } = {}) {
+export async function archivePlan(planFile, { projectDir = process.cwd(), note = null } = {}) {
   const source = resolveInside(projectDir, planFile);
   const { archivePlans } = await readAifPaths(projectDir);
   const target = path.join(archivePlans, path.basename(source));
@@ -27,6 +28,7 @@ export async function archivePlan(planFile, { projectDir = process.cwd() } = {})
   const { data, body } = await read(source);
   data.status = 'done';
   data.archived = todayUTC();
+  if (note) data.archived_reason = note;
   await atomicWrite(target, serialize(data, body));
   try {
     await unlink(source);

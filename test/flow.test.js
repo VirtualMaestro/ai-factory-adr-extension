@@ -83,5 +83,7 @@ test('superseding an ADR with a non-archived plan requires disposition (Acc 25)'
   const res = await supersede(oldAdr, newAdr, { projectDir: dir, planDisposition: 'archive' });
   assert.equal(res.plan.action, 'archived');
   assert.ok(!existsSync(plan), 'plan removed from live dir');
-  assert.ok(existsSync(path.join(dir, '.ai-factory/archive/plans/plan-adr-oldp.md')));
+  const archived = path.join(dir, '.ai-factory/archive/plans/plan-adr-oldp.md');
+  assert.ok(existsSync(archived));
+  assert.equal((await read(archived)).data.archived_reason, 'superseded by adr-newp'); // §19.7 step 5
 });

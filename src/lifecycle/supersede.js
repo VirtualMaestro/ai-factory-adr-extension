@@ -35,7 +35,7 @@ export async function supersede(oldFile, newFile, { projectDir = process.cwd(), 
 
   let disposed = null;
   if (plan) {
-    if (planDisposition === 'archive') disposed = { action: 'archived', ...(await archivePlan(plan.file, { projectDir })) };
+    if (planDisposition === 'archive') disposed = { action: 'archived', ...(await archivePlan(plan.file, { projectDir, note: `superseded by ${newAdr.data.id}` })) };
     else if (planDisposition === 'delete') {
       await unlink(plan.file);
       disposed = { action: 'deleted', file: plan.file };

@@ -134,15 +134,21 @@ Acceptance: 15,16,17 (P3.1); 18 (P3.2); 19,20,21 (P3.3); 22 (P3.4).
 
 ---
 
-## Epic P4 — Superseding  (Acc 23–25)
+## Epic P4 — Superseding  (Acc 23–25) ✅ DONE — 57/57 tests green (1 unit + wave-3 integration); verified live against `ai-factory@2.17.0`
 
-| ID | Task | Refs |
-|---|---|---|
-| P4.1 | `aif-adr-supersede` — reciprocal `supersedes` + `Replaced by` links w/ correct relative paths; old→`superseded` atomic move; audit | §19.7 |
-| P4.2 | Orphaned non-archived-plan disposition: explicit user choice archive-with-note \| delete | §17, inv 17 |
-| P4.3 | Active-decision protection + historical retrieval order | §18.3, §23 |
+Deterministic core (`supersede.js`, CLI `adr supersede`, `supersedeLink`, plan disposition, `validate.js` inv 11) was already built+tested in P1 (Acc 23/24/25 green in `test/flow.test.js`). So P4 = author 1 skill body + one small `src` note + wave-3 integration. No new CLI, no new lifecycle module (mirrors P3).
+
+| ID | Task | Refs | Status |
+|---|---|---|---|
+| P4.1 | `aif-adr-supersede` — reciprocal `supersedes` + `Replaced by` links w/ correct relative paths; old→`superseded` atomic move; audit | §19.7 | ✅ skill wraps `adr supersede` + `status --check` |
+| P4.2 | Orphaned non-archived-plan disposition: explicit user choice archive-with-note \| delete | §17, inv 17 | ✅ CLI `--archive-plan`/`--delete-plan`; archive now writes `archived_reason: superseded by <newId>` (§19.7 step 5) |
+| P4.3 | Active-decision protection + historical retrieval order | §18.3, §23 | ✅ skill-body guidance (material-change→new ADR; active→accepted→superseded retrieval order) |
 
 Precondition guard: old is `accepted`/`active`, new is `accepted`/`active`, IDs differ, replacement accepted first.
+
+**Delivered:** authored `skills/aif-adr-supersede/SKILL.md` (stripped `(Placeholder…)`); `note` param added to `archivePlan` (`src/lifecycle/archive.js`, backward-compatible — finalize path unaffected), threaded from `supersede.js` on archive disposition; `test/flow.test.js` unit asserts `archived_reason`; wave-3 e2e in `test/integration/extension-lifecycle.test.js` (supersede via real CLI → old in `superseded/`, reciprocal links, plan archived-with-note, per-runtime skill install no `Placeholder`, `status --check` exit 0).
+
+**Note for later:** inv 12 (reciprocal `supersedes`) stays owned by `audit-artifacts` (relation reciprocity), not P4 unit coverage — validate.js covers only inv 11 (superseded ADR names its replacement). Memory sync (§19.7 step 8) deferred to Phase 5.
 
 ---
 

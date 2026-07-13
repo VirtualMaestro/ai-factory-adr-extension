@@ -121,7 +121,8 @@ async function seedAccepted(dir, id, title) {
     `# ${title}`, '',
     '## Context', '', '- **Problem:** We need a documented decision.', '',
     '## Decision', '', 'We will use option A because it is simplest.', '',
-    '## Consequences', '', '- **Negative:** Limited.', '', '## Implementation', '',
+    '## Consequences', '', '- **Negative:** Limited.', '', '## Implementation', '', '',
+    '## References', '', '- **Replaced by:** —', '',
   ].join('\n'), 'utf8');
   return file;
 }
@@ -193,6 +194,54 @@ test('wave-2: a documentation-only ADR finalizes to active without a plan (Acc 2
   const active = path.join(dir, 'docs/adr/active', `${id}.md`);
   assert.equal((JSON.parse(aif(['adr', 'status', active, '--json'], dir))).status, 'active');
   assert.ok(!existsSync(path.join(dir, '.ai-factory/archive/plans', `plan-${id}.md`)), 'no plan archived');
+});
+
+test('wave-3 lifecycle: supersede moves the old ADR to superseded and archives its plan with a note (Acc 23,24,25)', opts, async () => {
+  const dir = await newProject('claude,codex');
+  aif(['extension', 'add', EXT_ROOT], dir);
+  aif(['adr', 'init'], dir);
+
+  // The P4 supersede skill body is authored (not a placeholder) and installed for both runtimes.
+  for (const runtime of ['claude', 'codex']) {
+    const body = await readFile(path.join(skillsDir(dir, runtime), 'aif-adr-supersede', 'SKILL.md'), 'utf8');
+    assert.doesNotMatch(body, /Placeholder/, `${runtime}/aif-adr-supersede authored`);
+  }
+
+  const oldId = 'adr-old-storage';
+  const newId = 'adr-new-storage';
+  await seedAccepted(dir, oldId, 'Old storage');
+  await seedAccepted(dir, newId, 'New storage');
+  const oldFile = `docs/adr/accepted/${oldId}.md`;
+  const newFile = `docs/adr/accepted/${newId}.md`;
+
+  // Give the old ADR a live (non-archived) plan so supersede requires a disposition (inv 17).
+  const planId = `plan-${oldId}`;
+  const planDir = path.join(dir, '.ai-factory', 'plans');
+  await mkdir(planDir, { recursive: true });
+  await writeFile(path.join(planDir, `${planId}.md`), [
+    '---', `id: ${planId}`, 'type: plan', 'status: in_progress',
+    `implements: [${oldId}]`, `depends_on: [${oldId}]`, '---', '', '# Plan', '',
+  ].join('\n'), 'utf8');
+  aif(['adr', 'link-plan', oldFile, path.join('.ai-factory', 'plans', `${planId}.md`)], dir);
+
+  // Supersede with an explicit plan disposition (archive-with-note).
+  aif(['adr', 'supersede', oldFile, newFile, '--archive-plan'], dir);
+
+  // Old ADR moved to superseded/ with a reciprocal Replaced-by link; new ADR gained `supersedes`.
+  assert.ok(!existsSync(path.join(dir, oldFile)), 'old ADR left accepted/');
+  const superseded = path.join(dir, 'docs/adr/superseded', `${oldId}.md`);
+  assert.ok(existsSync(superseded), 'old ADR moved to superseded/ (Acc 24)');
+  assert.match(await readFile(superseded, 'utf8'), new RegExp(`- \\*\\*Replaced by:\\*\\* .*${newId}\\.md`));
+  assert.match(await readFile(path.join(dir, newFile), 'utf8'), new RegExp(`supersedes:[\\s\\S]*${oldId}`));
+
+  // Plan archived with the superseded note (Acc 25, §19.7 step 5).
+  const archived = path.join(dir, '.ai-factory/archive/plans', `${planId}.md`);
+  assert.ok(existsSync(archived), 'plan archived');
+  assert.match(await readFile(archived, 'utf8'), new RegExp(`archived_reason:.*superseded by ${newId}`));
+
+  const overview = JSON.parse(aif(['adr', 'status', '--json'], dir));
+  assert.ok(overview.superseded.includes(oldId), 'status reports the superseded ADR');
+  assert.doesNotThrow(() => aif(['adr', 'status', '--check'], dir), 'clean tree → exit 0');
 });
 
 test('re-adding does not duplicate skills or extension entries (Acc 7)', opts, async () => {
