@@ -113,16 +113,24 @@ Skill body rule: show slash form, note Codex `$` form; no nested-skill-call assu
 
 ---
 
-## Epic P3 — Plan integration  (Acc 15–22)
+## Epic P3 — Plan integration  (Acc 15–22) ✅ DONE — 56/56 tests green (2 new wave-2 integration cases); verified live against `ai-factory@2.17.0`
 
-| ID | Task | Refs |
-|---|---|---|
-| P3.1 | `aif-adr-plan` — create plan in `paths.plans`; reciprocal `implements`(plan)/`affects`(ADR) links + ADR Implementation section; audit | §19.4 |
-| P3.2 | `aif-adr-implement` — resolve plan by metadata; validate reciprocal links; keep ADR `accepted` | §19.5 |
-| P3.3 | `aif-adr-finalize` — strict `aif-verify`; pass → activate ADR + archive plan (`status: done`, `archived: DATE`, → `paths.archive/plans/`); fail → leave `accepted`; contradiction → recommend refine, never silent rewrite | §19.6 |
-| P3.4 | Documentation-only ADR path → active without plan | §19.6 |
+Deterministic core was already built+tested in P0/P1 (`link-plan`, `finalize` plan-backed **and** doc-only, `resolve-plan` — all green in `test/flow.test.js`). So P3 = author 3 skill bodies + wave-2 integration coverage. No new `src/` code, no new CLI.
+
+| ID | Task | Refs | Status |
+|---|---|---|---|
+| P3.1 | `aif-adr-plan` — create plan in `paths.plans`; reciprocal `implements`(plan)/`affects`(ADR) links + ADR Implementation section; audit | §19.4 | ✅ skill wraps `aif-plan full` + `adr link-plan` |
+| P3.2 | `aif-adr-implement` — resolve plan by metadata; validate reciprocal links; keep ADR `accepted` | §19.5 | ✅ skill wraps `adr resolve-plan` + `aif-implement` |
+| P3.3 | `aif-adr-finalize` — strict `aif-verify`; pass → activate ADR + archive plan (`status: done`, `archived: DATE`, → `paths.archive/plans/`); fail → leave `accepted`; contradiction → recommend refine, never silent rewrite | §19.6 | ✅ skill wraps strict `aif-verify` + `adr finalize` |
+| P3.4 | Documentation-only ADR path → active without plan | §19.6 | ✅ branch in `aif-adr-finalize` skill (`finalize.js` `DOC_ONLY_RE`) |
 
 Acceptance: 15,16,17 (P3.1); 18 (P3.2); 19,20,21 (P3.3); 22 (P3.4).
+
+**Delivered:** authored bodies for `skills/aif-adr-{plan,implement,finalize}/SKILL.md` (stripped `(Placeholder…)`); 2 wave-2 e2e in `test/integration/extension-lifecycle.test.js` (plan→link→resolve→finalize→archive; doc-only→active, per-runtime skill install with no `Placeholder` text).
+
+**Resolved PRD conflict:** §19.4's literal `- **Evidence:** not implemented` is a blocking inv-6 sentinel (`src/artifacts/placeholders.js`); `validate.js` flags it on accepted ADRs. Skills follow the P2 rule — accepted ADRs use a non-sentinel value (`pending`); `finalize` flips it to `implemented`.
+
+**Note for later:** no new `src/` mechanics needed — plan creation belongs to AIF's `aif-plan` (extension only links), and reciprocal-link validation is covered by `resolve-plan` (implements side) + `audit-artifacts` (relation reciprocity). Add a dedicated validator only if a gap surfaces. Memory sync (§19.6 step 11) stays deferred to Phase 5.
 
 ---
 

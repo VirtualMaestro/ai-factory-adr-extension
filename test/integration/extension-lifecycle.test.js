@@ -111,6 +111,90 @@ test('wave-1 lifecycle: propose → refine (draft) → accept, driven by the rea
   assert.doesNotThrow(() => aif(['adr', 'status', '--check'], dir), 'clean tree → exit 0');
 });
 
+// Author an accepted ADR at docs/adr/accepted/<id>.md with inv-6-clean content (Evidence non-sentinel).
+async function seedAccepted(dir, id, title) {
+  const file = path.join(dir, 'docs/adr/accepted', `${id}.md`);
+  await mkdir(path.dirname(file), { recursive: true });
+  await writeFile(file, [
+    '---', `id: ${id}`, 'type: adr', 'status: accepted', 'owners: [maintainer]',
+    'depends_on: []', 'affects: []', 'supersedes: []', '---', '',
+    `# ${title}`, '',
+    '## Context', '', '- **Problem:** We need a documented decision.', '',
+    '## Decision', '', 'We will use option A because it is simplest.', '',
+    '## Consequences', '', '- **Negative:** Limited.', '', '## Implementation', '',
+  ].join('\n'), 'utf8');
+  return file;
+}
+
+test('wave-2 lifecycle: plan → finalize activates the ADR and archives the plan (Acc 15,16,20,21)', opts, async () => {
+  const dir = await newProject('claude,codex');
+  aif(['extension', 'add', EXT_ROOT], dir);
+  aif(['adr', 'init'], dir);
+
+  // The 3 P3 skill bodies are authored (not placeholders) and installed for both runtimes.
+  for (const runtime of ['claude', 'codex']) {
+    for (const skill of ['aif-adr-plan', 'aif-adr-implement', 'aif-adr-finalize']) {
+      const body = await readFile(path.join(skillsDir(dir, runtime), skill, 'SKILL.md'), 'utf8');
+      assert.doesNotMatch(body, /Placeholder/, `${runtime}/${skill} authored`);
+    }
+  }
+
+  const id = 'adr-cache-layer';
+  await seedAccepted(dir, id, 'Cache layer');
+  const adrFile = `docs/adr/accepted/${id}.md`;
+  await writeFile(path.join(dir, 'docs/adr/accepted', `${id}.md`), (
+    await readFile(path.join(dir, adrFile), 'utf8')
+  ) + '- **Plan:** pending\n- **Evidence:** pending\n', 'utf8');
+
+  // Stand in for `aif-plan full`: place the plan artifact AIF would create in paths.plans.
+  const planId = `plan-${id}`;
+  const planDir = path.join(dir, '.ai-factory', 'plans');
+  await mkdir(planDir, { recursive: true });
+  const planFile = path.join(planDir, `${planId}.md`);
+  await writeFile(planFile, [
+    '---', `id: ${planId}`, 'type: plan', 'status: in_progress',
+    `implements: [${id}]`, `depends_on: [${id}]`, '---', '', '# Plan', '',
+  ].join('\n'), 'utf8');
+
+  // Link reciprocally, then confirm resolve-plan sees exactly one active plan.
+  aif(['adr', 'link-plan', adrFile, path.join('.ai-factory', 'plans', `${planId}.md`)], dir);
+  const resolved = JSON.parse(aif(['adr', 'resolve-plan', adrFile, '--json'], dir));
+  assert.equal(resolved.active.length, 1, 'one active plan resolved');
+  assert.equal(resolved.active[0].id, planId);
+
+  // Stand in for strict aif-verify: record evidence, then finalize.
+  aif(['adr', 'finalize', adrFile], dir);
+  assert.ok(!existsSync(path.join(dir, adrFile)), 'ADR left accepted/');
+  const active = path.join(dir, 'docs/adr/active', `${id}.md`);
+  assert.ok(existsSync(active), 'ADR moved to active/ (Acc 20)');
+  assert.match(await readFile(active, 'utf8'), /- \*\*Evidence:\*\* implemented/);
+
+  assert.ok(!existsSync(planFile), 'plan left the live plans dir');
+  const archived = path.join(dir, '.ai-factory/archive/plans', `${planId}.md`);
+  assert.ok(existsSync(archived), 'plan archived (Acc 21)');
+  assert.match(await readFile(archived, 'utf8'), /status: done/);
+
+  assert.doesNotThrow(() => aif(['adr', 'status', '--check'], dir), 'clean tree → exit 0');
+});
+
+test('wave-2: a documentation-only ADR finalizes to active without a plan (Acc 22)', opts, async () => {
+  const dir = await newProject('claude');
+  aif(['extension', 'add', EXT_ROOT], dir);
+  aif(['adr', 'init'], dir);
+
+  const id = 'adr-naming-convention';
+  await seedAccepted(dir, id, 'Naming convention');
+  const adrFile = `docs/adr/accepted/${id}.md`;
+  await writeFile(path.join(dir, adrFile), (
+    await readFile(path.join(dir, adrFile), 'utf8')
+  ) + '- **Plan:** not required\n- **Evidence:** documentation-only decision\n', 'utf8');
+
+  aif(['adr', 'finalize', adrFile], dir);
+  const active = path.join(dir, 'docs/adr/active', `${id}.md`);
+  assert.equal((JSON.parse(aif(['adr', 'status', active, '--json'], dir))).status, 'active');
+  assert.ok(!existsSync(path.join(dir, '.ai-factory/archive/plans', `plan-${id}.md`)), 'no plan archived');
+});
+
 test('re-adding does not duplicate skills or extension entries (Acc 7)', opts, async () => {
   const dir = await newProject('claude');
   aif(['extension', 'add', EXT_ROOT], dir);

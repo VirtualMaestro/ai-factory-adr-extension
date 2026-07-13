@@ -1,8 +1,40 @@
 ---
 name: aif-adr-implement
-description: Implement an ADR's plan — resolve the plan by metadata, validate reciprocal links, keep the ADR accepted. (Placeholder; body implemented in Epic P3.)
+description: Implement an ADR's plan — resolve the plan by metadata, validate reciprocal links, keep the ADR accepted.
 ---
 
 # aif-adr-implement
 
-Placeholder skill. Full workflow specified in PRD §19.5, implemented in Epic P3.
+Start or continue implementation from an accepted decision (PRD §19.5). This skill drives the
+work against the linked plan; it **never** advances the ADR — completing implementation is not
+the same as finalizing the decision (that is `aif-adr-finalize`).
+
+## Preconditions
+
+Do not implement unless **all** hold:
+
+- the ADR status is `accepted` and it is not superseded;
+- exactly one non-archived plan implements it;
+- the ADR↔plan links are reciprocal.
+
+## Workflow
+
+1. **Resolve the plan by metadata**, never by filename guessing:
+
+   ```text
+   ai-factory adr resolve-plan <adr-file>
+   ```
+
+   It resolves via the plan's `implements` frontmatter and exits non-zero if more than one
+   non-archived plan matches (inv 7) — stop and fix that before continuing.
+2. **Validate the links.** `ai-factory adr validate <adr-file>` covers the ADR-side
+   invariants; the `implements` side is confirmed by `resolve-plan` and relation reciprocity
+   (ADR `affects` ↔ plan `implements`) by `audit-artifacts`. Do not proceed on a mismatch.
+3. **Implement** the resolved plan following `aif-implement` semantics.
+4. **Keep the ADR `accepted`.** Do not transition it merely because implementation work
+   finished.
+5. **Report the plan used** (its id and path).
+
+## Invocation
+
+Claude Code: `/aif-adr-implement @adr-file` · Codex: `$aif-adr-implement @adr-file`.
