@@ -1,0 +1,26 @@
+{
+  "name": "ai-factory-adr-extension",
+  "version": "0.1.0",
+  "description": "Architecture Decision Record lifecycle for AI Factory",
+  "type": "module",
+  "license": "MIT",
+  "aiFactoryCompatibility": ">=2.0.0 <3.0.0",
+  "scripts": {
+    "test": "node --test"
+  },
+  "files": [
+    "extension.json",
+    "skills",
+    "commands",
+    "src",
+    "templates",
+    "schemas"
+  ],
+  "dependencies": {
+    "ajv": "^8.17.1",
+    "yaml": "^2.5.1"
+  },
+  "devDependencies": {
+    "commander": "^12.1.0"
+  }
+}

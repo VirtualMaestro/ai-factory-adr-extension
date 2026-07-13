@@ -47,17 +47,23 @@ Ran throwaway extension (`extension.json` corrected shape + 2 skills + `commands
 
 ---
 
-## Epic P0 — Packaging foundation  (Acc 1–10)
+## Epic P0 — Packaging foundation  (Acc 1–10) ✅ DONE
 
-| ID | Task | Refs | Test |
-|---|---|---|---|
-| P0.1 | `package.json` (`type:module`, `aiFactoryCompatibility`) + `extension.json` (8 skill paths, **corrected** `commands` objects) | §6.1–6.2 | Acc 1 |
-| P0.2 | Validate `extension.json` against `schemas/extension.schema.json` (ajv) | §6.2 | unit |
-| P0.3 | `commands/adr.js` → `register(program)` adds `adr` command with working `adr init` (idempotent, reports created/skipped) | §7, §8 | Acc 4,10 |
-| P0.4 | AIF project detection + version-compat gate: read `.ai-factory.json`, warn-unknown / stop-incompatible; actionable error when non-initialized | §7, §29 | Acc 5 |
-| P0.5 | Fixture projects + `extension add/update/remove` integration tests: skills per runtime, no dupes, update preserves ADRs/config, remove keeps ADRs | §30.2–30.3 | Acc 2,3,6,7,8,9 |
+Verified end-to-end against real `ai-factory@2.17.0`; 15/15 tests green (10 unit + 5 integration).
+
+| ID | Task | Refs | Test | Status |
+|---|---|---|---|---|
+| P0.1 | `package.json` (`type:module`, `aiFactoryCompatibility`) + `extension.json` (8 skill paths, **corrected** `commands` objects) | §6.1–6.2 | Acc 1 | ✅ |
+| P0.2 | Validate `extension.json` against `schemas/extension.schema.json` (ajv) | §6.2 | unit | ✅ |
+| P0.3 | `commands/adr.js` → `register(program)` adds `adr` command with working `adr init` (idempotent, reports created/skipped) | §7, §8 | Acc 4,10 | ✅ |
+| P0.4 | AIF project detection + version-compat gate: read `.ai-factory.json`, warn-unknown / stop-incompatible; actionable error when non-initialized | §7, §29 | Acc 5 | ✅ |
+| P0.5 | Fixture projects + `extension add/update/remove` integration tests: skills per runtime, no dupes, update preserves ADRs/config, remove keeps ADRs | §30.2–30.3 | Acc 2,3,6,7,8,9 | ✅ |
 
 Fixtures (§30.3): Claude-only, Codex-only, both, existing-install, relocated `paths.plans`+sequential, non-initialized, corrupted-metadata.
+
+**Delivered:** `package.json`, `extension.json`, vendored `schemas/extension.schema.json`, `commands/adr.js`, `src/aif/detect.js`, `src/config/{paths,adrConfig}.js`, `src/init.js`, 8 placeholder `skills/aif-adr-*/SKILL.md` (bodies → P2–P4), unit suites (`test/{extension-manifest,init,detect}.test.js`) + integration suite (`test/integration/extension-lifecycle.test.js`, skips when `ai-factory` absent).
+
+**Notes for later epics:** fixtures generated live via `ai-factory init` in the integration suite, not committed dirs. Edge fixtures (non-initialized, corrupted-metadata, relocated root) covered by unit tests (`detect`/`init`), not standalone projects — add committed fixtures if P1+ needs them. `commander` is a devDependency (runtime `program` comes from AIF). Version gate uses a minimal `>=X <Y` parser — swap for `semver` if ranges get richer.
 
 ---
 

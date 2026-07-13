@@ -1,0 +1,19 @@
+{
+  "$schema": "https://raw.githubusercontent.com/lee-to/ai-factory/2.x/schemas/extension.schema.json",
+  "name": "ai-factory-adr-extension",
+  "version": "0.1.0",
+  "description": "Architecture Decision Record lifecycle for AI Factory",
+  "skills": [
+    "skills/aif-adr-propose",
+    "skills/aif-adr-refine",
+    "skills/aif-adr-accept",
+    "skills/aif-adr-plan",
+    "skills/aif-adr-implement",
+    "skills/aif-adr-finalize",
+    "skills/aif-adr-supersede",
+    "skills/aif-adr-status"
+  ],
+  "commands": [
+    { "name": "adr", "description": "ADR lifecycle", "module": "commands/adr.js" }
+  ]
+}
