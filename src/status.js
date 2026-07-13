@@ -1,0 +1,76 @@
+import { readdir } from 'node:fs/promises';
+import path from 'node:path';
+import { adrRoot, STATUS_DIRS } from './config/paths.js';
+import { read } from './artifacts/frontmatter.js';
+import { validateAdr } from './lifecycle/validate.js';
+import { resolvePlans } from './artifacts/plan.js';
+import { STATUS_BY_DIR } from './lifecycle/status.js';
+
+async function listAdrs(root) {
+  const out = [];
+  for (const dir of STATUS_DIRS) {
+    let files = [];
+    try {
+      files = (await readdir(path.join(root, dir))).filter((f) => f.endsWith('.md'));
+    } catch {
+      /* directory absent → skip */
+    }
+    for (const f of files) out.push({ dir, file: path.join(root, dir, f) });
+  }
+  return out;
+}
+
+/**
+ * Project-wide ADR overview (§19.8). `issues` collects blocking ADR-specific problems (dir/status
+ * mismatch, multi-plan, placeholders). Duplicate ids / broken refs are the audit's job (run separately).
+ */
+export async function buildStatus(projectDir = process.cwd()) {
+  const root = await adrRoot(projectDir);
+  const rel = (f) => path.relative(projectDir, f);
+  const report = { proposals: [], drafts: [], acceptedNoPlan: [], acceptedWithPlan: [], active: [], superseded: [], issues: [] };
+
+  for (const { dir, file } of await listAdrs(root)) {
+    let data;
+    try {
+      ({ data } = await read(file));
+    } catch (err) {
+      report.issues.push(`${rel(file)}: ${err.message}`);
+      continue;
+    }
+    const { errors } = await validateAdr(file, { projectDir });
+    for (const e of errors) report.issues.push(`${rel(file)}: ${e}`);
+
+    const status = STATUS_BY_DIR[dir];
+    const id = data.id ?? rel(file);
+    if (status === 'proposed') report.proposals.push(id);
+    else if (status === 'draft') report.drafts.push(id);
+    else if (status === 'active') report.active.push(id);
+    else if (status === 'superseded') report.superseded.push(id);
+    else if (status === 'accepted') {
+      const { active } = await resolvePlans(data.id, { projectDir });
+      (active.length ? report.acceptedWithPlan : report.acceptedNoPlan).push(id);
+    }
+  }
+  return report;
+}
+
+/** Single-ADR detail (§19.8): id, status, location, linked plan, evidence, relations, validation. */
+export async function buildFileStatus(file, projectDir = process.cwd()) {
+  const { data, body } = await read(file);
+  const { active, plans } = await resolvePlans(data.id, { projectDir });
+  const { errors, warnings } = await validateAdr(file, { projectDir });
+  const evidence = body.match(/- \*\*Evidence:\*\* (.*)/)?.[1]?.trim() ?? null;
+  return {
+    id: data.id,
+    status: data.status,
+    location: path.relative(projectDir, path.resolve(file)),
+    activePlan: active[0]?.id ?? null,
+    archivedPlans: plans.filter((p) => p.archived).map((p) => p.id),
+    evidence,
+    depends_on: data.depends_on ?? [],
+    affects: data.affects ?? [],
+    supersedes: data.supersedes ?? [],
+    errors,
+    warnings,
+  };
+}

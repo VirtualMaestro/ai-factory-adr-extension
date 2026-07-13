@@ -67,20 +67,28 @@ Fixtures (§30.3): Claude-only, Codex-only, both, existing-install, relocated `p
 
 ---
 
-## Epic P1 — Core ADR lifecycle  (Acc 10; invariants §21)
+## Epic P1 — Core ADR lifecycle  (Acc 10; invariants §21) ✅ DONE — 50/50 unit + 5/5 integration green; verified live against `ai-factory@2.17.0`
 
-| ID | Task | Refs | Test |
-|---|---|---|---|
-| P1.1 | `templates/adr.md` | §16 | — |
-| P1.2 | Config: create/read `.ai-factory/adr-extension.yaml` defaults + `version` migration; readback `config.yaml` `paths.plans`/`paths.archive` (+ defaults) | §26 | §30.1 |
-| P1.3 | Frontmatter parse; stable ID gen; filename-stem == id | §15 | inv 1–3 |
-| P1.4 | Directory ↔ status map + validation | §14 | inv 4 |
-| P1.5 | Transition-legality table + atomic move w/ rollback + target-collision guard | §17, §20 | inv 15 |
-| P1.6 | Plan resolution via `implements` frontmatter, incl. `NNNN_` sequential filenames (never filename-match) | §15 | inv 7,8 |
-| P1.7 | All `adr` subcommands: `init validate transition resolve-plan link-plan finalize supersede status status --check` | §8 | Acc 30 |
-| P1.8 | `audit-artifacts` invocation via arg array; pass ADR root explicitly when relocated | §22, §28 | inv 14 |
-| P1.9 | Path safety: reject traversal/outside-project; atomic writes; no shell interpolation | §28 | unit |
-| P1.10 | Lifecycle unit tests covering all §21 invariants (1–17) | §21, §30.1 | — |
+| ID | Task | Refs | Test | Status |
+|---|---|---|---|---|
+| P1.1 | `templates/adr.md` | §16 | — | ✅ |
+| P1.2 | Config: create/read `.ai-factory/adr-extension.yaml` defaults + `version` migration; readback `config.yaml` `paths.plans`/`paths.archive` (+ defaults) | §26 | §30.1 | ✅ (P0 `adrConfig.js`/`paths.js`; migration key present, no migrations yet) |
+| P1.3 | Frontmatter parse; stable ID gen; filename-stem == id | §15 | inv 1–3 | ✅ `artifacts/{frontmatter,id}.js` |
+| P1.4 | Directory ↔ status map + validation | §14 | inv 4 | ✅ `lifecycle/status.js` |
+| P1.5 | Transition-legality table + atomic move w/ rollback + target-collision guard | §17, §20 | inv 15 | ✅ `lifecycle/{transitions,move}.js` |
+| P1.6 | Plan resolution via `implements` frontmatter, incl. `NNNN_` sequential filenames (never filename-match) | §15 | inv 7,8 | ✅ `artifacts/plan.js` |
+| P1.7 | All `adr` subcommands: `init validate transition resolve-plan link-plan finalize supersede status status --check` | §8 | Acc 30 | ✅ `commands/adr.js` |
+| P1.8 | `audit-artifacts` invocation via arg array; pass ADR root explicitly when relocated | §22, §28 | inv 14 | ✅ `audit.js` (arg-array + relocated root unit-tested; live `ai-factory audit-artifacts` → `PASS 0 fail/warn` via `status --check`) |
+| P1.9 | Path safety: reject traversal/outside-project; atomic writes; no shell interpolation | §28 | unit | ✅ `util/safe-path.js` |
+| P1.10 | Lifecycle unit tests covering all §21 invariants (1–17) | §21, §30.1 | — | ✅ `test/{frontmatter,id,lifecycle,plan-resolve,validate,flow,audit}.test.js` |
+
+**Delivered:** `templates/adr.md`; `src/artifacts/{frontmatter,id,plan,links,placeholders}.js`; `src/lifecycle/{status,transitions,move,validate,finalize,supersede,archive}.js`; `src/{audit,status}.js`; `src/util/safe-path.js`; all `adr` subcommands wired in `commands/adr.js`; 7 new test suites (50/50 green). CLI driven end-to-end (`validate` → `transition` real move → `status`), exit 0.
+
+**Boundary held:** P1 `finalize`/`supersede` commands do the deterministic file mechanics only. Agent orchestration (strict `aif-verify`, dup/conflict scans, refinement) lands as skills in P2–P4.
+
+**Live verification (against `ai-factory@2.17.0`):** `extension add` (local) installs 8 skills + registers `adr`; `adr init` → 6 created; `validate` → Valid; `transition proposed→draft` real move; live `audit-artifacts docs/adr .ai-factory` → `PASS, 0 fail 0 warn`; `status --check` exit 0 on clean, **exit 1** on a blocking error (inv 6 placeholder in an accepted ADR) → Acc 30 confirmed.
+
+Invariants 12,13,16,17 are enforced by later epics/audit, not P1 unit coverage: 12 (reciprocal `supersedes`) via `supersede.js`+audit; 13 (no material in-place rewrite) is a skill/editing-rule concern (§18); 16 (memory-sync safety) is Phase 5; 17 (no active plan on superseded) via supersede plan-disposition.
 
 ---
 
