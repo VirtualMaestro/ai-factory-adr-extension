@@ -22,10 +22,14 @@ Install into an initialized AI Factory project from npm, a git URL, or a local
 path:
 
 ```bash
+ai-factory init
 ai-factory extension add ai-factory-adr-extension        # npm
 # ai-factory extension add https://github.com/VirtualMaestro/ai-factory-adr-extension.git
 # ai-factory extension add ../ai-factory-adr-extension    # local checkout
 ```
+
+The extension requires the valid `.ai-factory.json` marker created by
+`ai-factory init`; a directory named `.ai-factory/` alone is not sufficient.
 
 This installs the nine skills into each configured runtime (`.claude/skills/`,
 `.codex/skills/`) and registers the `adr` command. Then scaffold the ADR
@@ -48,6 +52,12 @@ ai-factory extension update --force                       # refresh even if vers
 Updating **preserves** your ADR documents and `.ai-factory/adr-extension.yaml`.
 Re-running `add` does not duplicate skills or extension entries.
 
+To remove the extension while keeping project ADRs and plans:
+
+```bash
+ai-factory extension remove ai-factory-adr-extension
+```
+
 ## Lifecycle
 
 ```text
@@ -69,15 +79,42 @@ accept, plan, implement, finalize, supersede, status}`.
 | `init` | Scaffold the ADR directory structure (idempotent) |
 | `new <topic>` | Scaffold a `proposed` ADR from the template |
 | `validate <file>` | Check one ADR against the lifecycle invariants |
-| `transition <file> <status>` | Atomic status move (with rollback) |
+| `transition <file> <status>` | Atomic move between non-terminal lifecycle states |
 | `link-plan <adr> <plan>` | Write reciprocal ADR↔plan links |
 | `resolve-plan <adr>` | Resolve the plan(s) implementing an ADR |
 | `finalize <file>` | Activate an ADR; archive its plan |
 | `supersede <old> <new>` | Replace an ADR, preserving history |
-| `status [file]` | Overview / diagnostics; `--check` exits non-zero on blocking errors (CI) |
+| `status [file]` | Overview / diagnostics; JSON detail includes `replacedBy`; `--check` exits non-zero on blocking errors (CI) |
 
 The lifecycle skills wrap these commands — prefer the skills for authoring work
 and reserve raw commands for scripting and CI.
+
+`active` and `superseded` are managed states: use `finalize` and `supersede`
+rather than `transition`. Returning `accepted → draft` is rejected while a
+non-archived plan still implements the ADR.
+
+A documentation-only ADR must declare `Plan: not required` or
+`Evidence: documentation-only decision` as a structured field inside its
+`## Implementation` section; matching prose elsewhere does not bypass planning.
+
+## Configuration
+
+The ADR root defaults to `docs/adr` and can be changed in
+`.ai-factory/adr-extension.yaml`:
+
+```yaml
+adr:
+  root: docs/decisions
+```
+
+Commands and `adr status --check` resolve this setting automatically, including
+when the root is outside AI Factory's default audit paths.
+
+## Current scope
+
+Markdown ADRs in Git are the only source of truth. Optional Cognee memory and
+code-intelligence integrations are deferred post-MVP and are not included in
+the current release.
 
 ## Documentation
 
