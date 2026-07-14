@@ -1,6 +1,7 @@
 import { detectAif, AifError } from '../src/aif/detect.js';
 import { init } from '../src/init.js';
 import { validateAdr } from '../src/lifecycle/validate.js';
+import { verifyAnchors } from '../src/lifecycle/verify.js';
 import { transition } from '../src/lifecycle/move.js';
 import { resolvePlans } from '../src/artifacts/plan.js';
 import { linkPlan } from '../src/artifacts/links.js';
@@ -64,6 +65,29 @@ export function register(program) {
         console.log(res.errors.length ? `Invalid: ${res.errors.length} error(s).` : 'Valid.');
       });
       if (res.errors.length) process.exitCode = 1;
+    }));
+
+  adr
+    .command('verify-anchors <file>')
+    .description('Check that an ADR\'s `code:` anchors resolve on disk (non-zero exit if any are missing)')
+    .option('--json', 'Machine-readable output')
+    .action((file, opts) => guard(opts, async () => {
+      const res = await verifyAnchors(file, { projectDir: process.cwd() });
+      if (res.errors) {
+        out(opts, { command: 'verify-anchors', file, ...res }, () => res.errors.forEach((e) => console.error(`  error:   ${e}`)));
+        process.exitCode = 1;
+        return;
+      }
+      out(opts, { command: 'verify-anchors', file, ...res }, () => {
+        for (const a of res.anchors) {
+          const ok = a.fileExists && a.symbolFound !== false;
+          const why = !a.fileExists ? 'file not found' : a.symbolFound === false ? 'symbol not found' : '';
+          console.log(`  ${ok ? 'ok     ' : 'MISSING'} ${a.anchor}${why ? `  (${why})` : ''}`);
+        }
+        if (!res.anchors.length) console.log(res.docOnly ? 'No code anchors (documentation-only ADR).' : 'No code anchors declared.');
+        else console.log(res.missing.length ? `${res.missing.length} anchor(s) missing.` : 'All anchors resolve.');
+      });
+      if (res.missing.length) process.exitCode = 1;
     }));
 
   adr

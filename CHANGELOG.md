@@ -4,6 +4,20 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and the project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.3.0] — 2026-07-14
+
+### Added
+
+- **ADR-vs-code verification.** New `aif-adr-verify` skill and `adr verify-anchors`
+  subcommand answer, on demand, "was this ADR implemented, and does the code still
+  match the Decision?" — a re-runnable, read-only check that complements
+  `aif-adr-finalize`'s one-shot, plan-based gate. `verify-anchors` deterministically
+  confirms every `code:` anchor (and any `#symbol`) resolves on disk, exiting non-zero
+  when any is missing (CI-usable); the skill layers agent judgment over it, classifying
+  the ADR as implemented / partial / drift / not-implemented / doc-only and reporting a
+  verdict without ever mutating the ADR or the code. Symbol matching is a naive
+  word-boundary grep for now; deep resolution is deferred to Phase 6 code-intelligence.
+
 ## [1.2.0] — 2026-07-14
 
 ### Added

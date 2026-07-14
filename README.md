@@ -4,7 +4,8 @@ Architecture Decision Record (ADR) lifecycle for [AI Factory](https://github.com
 
 Adds an audited, Git-native ADR workflow to an AI Factory project: eight
 lifecycle skills for the agent (`propose → refine → accept → plan → implement →
-finalize`, plus `supersede` and `status`), an overview skill that maps the flow,
+finalize`, plus `supersede` and `status`), a `verify` skill that checks an ADR
+against the implemented code on demand, an overview skill that maps the flow,
 and a deterministic `ai-factory adr` command that does the file mechanics
 (status moves, reciprocal links, artifact audit).
 
@@ -31,7 +32,7 @@ ai-factory extension add ai-factory-adr-extension        # npm
 The extension requires the valid `.ai-factory.json` marker created by
 `ai-factory init`; a directory named `.ai-factory/` alone is not sufficient.
 
-This installs the ten skills into each configured runtime (`.claude/skills/`,
+This installs the eleven skills into each configured runtime (`.claude/skills/`,
 `.codex/skills/`) and registers the `adr` command. Then scaffold the ADR
 directories:
 
@@ -73,7 +74,8 @@ proposed    draft    accepted                          active
 For the agent, start with the **`/aif-adr-overview`** skill (Codex:
 `$aif-adr-overview`) — it maps every stage to its skill and states the
 retrieval/immutability rules. The stage skills are `aif-adr-{propose, refine,
-accept, plan, implement, finalize, supersede, status}`.
+accept, plan, implement, finalize, supersede, status}`. Off the linear flow,
+`aif-adr-verify` checks any accepted/active ADR against the implemented code.
 
 ### Migrating an existing ADR workflow
 
@@ -92,6 +94,7 @@ status directory (`git mv` preserves history), validates the set with
 | `new <topic>` | Scaffold a `proposed` ADR from the template |
 | `import <topic> --status <s> [--id <id>]` | Scaffold a conformant ADR skeleton at any status (used by migration) |
 | `validate <file>` | Check one ADR against the lifecycle invariants |
+| `verify-anchors <file>` | Check that an ADR's `code:` anchors resolve on disk (non-zero exit if any are missing) |
 | `transition <file> <status>` | Atomic move between non-terminal lifecycle states |
 | `link-plan <adr> <plan>` | Write reciprocal ADR↔plan links |
 | `resolve-plan <adr>` | Resolve the plan(s) implementing an ADR |
@@ -116,7 +119,9 @@ Each ADR carries an optional `code: []` frontmatter array — the primary
 entry-point files/symbols the decision lives in (repo-root paths, POSIX `/`,
 optional `#symbol` suffix, e.g. `src/status.js#validateDirStatus`). `finalize`
 populates it at activation, `migrate` backfills it on import, and `validate`
-warns when an `active` non-documentation-only ADR has no anchors. The reverse
+warns when an `active` non-documentation-only ADR has no anchors. `verify-anchors` (and the
+`aif-adr-verify` skill wrapping it) checks that the listed anchors actually resolve on disk,
+catching drift when code is moved or deleted. The reverse
 question — "which decisions govern this file?" — is a plain grep over `code:`
 in the ADR root; no index or external tooling involved.
 

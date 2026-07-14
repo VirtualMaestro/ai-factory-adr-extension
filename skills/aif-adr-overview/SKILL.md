@@ -45,6 +45,9 @@ none ───────────────────▶ proposed ─�
 - **`aif-adr-supersede <old> <new>`** — replace an accepted/active decision with
   a newer one (reciprocal links, `→ superseded`), preserving history.
 - **`aif-adr-status`** — read-only overview / diagnostics, at any point.
+- **`aif-adr-verify <adr>`** — off the linear flow: re-runnable, read-only check
+  of an accepted/active ADR against the implemented code (do the `code:` anchors
+  resolve, does the code honor the Decision). Answers "is this ADR really done?".
 - **`aif-adr-migrate`** — one-time: bring a project's pre-existing/legacy ADRs
   into this lifecycle. Run it before authoring new ADRs in a project that already
   had its own ADR approach.
