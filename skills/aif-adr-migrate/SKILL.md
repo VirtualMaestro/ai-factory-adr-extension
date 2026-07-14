@@ -33,10 +33,12 @@ parse mechanically. You read and map; the commands place and check.
 
 ## Workflow
 
-1. **Inventory the legacy ADRs.** Find them — common locations: a top-level
-   `adr/`, pre-existing loose files in `docs/adr/`, `docs/decisions/`,
-   `architecture/decisions/`. Read each one. Note its format and any existing
-   status/date/title, and whether any two are a replace/deprecate pair.
+1. **Inventory the legacy ADRs.** **Ask the operator where the legacy ADRs live** —
+   there is no reliable way to auto-locate them across projects, and the operator
+   knows their own layout. Only if they don't say, fall back to scanning the common
+   locations: a top-level `adr/`, pre-existing loose files in `docs/adr/`,
+   `docs/decisions/`, `architecture/decisions/`. Read each one. Note its format and
+   any existing status/date/title, and whether any two are a replace/deprecate pair.
 
 2. **Map each ADR (judgment).** Decide, per legacy file:
    - **id** — a stable slug, `adr-<lowercase-hyphenated>` derived from the title.

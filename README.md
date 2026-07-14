@@ -39,6 +39,9 @@ directories:
 ai-factory adr init
 ```
 
+If your ADRs live outside `docs/adr`, set `adr.root` **before** running this —
+see [Configuration](#configuration).
+
 ## Upgrade
 
 The extension is fetched fresh from its source on every add/update — there is no
@@ -116,6 +119,14 @@ The ADR root defaults to `docs/adr` and can be changed in
 adr:
   root: docs/decisions
 ```
+
+**Set the root before `ai-factory adr init`.** `init` scaffolds the lifecycle
+directories into whatever `adr.root` resolves to. If you keep ADRs elsewhere and
+run `init` first, the empty lifecycle dirs land under `docs/adr` while your
+existing ADRs stay outside the lifecycle. `init` never deletes or overwrites, so
+nothing is lost — but changing the root afterwards means re-running `init` and
+relocating the dirs it already created. Create the config file (or run `init`
+once to generate it), set `adr.root`, then run `init`.
 
 Commands and `adr status --check` resolve this setting automatically, including
 when the root is outside AI Factory's default audit paths.
