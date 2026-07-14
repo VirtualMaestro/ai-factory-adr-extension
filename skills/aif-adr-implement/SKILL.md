@@ -27,14 +27,17 @@ Do not implement unless **all** hold:
 
    It resolves via the plan's `implements` frontmatter and exits non-zero if more than one
    non-archived plan matches (inv 7) — stop and fix that before continuing.
-2. **Validate the links.** `ai-factory adr status --check` covers ADR invariants and runs
+2. **Check dependency readiness.** Run `ai-factory adr status <adr-file>`. If it reports
+   dependency warnings, state each warning to the operator and confirm they want to continue
+   before implementing.
+3. **Validate the links.** `ai-factory adr status --check` covers ADR invariants and runs
    the artifact audit using the configured ADR root. The `implements` side is also confirmed
    by `resolve-plan`. Do not proceed on a mismatch.
-3. **Implement** the resolved plan by applying `aif-implement` semantics in this run; do not
+4. **Implement** the resolved plan by applying `aif-implement` semantics in this run; do not
    invoke `aif-implement` as a nested skill.
-4. **Keep the ADR `accepted`.** Do not transition it merely because implementation work
+5. **Keep the ADR `accepted`.** Do not transition it merely because implementation work
    finished.
-5. **Report the plan used** (its id and path).
+6. **Report the plan used** (its id and path).
 
 ## Invocation
 

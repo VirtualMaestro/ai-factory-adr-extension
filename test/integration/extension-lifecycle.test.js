@@ -2,7 +2,7 @@
 // The whole suite skips with a clear message when the CLI is absent so `node --test` stays green.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import { mkdtemp, writeFile, readFile, mkdir, readdir } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import os from 'node:os';
@@ -17,6 +17,11 @@ const WIN = process.platform === 'win32';
 function aif(args, cwd) {
   const quoted = WIN ? args.map((a) => (/\s/.test(a) ? `"${a}"` : a)) : args;
   return execFileSync('ai-factory', quoted, { cwd, encoding: 'utf8', stdio: 'pipe', shell: WIN });
+}
+
+function aifResult(args, cwd) {
+  const quoted = WIN ? args.map((a) => (/\s/.test(a) ? `"${a}"` : a)) : args;
+  return spawnSync('ai-factory', quoted, { cwd, encoding: 'utf8', stdio: 'pipe', shell: WIN });
 }
 
 function npm(args, cwd) {
@@ -160,6 +165,26 @@ test('adr import scaffolds a conformant skeleton at a chosen status via the real
   assert.match(await readFile(file, 'utf8'), /status: active/);
 });
 
+test('status surfaces dependency warnings without failing file --check', opts, async () => {
+  const dir = await newProject('claude');
+  aif(['extension', 'add', EXT_ROOT], dir);
+  aif(['adr', 'init'], dir);
+
+  await seedAccepted(dir, 'adr-dependency', 'Dependency');
+  const target = await seedAccepted(dir, 'adr-target', 'Target');
+  await writeFile(target, (await readFile(target, 'utf8'))
+    .replace('depends_on: []', 'depends_on: [adr-dependency]'), 'utf8');
+  const relativeTarget = 'docs/adr/accepted/adr-target.md';
+
+  const json = JSON.parse(aif(['adr', 'status', relativeTarget, '--json'], dir));
+  assert.deepEqual(json.warnings, [
+    'depends on "adr-dependency" which is not yet active (status: accepted)',
+  ]);
+  const human = aifResult(['adr', 'status', relativeTarget, '--check'], dir);
+  assert.equal(human.status, 0);
+  assert.match(human.stderr, /warning: depends on "adr-dependency" which is not yet active/);
+});
+
 // Author an accepted ADR at docs/adr/accepted/<id>.md with inv-6-clean content (Evidence non-sentinel).
 async function seedAccepted(dir, id, title) {
   const file = path.join(dir, 'docs/adr/accepted', `${id}.md`);
@@ -187,6 +212,10 @@ test('wave-2 lifecycle: plan → finalize activates the ADR and archives the pla
     for (const skill of ['aif-adr-plan', 'aif-adr-implement', 'aif-adr-finalize']) {
       const body = await readFile(path.join(skillsDir(dir, runtime), skill, 'SKILL.md'), 'utf8');
       assert.doesNotMatch(body, /Placeholder/, `${runtime}/${skill} authored`);
+      if (skill !== 'aif-adr-finalize') {
+        assert.match(body, /ai-factory adr status <adr-file>/, `${runtime}/${skill} checks dependencies`);
+        assert.match(body, /confirm/i, `${runtime}/${skill} asks before continuing`);
+      }
     }
   }
 

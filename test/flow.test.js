@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync } from 'node:fs';
-import { readFile } from 'node:fs/promises';
+import { readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { read } from '../src/artifacts/frontmatter.js';
 import { linkPlan } from '../src/artifacts/links.js';
@@ -10,6 +10,33 @@ import { supersede } from '../src/lifecycle/supersede.js';
 import { atomicWrite } from '../src/util/safe-path.js';
 import { buildFileStatus } from '../src/status.js';
 import { mkProject, writeAdr, writePlan } from './helpers.js';
+
+test('status warns until every known ADR dependency is active', async () => {
+  const dir = await mkProject();
+  for (const status of ['proposed', 'draft', 'accepted', 'active', 'superseded']) {
+    await writeAdr(dir, { id: `adr-dep-${status}`, status });
+  }
+  await writeFile(path.join(dir, 'docs/adr/drafts/broken.md'), '---\nid: [\n---\n', 'utf8');
+  const adr = await writeAdr(dir, {
+    id: 'adr-target',
+    status: 'accepted',
+    depends_on: [
+      'adr-dep-proposed',
+      'adr-dep-draft',
+      'adr-dep-accepted',
+      'adr-dep-active',
+      'adr-dep-superseded',
+      'adr-missing',
+    ],
+  });
+
+  assert.deepEqual((await buildFileStatus(adr, dir)).warnings, [
+    'depends on "adr-dep-proposed" which is not yet active (status: proposed)',
+    'depends on "adr-dep-draft" which is not yet active (status: draft)',
+    'depends on "adr-dep-accepted" which is not yet active (status: accepted)',
+    'depends on superseded "adr-dep-superseded"; consider its replacement',
+  ]);
+});
 
 test('link-plan writes reciprocal ADR↔plan links (inv 8,9)', async () => {
   const dir = await mkProject();

@@ -20,6 +20,36 @@ async function listAdrs(root) {
   return out;
 }
 
+async function indexAdrsById(root) {
+  const index = new Map();
+  for (const { dir, file } of await listAdrs(root)) {
+    try {
+      const { data } = await read(file);
+      if (data.id != null) index.set(data.id, { status: STATUS_BY_DIR[dir], file });
+    } catch {
+      /* malformed ADRs are reported by status --check / audit-artifacts */
+    }
+  }
+  return index;
+}
+
+function checkDependencies(data, index) {
+  const ids = Array.isArray(data.depends_on)
+    ? data.depends_on
+    : data.depends_on == null ? [] : [data.depends_on];
+  const warnings = [];
+  for (const id of ids) {
+    const dependency = index.get(id);
+    if (!dependency || dependency.status === 'active') continue;
+    warnings.push(
+      dependency.status === 'superseded'
+        ? `depends on superseded "${id}"; consider its replacement`
+        : `depends on "${id}" which is not yet active (status: ${dependency.status})`,
+    );
+  }
+  return warnings;
+}
+
 /**
  * Project-wide ADR overview (§19.8). `issues` collects blocking ADR-specific problems (dir/status
  * mismatch, multi-plan, placeholders). Duplicate ids / broken refs are the audit's job (run separately).
@@ -59,6 +89,10 @@ export async function buildFileStatus(file, projectDir = process.cwd()) {
   const { data, body } = await read(file);
   const { active, plans } = await resolvePlans(data.id, { projectDir });
   const { errors, warnings } = await validateAdr(file, { projectDir });
+  const dependencyWarnings = checkDependencies(
+    data,
+    await indexAdrsById(await adrRoot(projectDir)),
+  );
   const evidence = body.match(/- \*\*Evidence:\*\* (.*)/)?.[1]?.trim() ?? null;
   const replacedBy = body.match(/- \*\*Replaced by:\*\* (.*)/)?.[1]?.trim() ?? null;
   return {
@@ -73,6 +107,6 @@ export async function buildFileStatus(file, projectDir = process.cwd()) {
     affects: data.affects ?? [],
     supersedes: data.supersedes ?? [],
     errors,
-    warnings,
+    warnings: [...warnings, ...dependencyWarnings],
   };
 }

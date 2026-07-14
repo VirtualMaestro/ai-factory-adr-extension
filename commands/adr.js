@@ -138,6 +138,7 @@ export function register(program) {
           console.log(`  plan:     ${res.activePlan ?? 'none'}`);
           console.log(`  evidence: ${res.evidence ?? '—'}`);
           res.errors.forEach((e) => console.error(`  error:   ${e}`));
+          res.warnings.forEach((w) => console.warn(`  warning: ${w}`));
         });
         if (opts.check && res.errors.length) process.exitCode = 1;
         return;

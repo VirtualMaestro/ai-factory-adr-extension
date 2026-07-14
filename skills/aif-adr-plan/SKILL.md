@@ -22,7 +22,9 @@ Do not plan unless **all** hold:
 
 ## Workflow
 
-1. **Inspect** the accepted ADR and any relevant active decisions.
+1. **Inspect** the accepted ADR and any relevant active decisions. Run
+   `ai-factory adr status <adr-file>` first. If it reports dependency warnings, state each
+   warning to the operator and confirm they want to continue before creating the plan.
 2. **Create the plan** by applying `aif-plan full` planning semantics in this run; do not
    invoke `aif-plan` as a nested skill. AI Factory owns plan
    creation, the plans directory (`paths.plans`), and the filename format (including
