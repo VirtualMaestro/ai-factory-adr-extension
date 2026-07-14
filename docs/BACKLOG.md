@@ -2,7 +2,7 @@
 
 Derived from [`ai-factory-adr-extension-PRD.md`](./ai-factory-adr-extension-PRD.md). Section refs (`§`) point to the PRD; `Acc N` = PRD §31 acceptance criterion N; tests = PRD §30.
 
-**Scope:** MVP = Phases 0–4. Phases 5–6 (Cognee, code-intelligence) are deferred and must not block release (§32, §35).
+**Scope:** MVP = Phases 0–4. Phase 5 (Cognee) dropped — see Deferred section; Phase 6 (code-intelligence) deferred and must not block release (§32, §35).
 
 ---
 
@@ -162,9 +162,9 @@ Precondition guard: old is `accepted`/`active`, new is `accepted`/`active`, IDs 
 
 ## Deferred (post-MVP — do NOT block release)
 
-- **Phase 5 — Optional memory (Cognee):** provider iface, no-op provider, `@cognee/cognee-ts` client + optional `cognee-mcp` manifest template, full dataset rebuild (`adr sync`), stale-index marker, source-readback rule. §24
+- **Phase 5 — Optional memory (Cognee): DROPPED (2026-07-14).** Spike below resolved it: Cognee requires an LLM at ingestion (`cognify` builds its graph by LLM extraction) + embedding model — service, cost, egress — while the agent baseline (frontmatter + `adr status` + grep) covers decision recall at solo-dev corpus size for free. `adr.memory.provider` config axis stays reserved (`none`); revisit at hundreds of ADRs / multi-repo. Decision of record: `docs/ADR_Proposal_Cognee_CodebaseMemory.md`. §24 stands as historical plan only.
 - **Phase 6 — Optional code-intelligence:** provider iface, `codegraph` / `codebase-memory-mcp` adapter (two alternatives for the same enrichment), impact + verification enrichment; must not own ADR data or change lifecycle state. §25
-- **Spike — Cognee vs codebase-memory-mcp overlap:** before building Phase 5, verify whether a running `codebase-memory-mcp` (its `search_graph` semantic search + ADR indexing) already covers the decision-recall that Phase 5's Cognee memory would provide. If so, Cognee is redundant → drop the separate `memory.provider` axis or fold both into one `enrichment.provider` slot. Index a real project, compare recall quality Cognee vs codebase-memory-mcp on "have we decided X before" queries. Note: `manage_adr` must still never be the primary ADR store (§25, Markdown = truth). Deliverable: recommendation on whether Phase 5 ships at all.
+- **Spike — Cognee vs codebase-memory-mcp overlap: RESOLVED (2026-07-14, lite run on two indexed repos).** Verdict: neither tool serves decision recall. codebase-memory-mcp's BM25/vector indexes cover code symbols only — decision-recall queries scored ~0 cosine or returned nothing; markdown sections are structural nodes (heading names) with unsearchable content; `manage_adr` is one fixed-section architecture summary per project (no per-decision records, no search). Cognee dropped on cost/complexity (LLM required at ingestion) vs a sufficient agent baseline (frontmatter + `adr status` + grep) at this corpus size. Full recall/precision comparison unnecessary — the decision rests on baseline sufficiency, not Cognee quality. Recorded in `docs/ADR_Proposal_Cognee_CodebaseMemory.md`.
 
 ---
 
