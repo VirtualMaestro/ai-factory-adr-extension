@@ -4,19 +4,20 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and the project adheres to
 [Semantic Versioning](https://semver.org/).
 
-## [1.3.0] — 2026-07-14
+## [1.4.0] — 2026-07-14
 
 ### Added
 
-- **ADR-vs-code verification.** New `aif-adr-verify` skill and `adr verify-anchors`
-  subcommand answer, on demand, "was this ADR implemented, and does the code still
-  match the Decision?" — a re-runnable, read-only check that complements
-  `aif-adr-finalize`'s one-shot, plan-based gate. `verify-anchors` deterministically
-  confirms every `code:` anchor (and any `#symbol`) resolves on disk, exiting non-zero
-  when any is missing (CI-usable); the skill layers agent judgment over it, classifying
-  the ADR as implemented / partial / drift / not-implemented / doc-only and reporting a
-  verdict without ever mutating the ADR or the code. Symbol matching is a naive
-  word-boundary grep for now; deep resolution is deferred to Phase 6 code-intelligence.
+- **Dependency-ordered "what to implement next".** New `aif-adr-next` skill and `adr order`
+  subcommand read the `depends_on` graph across all ADRs and answer "which ADR do I implement
+  next, and in what order?" — previously the author had to trace every dependency by hand.
+  `adr order` computes a deterministic topological plan: `next` (the ready-now list — `accepted`
+  ADRs whose every dependency is already `active`), the full topological `order` of the
+  schedulable backlog, `blocked` ADRs (a dependency is missing/`superseded`, or they sit behind a
+  cycle), and `cycles` (exits non-zero, since no valid order exists until they are broken). The
+  skill layers judgment on top, recommending the concrete ADR to pick up. Read-only; cross-artifact
+  cycle *validation* remains `ai-factory audit-artifacts`' job — `order` only surfaces cycles to
+  explain why an order can't be produced.
 
 ## [1.3.1] — 2026-07-14
 
@@ -30,6 +31,20 @@ All notable changes to this project are documented here. The format follows
   Plan) **only** when the value is empty or a template sentinel; content-ful values are left
   intact. `setField` is now multiline-aware, so replacing a value consumes its continuation lines
   and never leaves an orphan.
+
+## [1.3.0] — 2026-07-14
+
+### Added
+
+- **ADR-vs-code verification.** New `aif-adr-verify` skill and `adr verify-anchors`
+  subcommand answer, on demand, "was this ADR implemented, and does the code still
+  match the Decision?" — a re-runnable, read-only check that complements
+  `aif-adr-finalize`'s one-shot, plan-based gate. `verify-anchors` deterministically
+  confirms every `code:` anchor (and any `#symbol`) resolves on disk, exiting non-zero
+  when any is missing (CI-usable); the skill layers agent judgment over it, classifying
+  the ADR as implemented / partial / drift / not-implemented / doc-only and reporting a
+  verdict without ever mutating the ADR or the code. Symbol matching is a naive
+  word-boundary grep for now; deep resolution is deferred to Phase 6 code-intelligence.
 
 ## [1.2.0] — 2026-07-14
 

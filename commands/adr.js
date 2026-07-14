@@ -8,6 +8,7 @@ import { linkPlan } from '../src/artifacts/links.js';
 import { finalize } from '../src/lifecycle/finalize.js';
 import { supersede } from '../src/lifecycle/supersede.js';
 import { buildStatus, buildFileStatus } from '../src/status.js';
+import { buildOrder } from '../src/order.js';
 import { runAudit } from '../src/audit.js';
 import { createProposal } from '../src/artifacts/create.js';
 import { importAdr } from '../src/artifacts/import.js';
@@ -183,6 +184,35 @@ export function register(program) {
       });
       const auditFailed = audit && audit.code !== 0 && audit.code !== null;
       if (opts.check && (report.issues.length || auditFailed)) process.exitCode = 1;
+    }));
+
+  adr
+    .command('order')
+    .description('Dependency-ordered implementation plan: what is ready to implement next, and in what order')
+    .option('--json', 'Machine-readable output')
+    .action((opts) => guard(opts, async () => {
+      const res = await buildOrder({ projectDir: process.cwd() });
+      out(opts, { command: 'order', ...res }, () => {
+        console.log('Next to implement (accepted, all deps active):');
+        if (res.next.length) res.next.forEach((id, i) => console.log(`  ${i + 1}. ${id}`));
+        else console.log('  (none ready)');
+        console.log('Order (topological):');
+        if (res.order.length) {
+          for (const o of res.order) {
+            const wait = o.blockedBy.length ? `  ← after ${o.blockedBy.join(', ')}` : '';
+            console.log(`  [${o.status}] ${o.id}${wait}`);
+          }
+        } else console.log('  (nothing to order)');
+        if (res.blocked.length) {
+          console.log('Blocked:');
+          for (const b of res.blocked) console.log(`  ${b.id} ← ${b.blockedBy.join(', ') || '?'}${b.note ? `  (${b.note})` : ''}`);
+        }
+        if (res.cycles.length) {
+          console.error('Cycles — mutually-dependent ADRs; break one before an order exists:');
+          for (const c of res.cycles) console.error(`  ${c.join(' ↔ ')}`);
+        }
+      });
+      if (res.cycles.length) process.exitCode = 1;
     }));
 
   return adr;

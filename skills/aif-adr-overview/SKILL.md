@@ -48,6 +48,9 @@ none ───────────────────▶ proposed ─�
 - **`aif-adr-verify <adr>`** — off the linear flow: re-runnable, read-only check
   of an accepted/active ADR against the implemented code (do the `code:` anchors
   resolve, does the code honor the Decision). Answers "is this ADR really done?".
+- **`aif-adr-next`** — off the linear flow: reads the `depends_on` graph and
+  recommends which ADR to implement next (ready = `accepted` with all deps
+  `active`), plus the topological order, blocked ADRs, and any cycles.
 - **`aif-adr-migrate`** — one-time: bring a project's pre-existing/legacy ADRs
   into this lifecycle. Run it before authoring new ADRs in a project that already
   had its own ADR approach.

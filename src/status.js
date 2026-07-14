@@ -6,7 +6,7 @@ import { validateAdr } from './lifecycle/validate.js';
 import { resolvePlans } from './artifacts/plan.js';
 import { STATUS_BY_DIR } from './lifecycle/status.js';
 
-async function listAdrs(root) {
+export async function listAdrs(root) {
   const out = [];
   for (const dir of STATUS_DIRS) {
     let files = [];

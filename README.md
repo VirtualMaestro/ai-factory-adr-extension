@@ -32,7 +32,7 @@ ai-factory extension add ai-factory-adr-extension        # npm
 The extension requires the valid `.ai-factory.json` marker created by
 `ai-factory init`; a directory named `.ai-factory/` alone is not sufficient.
 
-This installs the eleven skills into each configured runtime (`.claude/skills/`,
+This installs the twelve skills into each configured runtime (`.claude/skills/`,
 `.codex/skills/`) and registers the `adr` command. Then scaffold the ADR
 directories:
 
@@ -75,7 +75,8 @@ For the agent, start with the **`/aif-adr-overview`** skill (Codex:
 `$aif-adr-overview`) — it maps every stage to its skill and states the
 retrieval/immutability rules. The stage skills are `aif-adr-{propose, refine,
 accept, plan, implement, finalize, supersede, status}`. Off the linear flow,
-`aif-adr-verify` checks any accepted/active ADR against the implemented code.
+`aif-adr-verify` checks any accepted/active ADR against the implemented code, and
+`aif-adr-next` reads the `depends_on` graph to tell you which ADR to implement next.
 
 ### Migrating an existing ADR workflow
 
@@ -101,6 +102,7 @@ status directory (`git mv` preserves history), validates the set with
 | `finalize <file>` | Activate an ADR; archive its plan |
 | `supersede <old> <new>` | Replace an ADR, preserving history |
 | `status [file]` | Overview / diagnostics; JSON detail includes `replacedBy`; `--check` exits non-zero on blocking errors (CI) |
+| `order` | Dependency-ordered plan: what is ready to implement next, the topological order, blocked ADRs, and cycles (non-zero exit on a cycle) |
 
 The lifecycle skills wrap these commands — prefer the skills for authoring work
 and reserve raw commands for scripting and CI.
