@@ -18,6 +18,17 @@ All notable changes to this project are documented here. The format follows
   verdict without ever mutating the ADR or the code. Symbol matching is a naive
   word-boundary grep for now; deep resolution is deferred to Phase 6 code-intelligence.
 
+### Fixed
+
+- **`adr finalize` no longer clobbers authored Evidence.** Finalize previously overwrote the
+  `- **Evidence:**` field with the literal `implemented` on every activation, destroying any
+  content the author had written (commit refs, artifact lists) — and, because `setField` only
+  replaced the field's first line, a multiline Evidence was left with orphaned continuation lines
+  and broken markdown. Finalize now overwrites Evidence (and, on the documentation-only path,
+  Plan) **only** when the value is empty or a template sentinel; content-ful values are left
+  intact. `setField` is now multiline-aware, so replacing a value consumes its continuation lines
+  and never leaves an orphan.
+
 ## [1.2.0] — 2026-07-14
 
 ### Added

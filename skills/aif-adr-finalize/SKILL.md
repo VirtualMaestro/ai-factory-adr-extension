@@ -50,7 +50,9 @@ and the contradiction check — that must pass first.
    ai-factory adr finalize <adr-file>
    ```
 
-   It sets `Evidence: implemented`, atomically moves the ADR to `active/`, and archives the
+   It sets `Evidence: implemented` **only if** the Evidence field is still empty or a template
+   sentinel — authored Evidence (commit refs, artifact lists, multiline notes) is preserved —
+   then atomically moves the ADR to `active/`, and archives the
    plan following `aif-archive` semantics (→ `paths.archive/plans/`, `status: done`,
    `archived: YYYY-MM-DD`, filename preserved).
 7. **Audit** — `ai-factory adr status --check`. Resolve any failures.

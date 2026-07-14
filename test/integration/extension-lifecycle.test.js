@@ -244,7 +244,7 @@ test('wave-2 lifecycle: plan → finalize activates the ADR and archives the pla
   assert.ok(!existsSync(path.join(dir, adrFile)), 'ADR left accepted/');
   const active = path.join(dir, 'docs/adr/active', `${id}.md`);
   assert.ok(existsSync(active), 'ADR moved to active/ (Acc 20)');
-  assert.match(await readFile(active, 'utf8'), /- \*\*Evidence:\*\* implemented/);
+  assert.match(await readFile(active, 'utf8'), /- \*\*Evidence:\*\* pending/, 'authored Evidence preserved, not clobbered');
 
   assert.ok(!existsSync(planFile), 'plan left the live plans dir');
   const archived = path.join(dir, '.ai-factory/archive/plans', `${planId}.md`);

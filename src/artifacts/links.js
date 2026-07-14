@@ -8,9 +8,13 @@ function uniqPush(value, item) {
   return arr;
 }
 
-/** Replace a `- **Label:** …` line in the body; append under a heading is out of scope (template seeds it). */
+/**
+ * Replace a `- **Label:** …` field in the body; append under a heading is out of scope
+ * (template seeds it). Multiline-aware: the match extends over any indented continuation lines
+ * of the value, so replacing a multiline value does not leave orphaned continuation lines.
+ */
 export function setField(body, label, value) {
-  const re = new RegExp(`^- \\*\\*${label}:\\*\\* .*$`, 'm');
+  const re = new RegExp(`^- \\*\\*${label}:\\*\\* .*(?:\\r?\\n[ \\t]+\\S.*)*$`, 'm');
   const line = `- **${label}:** ${value}`;
   return re.test(body) ? body.replace(re, line) : body;
 }

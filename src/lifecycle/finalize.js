@@ -1,4 +1,5 @@
 import { setField } from '../artifacts/links.js';
+import { findPlaceholders } from '../artifacts/placeholders.js';
 import { read as readDoc, serialize } from '../artifacts/frontmatter.js';
 import { resolveActivePlan } from '../artifacts/plan.js';
 import { transition, transitionTarget } from './move.js';
@@ -18,6 +19,20 @@ function implementationFields(body) {
 export function isDocumentationOnly(body) {
   const { plan, evidence } = implementationFields(body);
   return /^not required$/i.test(plan ?? '') || /^documentation-only(?: decision)?$/i.test(evidence ?? '');
+}
+
+/** A field value is empty or a template sentinel — safe to overwrite. Anything the author
+ * actually wrote (commit refs, artifact lists, multiline evidence) is content and must be kept. */
+function isPlaceholderValue(v) {
+  const t = (v ?? '').trim();
+  return t === '' || t === '—' || findPlaceholders(t).length > 0;
+}
+
+/** Set an Implementation field ONLY when its current value is empty/sentinel; a content-ful
+ * value the author wrote is left untouched (never clobber authored Evidence, §19.6). */
+function setImplField(body, label, value) {
+  const cur = implementationFields(body)[label.toLowerCase()];
+  return isPlaceholderValue(cur) ? setField(body, label, value) : body;
 }
 
 /**
@@ -49,8 +64,8 @@ export async function finalize(file, { projectDir = process.cwd() } = {}) {
   }
 
   let newBody = body;
-  if (plan) newBody = setField(newBody, 'Evidence', 'implemented');
-  else newBody = setField(setField(newBody, 'Plan', 'not required'), 'Evidence', 'documentation-only decision');
+  if (plan) newBody = setImplField(newBody, 'Evidence', 'implemented');
+  else newBody = setImplField(setImplField(newBody, 'Plan', 'not required'), 'Evidence', 'documentation-only decision');
   const activeTarget = transitionTarget(abs, 'active', { projectDir });
   const files = [abs, activeTarget];
   if (plan) files.push(plan.file, await archivePlanTarget(plan.file, { projectDir }));

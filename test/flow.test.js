@@ -6,6 +6,7 @@ import path from 'node:path';
 import { read } from '../src/artifacts/frontmatter.js';
 import { linkPlan } from '../src/artifacts/links.js';
 import { finalize } from '../src/lifecycle/finalize.js';
+import { validateAdr } from '../src/lifecycle/validate.js';
 import { supersede } from '../src/lifecycle/supersede.js';
 import { atomicWrite } from '../src/util/safe-path.js';
 import { buildFileStatus } from '../src/status.js';
@@ -79,7 +80,7 @@ test('finalize activates a plan-backed ADR and archives the plan (Acc 20)', asyn
   assert.ok(!existsSync(adr) && existsSync(res.active), 'ADR moved to active/');
   assert.match(res.active, /active[\\/]adr-fin\.md$/);
   assert.equal((await read(res.active)).data.status, 'active');
-  assert.match((await read(res.active)).body, /- \*\*Evidence:\*\* implemented/);
+  assert.match((await read(res.active)).body, /- \*\*Evidence:\*\* ready/, 'authored Evidence is preserved, not clobbered');
 
   assert.ok(!existsSync(plan), 'plan left the live plans dir');
   const archived = path.join(dir, '.ai-factory/archive/plans/plan-adr-fin.md');
@@ -87,6 +88,31 @@ test('finalize activates a plan-backed ADR and archives the plan (Acc 20)', asyn
   const pf = (await read(archived)).data;
   assert.equal(pf.status, 'done');
   assert.match(pf.archived, /^\d{4}-\d{2}-\d{2}$/);
+});
+
+test('finalize sets Evidence=implemented only when it is empty/sentinel', async () => {
+  const dir = await mkProject();
+  for (const [id, evidence] of [['adr-fin-sent', 'not implemented'], ['adr-fin-empty', '—']]) {
+    const body = `\n# T\n\n## Decision\n\nUse X.\n\n## Implementation\n\n- **Plan:** ${id}-plan\n- **Evidence:** ${evidence}\n`;
+    const adr = await writeAdr(dir, { id, status: 'accepted', body, affects: [`${id}-plan`] });
+    await writePlan(dir, { id: `${id}-plan`, implements: [id] });
+    const res = await finalize(adr, { projectDir: dir });
+    assert.match((await read(res.active)).body, /- \*\*Evidence:\*\* implemented/, `${evidence} → implemented`);
+  }
+});
+
+test('finalize preserves multiline authored Evidence without leaving an orphan line', async () => {
+  const dir = await mkProject();
+  const evidence = '- **Evidence:** implemented. Baseline scaffold landed in commit `1fbe059` (Node 24 via `.nvmrc`\n  + `engines.node ">=24 <25"`, `"type":"module"`)';
+  const body = `\n# T\n\n## Decision\n\nUse X.\n\n## Implementation\n\n- **Plan:** adr-ml-plan\n${evidence}\n`;
+  const adr = await writeAdr(dir, { id: 'adr-ml', status: 'accepted', body, affects: ['adr-ml-plan'] });
+  await writePlan(dir, { id: 'adr-ml-plan', implements: ['adr-ml'] });
+
+  const res = await finalize(adr, { projectDir: dir });
+  const out = (await read(res.active)).body;
+  assert.ok(out.includes('Baseline scaffold landed in commit'), 'authored body kept');
+  assert.ok(out.includes('+ `engines.node ">=24 <25"`, `"type":"module"`)'), 'continuation line kept, closing paren intact');
+  assert.equal((await validateAdr(res.active, { projectDir: dir })).errors.length, 0, 'validate passes');
 });
 
 test('finalize activates a documentation-only ADR without a plan (Acc 22)', async () => {
