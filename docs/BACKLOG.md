@@ -163,7 +163,8 @@ Precondition guard: old is `accepted`/`active`, new is `accepted`/`active`, IDs 
 ## Deferred (post-MVP — do NOT block release)
 
 - **Phase 5 — Optional memory (Cognee):** provider iface, no-op provider, `@cognee/cognee-ts` client + optional `cognee-mcp` manifest template, full dataset rebuild (`adr sync`), stale-index marker, source-readback rule. §24
-- **Phase 6 — Optional code-intelligence:** provider iface, `codegraph` / `codebase-memory-mcp` adapter, impact + verification enrichment; must not own ADR data or change lifecycle state. §25
+- **Phase 6 — Optional code-intelligence:** provider iface, `codegraph` / `codebase-memory-mcp` adapter (two alternatives for the same enrichment), impact + verification enrichment; must not own ADR data or change lifecycle state. §25
+- **Spike — Cognee vs codebase-memory-mcp overlap:** before building Phase 5, verify whether a running `codebase-memory-mcp` (its `search_graph` semantic search + ADR indexing) already covers the decision-recall that Phase 5's Cognee memory would provide. If so, Cognee is redundant → drop the separate `memory.provider` axis or fold both into one `enrichment.provider` slot. Index a real project, compare recall quality Cognee vs codebase-memory-mcp on "have we decided X before" queries. Note: `manage_adr` must still never be the primary ADR store (§25, Markdown = truth). Deliverable: recommendation on whether Phase 5 ships at all.
 
 ---
 
