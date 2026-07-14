@@ -18,6 +18,8 @@ All notable changes to this project are documented here. The format follows
   verdict without ever mutating the ADR or the code. Symbol matching is a naive
   word-boundary grep for now; deep resolution is deferred to Phase 6 code-intelligence.
 
+## [1.3.1] — 2026-07-14
+
 ### Fixed
 
 - **`adr finalize` no longer clobbers authored Evidence.** Finalize previously overwrote the
