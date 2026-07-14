@@ -38,6 +38,12 @@ and the contradiction check — that must pass first.
    - **Verification:** build, tests, lint, architecture checks
    ```
 
+   Also promote the `- **Code:**` line into the frontmatter `code:` array — the primary
+   entry-point anchors an agent starts tracing from, not every touched file. Convention:
+   paths relative to the repo root, POSIX `/` separators, optional `#symbol` suffix
+   (`src/status.js#validateDirStatus`); verify each anchor exists before writing it.
+   This happens **before** step 6, so the ADR transitions with its anchors in place.
+
 6. **Finalize** — one deterministic call:
 
    ```text
@@ -48,8 +54,6 @@ and the contradiction check — that must pass first.
    plan following `aif-archive` semantics (→ `paths.archive/plans/`, `status: done`,
    `archived: YYYY-MM-DD`, filename preserved).
 7. **Audit** — `ai-factory adr status --check`. Resolve any failures.
-
-Optional memory synchronization is post-MVP and is not provided by this skill.
 
 ## Documentation-only ADRs
 

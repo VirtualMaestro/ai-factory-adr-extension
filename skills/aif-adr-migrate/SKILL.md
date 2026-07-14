@@ -64,13 +64,17 @@ parse mechanically. You read and map; the commands place and check.
      ```
 
      Then edit that file to match `templates/adr.md`: frontmatter (`id`,
-     `type: adr`, `status`, `owners`, `depends_on`, `affects`, `supersedes`) and
+     `type: adr`, `status`, `owners`, `depends_on`, `affects`, `supersedes`,
+     `code`) and
      the sections **Context** (Problem / Constraints / Decision drivers),
      **Decision**, **Alternatives considered**, **Consequences** (Positive /
      Negative / Risks), **Implementation** (Plan / Evidence), **References**
      (Code / Issue / Replaced by). Port the old content into these; **resolve
      every template placeholder** — do not leave `not implemented`, `[decision]`,
-     etc. The `status` field must equal the directory it now lives in.
+     etc. The `status` field must equal the directory it now lives in. For
+     `active`/`superseded` imports, backfill `code:` with the primary
+     entry-point anchors (repo-root paths, POSIX `/`, optional `#symbol`) when
+     the implementation location is known; otherwise leave it `[]`.
    - **Messy/partial legacy, or one legacy file that must split into several
      ADRs** — scaffold each target from the template instead, then fill it and
      drop the source:

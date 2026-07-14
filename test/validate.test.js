@@ -52,6 +52,24 @@ test('active ADR without evidence is rejected, with evidence passes (inv 10)', a
   assert.deepEqual((await validateAdr(withEv, { projectDir: dir })).errors, []);
 });
 
+test('active ADR without code anchors warns; with anchors or doc-only stays silent', async () => {
+  const dir = await mkProject();
+  const CODE_WARN = /empty code anchors/;
+
+  const noCode = await writeAdr(dir, { id: 'adr-nocode', status: 'active', body: GOOD });
+  assert.ok((await validateAdr(noCode, { projectDir: dir })).warnings.some((w) => CODE_WARN.test(w)));
+
+  const withCode = await writeAdr(dir, { id: 'adr-code', status: 'active', body: GOOD, code: ['src/x.js'] });
+  assert.ok(!(await validateAdr(withCode, { projectDir: dir })).warnings.some((w) => CODE_WARN.test(w)));
+
+  const docOnly = await writeAdr(dir, {
+    id: 'adr-doconly',
+    status: 'active',
+    body: '\n# T\n\n## Decision\n\nUse X.\n\n## Implementation\n\n- **Plan:** not required\n- **Evidence:** documentation-only decision\n',
+  });
+  assert.ok(!(await validateAdr(docOnly, { projectDir: dir })).warnings.some((w) => CODE_WARN.test(w)));
+});
+
 test('superseded ADR must reference its replacement (inv 11)', async () => {
   const dir = await mkProject();
   const f = await writeAdr(dir, { id: 'adr-sup', status: 'superseded', body: '\n# T\n\n## References\n\n- **Replaced by:** —\n' });

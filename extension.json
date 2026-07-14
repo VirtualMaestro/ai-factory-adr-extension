@@ -1,7 +1,7 @@
 {
   "$schema": "https://raw.githubusercontent.com/lee-to/ai-factory/2.x/schemas/extension.schema.json",
   "name": "ai-factory-adr-extension",
-  "version": "1.1.1",
+  "version": "1.2.0",
   "description": "Architecture Decision Record lifecycle for AI Factory",
   "skills": [
     "skills/aif-adr-overview",

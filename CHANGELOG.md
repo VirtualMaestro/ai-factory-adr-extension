@@ -4,6 +4,26 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and the project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.2.0] — 2026-07-14
+
+### Added
+
+- **`code` source anchors.** New optional `code: []` frontmatter array on ADRs —
+  primary entry-point anchors (repo-root paths, POSIX `/`, optional `#symbol`)
+  linking a decision to where it lives in the source. `aif-adr-finalize`
+  promotes the free-text `- **Code:**` line into it at activation;
+  `aif-adr-migrate` backfills it on `active`/`superseded` imports;
+  `adr validate` warns (never errors) when an `active` non-documentation-only
+  ADR has no anchors. Decision of record:
+  `docs/ADR_Proposal_Cognee_CodebaseMemory.md`.
+
+### Removed
+
+- **Phase 5 (optional Cognee memory) dropped.** Resolved by spike: decision
+  recall at solo-dev corpus size is served by frontmatter + `adr status` + grep;
+  Cognee's LLM-at-ingestion cost is not justified. The `adr.memory.provider`
+  config axis stays reserved (`none`).
+
 ## [1.1.0] — 2026-07-13
 
 ### Added
@@ -52,5 +72,6 @@ First stable release. MVP (Phases 0–4) complete; all acceptance criteria
 - Phase 5 (optional Cognee memory) and Phase 6 (optional code-intelligence) are
   post-MVP and do not block this release.
 
+[1.2.0]: https://github.com/VirtualMaestro/ai-factory-adr-extension/releases/tag/v1.2.0
 [1.0.1]: https://github.com/VirtualMaestro/ai-factory-adr-extension/releases/tag/v1.0.1
 [1.0.0]: https://github.com/VirtualMaestro/ai-factory-adr-extension/releases/tag/v1.0.0

@@ -6,7 +6,11 @@ owners: [maintainer]
 depends_on: []
 affects: []
 supersedes: []
-code: []
+code:
+  - templates/adr.md
+  - skills/aif-adr-finalize/SKILL.md
+  - skills/aif-adr-migrate/SKILL.md
+  - src/lifecycle/validate.js#validateAdr
 ---
 
 # `code` source anchors + optional codebase-memory-mcp code-intelligence; no memory provider (Cognee rejected)
@@ -175,22 +179,22 @@ not promised (the code graph, when enabled, can widen the search).
 
 ## Implementation
 
-- **Plan:** not created
-- **Evidence:** not implemented
-
-Concrete change points when Phase 6 is built (out of scope for this doc-only pass):
-add `code: []` to `templates/adr.md` frontmatter; have `aif-adr-finalize` populate it at
-activation (promoting today's body `- **Code:**` line); optionally teach `adr validate`
-to accept it as anchor strings (no target resolution — audit does not own `code`) and
-warn when an `active` non-documentation-only ADR has an empty `code`; backfill existing
-`active`/`superseded` ADRs via `aif-adr-migrate`;
-wire the codebase-memory-mcp adapter behind the existing provider knob; update the
-BACKLOG deferred items to reference the `code` anchors. PRD §24 is not rewritten — it
-stands as the historical Phase 5 plan; this ADR supersedes it as the decision of record.
+- **Plan:** not required (changes small enough to land directly)
+- **Evidence:** implemented — `code: []` added to `templates/adr.md`; `aif-adr-finalize`
+  step 5 promotes the body `- **Code:**` line into frontmatter anchors before the
+  transition; `aif-adr-migrate` backfills anchors on `active`/`superseded` imports;
+  `adr validate` warns (never errors) on an `active` non-documentation-only ADR with an
+  empty `code` (`src/lifecycle/validate.js`, reusing `isDocumentationOnly`); covered by
+  `test/validate.test.js` (77/77 green). No runtime code references codebase-memory-mcp —
+  there is deliberately no adapter: the MCP server is agent-side, so a user without it
+  loses nothing and nothing can fail (the provider knob only reserves the config axis).
+  PRD §24 is not rewritten — it stands as the historical Phase 5 plan; this ADR
+  supersedes it as the decision of record.
 
 ## References
 
-- **Code:** —
+- **Code:** `templates/adr.md`, `skills/aif-adr-finalize/SKILL.md`,
+  `skills/aif-adr-migrate/SKILL.md`, `src/lifecycle/validate.js`
 - **Issue:** —
 - **Replaced by:** —
 - **PRD:** §24 (Optional Cognee — dropped by this ADR), §25 (Optional Code-Intelligence)

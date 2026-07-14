@@ -110,6 +110,16 @@ A documentation-only ADR must declare `Plan: not required` or
 `Evidence: documentation-only decision` as a structured field inside its
 `## Implementation` section; matching prose elsewhere does not bypass planning.
 
+### `code` source anchors
+
+Each ADR carries an optional `code: []` frontmatter array — the primary
+entry-point files/symbols the decision lives in (repo-root paths, POSIX `/`,
+optional `#symbol` suffix, e.g. `src/status.js#validateDirStatus`). `finalize`
+populates it at activation, `migrate` backfills it on import, and `validate`
+warns when an `active` non-documentation-only ADR has no anchors. The reverse
+question — "which decisions govern this file?" — is a plain grep over `code:`
+in the ADR root; no index or external tooling involved.
+
 ## Configuration
 
 The ADR root defaults to `docs/adr` and can be changed in
@@ -133,9 +143,13 @@ when the root is outside AI Factory's default audit paths.
 
 ## Current scope
 
-Markdown ADRs in Git are the only source of truth. Optional Cognee memory and
-code-intelligence integrations are deferred post-MVP and are not included in
-the current release.
+Markdown ADRs in Git are the only source of truth. Decision recall needs no
+external service: structured frontmatter, `adr status`, and grep cover it. The
+optional Cognee memory integration was evaluated and dropped (the
+`adr.memory.provider` config axis stays reserved); the optional
+code-intelligence integration remains deferred post-MVP. No runtime code
+depends on any MCP server — installs without one lose nothing and cannot fail
+because of it.
 
 ## Documentation
 

@@ -2,6 +2,7 @@ import { existsSync } from 'node:fs';
 import { read } from '../artifacts/frontmatter.js';
 import { isValidId, stemMatchesId } from '../artifacts/id.js';
 import { isValidStatus, validateDirStatus } from './status.js';
+import { isDocumentationOnly } from './finalize.js';
 import { findPlaceholders } from '../artifacts/placeholders.js';
 import { resolveActivePlan } from '../artifacts/plan.js';
 import { resolveInside } from '../util/safe-path.js';
@@ -51,6 +52,14 @@ export async function validateAdr(file, { projectDir = process.cwd() } = {}) {
 
   if (data.status === 'active' && !EVIDENCE_RE.test(body) && !DOC_ONLY_RE.test(body)) {
     errors.push('active ADR must record implementation evidence or state documentation-only'); // inv 10
+  }
+
+  if (
+    data.status === 'active' &&
+    !isDocumentationOnly(body) &&
+    (!Array.isArray(data.code) || data.code.length === 0)
+  ) {
+    warnings.push('active ADR has empty code anchors (list primary entry points in `code:` or mark documentation-only)');
   }
 
   if (data.status === 'superseded' && !/- \*\*Replaced by:\*\* (?!—)\S/.test(body)) {
