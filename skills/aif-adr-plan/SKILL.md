@@ -56,6 +56,25 @@ Do not plan unless **all** hold:
    any failures.
 6. **Leave the ADR `accepted`.** Creating a plan never advances the decision.
 
+## Improving the plan
+
+The plan is a **standard AI Factory plan artifact**, so improve it with the stock **`aif-improve`**
+— do not add an ADR-specific improve skill (`aif-adr-refine` avoids `aif-improve` only because it
+sharpens the **decision**, a different task).
+
+`aif-improve` targets the plan by **path or auto-resolution — not by id**: it takes an optional
+`@<plan-path>`, and with no argument it resolves the active plan from the current git branch
+(`paths.plans/<branch-slug>.md`) or, failing that, the single plan in `paths.plans`. So on the
+branch where the plan was created just run `aif-improve`; otherwise pass `@<plan-path>` (find it
+with `aif-improve --list`, or `ai-factory adr resolve-plan <adr-file>` to identify the plan). A
+bare ADR/plan **id** does not resolve here — that shortcut is ours (`resolve-plan`), not
+`aif-improve`'s.
+
+`aif-improve` edits the plan **body**, not its frontmatter, so the reciprocal
+`implements`/`depends_on` links survive — but after improving, re-verify before implementing:
+`ai-factory adr resolve-plan <adr-file>` (still resolves to exactly one plan) and
+`ai-factory adr status --check` (links/audit clean).
+
 ## Invocation
 
 Claude Code: `/aif-adr-plan @adr-file` · Codex: `$aif-adr-plan @adr-file`.

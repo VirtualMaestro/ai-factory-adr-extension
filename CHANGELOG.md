@@ -4,6 +4,19 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and the project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.4.1] — 2026-07-15
+
+### Documentation
+
+- **Improving a plan uses the standard `aif-improve`.** Clarified in `aif-adr-plan` (and the
+  `aif-adr-overview` map) that an ADR's plan is an ordinary AI Factory plan artifact, so it is
+  refined with the stock `aif-improve` — no ADR-specific improve skill is needed. Noted that
+  `aif-improve` targets the plan by **path or branch/single-plan auto-resolution, not by id**
+  (pass `@<plan-path>`, or run it with no argument on the plan's branch), and that it edits the
+  plan body not its frontmatter, so the reciprocal `implements`/`depends_on` links are preserved;
+  re-verify afterward with `adr resolve-plan` / `adr status --check`. (`aif-adr-refine` remains
+  decision-only, deliberately not delegating to `aif-improve`.)
+
 ## [1.4.0] — 2026-07-14
 
 ### Added
