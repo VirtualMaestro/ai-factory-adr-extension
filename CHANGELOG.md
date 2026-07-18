@@ -4,6 +4,16 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and the project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.5.1] — 2026-07-18
+
+### Fixed
+
+- **Release metadata.** The 1.5.0 tarball shipped `extension.json` still pinned at `1.4.1`, so
+  `ai-factory extension update` reported `v1.4.1 → v1.4.1` and skipped the upgrade even though
+  the files were copied. No skill or command content changed; 1.5.1 republishes the 1.5.0
+  content with correct version metadata. A `prepack` guard now aborts publishing whenever
+  `package.json` and `extension.json` disagree.
+
 ## [1.5.0] — 2026-07-18
 
 ### Changed

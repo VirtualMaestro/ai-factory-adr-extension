@@ -1,6 +1,6 @@
 {
   "name": "ai-factory-adr-extension",
-  "version": "1.5.0",
+  "version": "1.5.1",
   "description": "Architecture Decision Record lifecycle for AI Factory",
   "type": "module",
   "license": "MIT",
@@ -23,7 +23,8 @@
     "node": ">=18"
   },
   "scripts": {
-    "test": "node --test"
+    "test": "node --test",
+    "prepack": "node -e \"const p=require('./package.json'),e=require('./extension.json');if(p.version!==e.version)throw new Error('version mismatch: package.json '+p.version+' vs extension.json '+e.version)\""
   },
   "files": [
     "CHANGELOG.md",
