@@ -4,6 +4,18 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and the project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.5.0] — 2026-07-18
+
+### Changed
+
+- **`aif-adr-refine` is now explicitly refinement-only.** The skill had no stated scope
+  boundary, so after improving an ADR the agent would sometimes drift into implementing the
+  decision or offering to. A new "Scope — refinement only" section forbids writing production
+  code, producing an implementation plan, and closing with follow-up offers such as "shall I
+  implement this now?" — refinement ends by reporting what changed in the ADR and any
+  transition applied. Implementation stays with the skills that own it (`aif-adr-next`, the
+  plan skills), invoked by the author.
+
 ## [1.4.1] — 2026-07-15
 
 ### Documentation
