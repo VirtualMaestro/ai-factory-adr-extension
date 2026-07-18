@@ -9,6 +9,16 @@ Discuss and improve a proposal or draft (PRD §19.2). This skill uses **ADR-spec
 refinement criteria — it must **not** delegate to `aif-improve`. Validating a decision
 record is a different task from validating an implementation plan.
 
+## Scope — refinement only
+
+This skill **only improves the ADR document**. It must **never** implement the decision,
+write or modify production code, create an implementation plan, or propose doing any of
+that as a next step. Do not end with offers like "shall I implement this now?".
+
+When refinement is done, stop. Report what changed in the ADR and any transition applied —
+nothing more. If the user wants implementation, they invoke the implementation skills
+(`aif-adr-next`, plan skills) themselves.
+
 ## Workflow
 
 1. **Validate first.** Run `ai-factory adr validate <file>` and address reported errors.

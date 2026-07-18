@@ -1,6 +1,6 @@
 {
   "name": "ai-factory-adr-extension",
-  "version": "1.4.1",
+  "version": "1.5.0",
   "description": "Architecture Decision Record lifecycle for AI Factory",
   "type": "module",
   "license": "MIT",
