@@ -130,7 +130,6 @@ test('wave-1 lifecycle: propose → refine (draft) → accept, driven by the rea
     '## Decision', '', 'We will use option A for the test scope because it is simplest.', '',
     '## Alternatives considered', '', '- **Option B** — rejected because it is more complex.', '',
     '## Consequences', '', '- **Positive:** Simple.', '- **Negative:** Limited.', '- **Risks:** None.', '',
-    '## Implementation', '', '- **Plan:** none', '- **Evidence:** pending', '',
   ].join('\n'), 'utf8');
 
   // refine (first): proposed → draft.
@@ -185,19 +184,17 @@ test('status surfaces dependency warnings without failing file --check', opts, a
   assert.match(human.stderr, /warning: depends on "adr-dependency" which is not yet active/);
 });
 
-// Author an accepted ADR at docs/adr/accepted/<id>.md with inv-6-clean content (Evidence non-sentinel).
+// Author an accepted ADR at docs/adr/accepted/<id>.md with inv-6-clean content (authored evidence).
 async function seedAccepted(dir, id, title) {
   const file = path.join(dir, 'docs/adr/accepted', `${id}.md`);
   await mkdir(path.dirname(file), { recursive: true });
   await writeFile(file, [
     '---', `id: ${id}`, 'type: adr', 'status: accepted', 'owners: [maintainer]',
-    'depends_on: []', 'affects: []', 'supersedes: []', '---', '',
+    'depends_on: []', 'affects: []', 'supersedes: []', 'evidence: pending', '---', '',
     `# ${title}`, '',
     '## Context', '', '- **Problem:** We need a documented decision.', '',
     '## Decision', '', 'We will use option A because it is simplest.', '',
-    '## Consequences', '', '- **Negative:** Limited.', '', '## Implementation', '',
-    '- **Plan:** none', '- **Evidence:** pending', '',
-    '## References', '', '- **Replaced by:** —', '',
+    '## Consequences', '', '- **Negative:** Limited.', '',
   ].join('\n'), 'utf8');
   return file;
 }
@@ -244,7 +241,7 @@ test('wave-2 lifecycle: plan → finalize activates the ADR and archives the pla
   assert.ok(!existsSync(path.join(dir, adrFile)), 'ADR left accepted/');
   const active = path.join(dir, 'docs/adr/active', `${id}.md`);
   assert.ok(existsSync(active), 'ADR moved to active/ (Acc 20)');
-  assert.match(await readFile(active, 'utf8'), /- \*\*Evidence:\*\* pending/, 'authored Evidence preserved, not clobbered');
+  assert.match(await readFile(active, 'utf8'), /evidence: pending/, 'authored evidence preserved, not clobbered');
 
   assert.ok(!existsSync(planFile), 'plan left the live plans dir');
   const archived = path.join(dir, '.ai-factory/archive/plans', `${planId}.md`);
@@ -263,8 +260,7 @@ test('wave-2: a documentation-only ADR finalizes to active without a plan (Acc 2
   await seedAccepted(dir, id, 'Naming convention');
   const adrFile = `docs/adr/accepted/${id}.md`;
   await writeFile(path.join(dir, adrFile), (await readFile(path.join(dir, adrFile), 'utf8'))
-    .replace('- **Plan:** none', '- **Plan:** not required')
-    .replace('- **Evidence:** pending', '- **Evidence:** documentation-only decision'), 'utf8');
+    .replace('evidence: pending', 'evidence: documentation-only decision'), 'utf8');
 
   aif(['adr', 'finalize', adrFile], dir);
   const active = path.join(dir, 'docs/adr/active', `${id}.md`);
@@ -303,13 +299,13 @@ test('wave-3 lifecycle: supersede moves the old ADR to superseded and archives i
   // Supersede with an explicit plan disposition (archive-with-note).
   aif(['adr', 'supersede', oldFile, newFile, '--archive-plan'], dir);
 
-  // Old ADR moved to superseded/ with a reciprocal Replaced-by link; new ADR gained `supersedes`.
+  // Old ADR moved to superseded/ with a reciprocal replaced_by link; new ADR gained `supersedes`.
   assert.ok(!existsSync(path.join(dir, oldFile)), 'old ADR left accepted/');
   const superseded = path.join(dir, 'docs/adr/superseded', `${oldId}.md`);
   assert.ok(existsSync(superseded), 'old ADR moved to superseded/ (Acc 24)');
-  assert.match(await readFile(superseded, 'utf8'), new RegExp(`- \\*\\*Replaced by:\\*\\* .*${newId}\\.md`));
+  assert.match(await readFile(superseded, 'utf8'), new RegExp(`replaced_by: ${newId}`));
   assert.match(await readFile(path.join(dir, newFile), 'utf8'), new RegExp(`supersedes:[\\s\\S]*${oldId}`));
-  assert.match(JSON.parse(aif(['adr', 'status', superseded, '--json'], dir)).replacedBy, new RegExp(`${newId}\\.md$`));
+  assert.equal(JSON.parse(aif(['adr', 'status', superseded, '--json'], dir)).replacedBy, newId);
 
   // Plan archived with the superseded note (Acc 25, §19.7 step 5).
   const archived = path.join(dir, '.ai-factory/archive/plans', `${planId}.md`);

@@ -5,7 +5,7 @@ import path from 'node:path';
 import { verifyAnchors } from '../src/lifecycle/verify.js';
 import { mkProject, writeAdr } from './helpers.js';
 
-const GOOD = '\n# T\n\n## Decision\n\nUse X.\n\n## Implementation\n\n- **Plan:** plan-adr-x\n- **Evidence:** implemented\n';
+const GOOD = { evidence: 'implemented' };
 
 /** Drop a source file at repo-root-relative `rel` with `content`. */
 async function writeSrc(dir, rel, content) {
@@ -17,7 +17,7 @@ async function writeSrc(dir, rel, content) {
 test('present anchor file resolves; absent one is missing', async () => {
   const dir = await mkProject();
   await writeSrc(dir, 'src/x.js', 'export const x = 1;\n');
-  const f = await writeAdr(dir, { id: 'adr-a', status: 'active', body: GOOD, code: ['src/x.js', 'src/gone.js'] });
+  const f = await writeAdr(dir, { id: 'adr-a', status: 'active', ...GOOD, code: ['src/x.js', 'src/gone.js'] });
   const res = await verifyAnchors(f, { projectDir: dir });
   assert.equal(res.anchors.find((a) => a.path === 'src/x.js').fileExists, true);
   assert.deepEqual(res.missing, ['src/gone.js']);
@@ -27,7 +27,7 @@ test('#symbol found and not-found', async () => {
   const dir = await mkProject();
   await writeSrc(dir, 'src/y.js', 'export function doThing() {}\n');
   const f = await writeAdr(dir, {
-    id: 'adr-b', status: 'active', body: GOOD,
+    id: 'adr-b', status: 'active', ...GOOD,
     code: ['src/y.js#doThing', 'src/y.js#missingSym'],
   });
   const res = await verifyAnchors(f, { projectDir: dir });
@@ -46,15 +46,14 @@ test('empty code array → no anchors, no missing, no crash', async () => {
 
 test('documentation-only ADR is flagged docOnly', async () => {
   const dir = await mkProject();
-  const body = '\n# T\n\n## Decision\n\nUse X.\n\n## Implementation\n\n- **Plan:** not required\n- **Evidence:** documentation-only decision\n';
-  const f = await writeAdr(dir, { id: 'adr-d', status: 'active', body });
+  const f = await writeAdr(dir, { id: 'adr-d', status: 'active', evidence: 'documentation-only decision' });
   const res = await verifyAnchors(f, { projectDir: dir });
   assert.equal(res.docOnly, true);
 });
 
 test('anchor escaping the project is treated as missing, not a crash', async () => {
   const dir = await mkProject();
-  const f = await writeAdr(dir, { id: 'adr-e', status: 'active', body: GOOD, code: ['../outside.js'] });
+  const f = await writeAdr(dir, { id: 'adr-e', status: 'active', ...GOOD, code: ['../outside.js'] });
   const res = await verifyAnchors(f, { projectDir: dir });
   assert.equal(res.anchors[0].fileExists, false);
   assert.deepEqual(res.missing, ['../outside.js']);

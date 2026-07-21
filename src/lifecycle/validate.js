@@ -4,11 +4,8 @@ import { isValidId, stemMatchesId } from '../artifacts/id.js';
 import { isValidStatus, validateDirStatus } from './status.js';
 import { isDocumentationOnly } from './finalize.js';
 import { findPlaceholders } from '../artifacts/placeholders.js';
-import { resolveActivePlan } from '../artifacts/plan.js';
+import { resolveActivePlan, resolvePlans } from '../artifacts/plan.js';
 import { resolveInside } from '../util/safe-path.js';
-
-const EVIDENCE_RE = /- \*\*Evidence:\*\* (?!not implemented\b)\S/;
-const DOC_ONLY_RE = /documentation-only|not required/i;
 
 /**
  * ADR-specific invariant checks (§21). Deliberately does NOT re-check what `audit-artifacts` owns
@@ -44,26 +41,35 @@ export async function validateAdr(file, { projectDir = process.cwd() } = {}) {
     const found = findPlaceholders(body); // inv 6
     if (found.length) errors.push(`unresolved placeholders: ${found.join(', ')}`);
     try {
-      await resolveActivePlan(data.id, { projectDir }); // inv 7 (throws on >1)
+      const active = await resolveActivePlan(data.id, { projectDir }); // inv 7 (throws on >1)
+      // Denormalization guard: `plan:` frontmatter must agree with the plan-side `implements`
+      // truth (an archived plan with the declared id is fine — finalize keeps the reference).
+      const declared = String(data.plan ?? '').trim();
+      if (declared && declared !== active?.id) {
+        const { plans } = await resolvePlans(data.id, { projectDir });
+        if (!plans.some((p) => p.id === declared)) {
+          warnings.push(`frontmatter plan "${declared}" has no plan implementing this ADR`);
+        }
+      }
     } catch (err) {
       errors.push(err.message.split('\n')[0]);
     }
   }
 
-  if (data.status === 'active' && !EVIDENCE_RE.test(body) && !DOC_ONLY_RE.test(body)) {
-    errors.push('active ADR must record implementation evidence or state documentation-only'); // inv 10
+  if (data.status === 'active' && !String(data.evidence ?? '').trim()) {
+    errors.push('active ADR must record `evidence:` in frontmatter (implemented / documentation-only); legacy body format? run aif-adr-migrate'); // inv 10
   }
 
   if (
     data.status === 'active' &&
-    !isDocumentationOnly(body) &&
+    !isDocumentationOnly(data) &&
     (!Array.isArray(data.code) || data.code.length === 0)
   ) {
     warnings.push('active ADR has empty code anchors (list primary entry points in `code:` or mark documentation-only)');
   }
 
-  if (data.status === 'superseded' && !/- \*\*Replaced by:\*\* (?!—)\S/.test(body)) {
-    errors.push('superseded ADR must reference its replacement (Replaced by)'); // inv 11
+  if (data.status === 'superseded' && !String(data.replaced_by ?? '').trim()) {
+    errors.push('superseded ADR must reference its replacement (`replaced_by:` in frontmatter)'); // inv 11
   }
 
   return { errors, warnings };

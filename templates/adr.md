@@ -7,6 +7,9 @@ depends_on: []
 affects: []
 supersedes: []
 code: []
+plan:
+evidence:
+replaced_by:
 ---
 
 # Short decision title
@@ -32,13 +35,7 @@ We will use **[decision]** for **[scope]** because **[main reason]**.
 - **Negative:** ...
 - **Risks:** ...
 
-## Implementation
-
-- **Plan:** not created
-- **Evidence:** not implemented
-
 ## References
 
 - **Code:** —
 - **Issue:** —
-- **Replaced by:** —

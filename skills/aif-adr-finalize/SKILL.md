@@ -26,19 +26,14 @@ and the contradiction check — that must pass first.
 4. **If the implementation contradicts the accepted Decision, finalization must fail.**
    Recommend returning the ADR to draft via `aif-adr-refine` — **never** silently rewrite the
    Decision to match the code.
-5. **Record evidence** in the ADR Implementation section, e.g.:
+5. **Record evidence** in the ADR frontmatter — a short string, e.g.:
 
-   ```markdown
-   ## Implementation
-
-   - **Plan:** plan-adr-...
-   - **Evidence:** implemented
-   - **Commit:** abc1234
-   - **Code:** `src/...`
-   - **Verification:** build, tests, lint, architecture checks
+   ```yaml
+   evidence: implemented, commit abc1234, verified by tests+lint
    ```
 
-   Also promote the `- **Code:**` line into the frontmatter `code:` array — the primary
+   Detailed implementation notes (commit lists, verification steps) belong in the ADR body
+   under References, not in `evidence:`. Also fill the frontmatter `code:` array — the primary
    entry-point anchors an agent starts tracing from, not every touched file. Convention:
    paths relative to the repo root, POSIX `/` separators, optional `#symbol` suffix
    (`src/status.js#validateDirStatus`); verify each anchor exists before writing it.
@@ -50,8 +45,8 @@ and the contradiction check — that must pass first.
    ai-factory adr finalize <adr-file>
    ```
 
-   It sets `Evidence: implemented` **only if** the Evidence field is still empty or a template
-   sentinel — authored Evidence (commit refs, artifact lists, multiline notes) is preserved —
+   It sets `evidence: implemented` **only if** the frontmatter `evidence:` field is still
+   empty — an authored value (commit refs, verification notes) is preserved —
    then atomically moves the ADR to `active/`, and archives the
    plan following `aif-archive` semantics (→ `paths.archive/plans/`, `status: done`,
    `archived: YYYY-MM-DD`, filename preserved).
@@ -59,11 +54,10 @@ and the contradiction check — that must pass first.
 
 ## Documentation-only ADRs
 
-An ADR whose Implementation section states no implementation is required (`- **Plan:** not
-required`, or an Evidence line naming a documentation-only decision) skips verification and the
-plan steps entirely. Run `ai-factory adr finalize <adr-file>` directly: with no plan and a
-documentation-only body it activates the ADR without a plan and records
-`Evidence: documentation-only decision`.
+An ADR with `evidence: documentation-only` (or `documentation-only decision`) in its
+frontmatter skips verification and the plan steps entirely. Set that field, then run
+`ai-factory adr finalize <adr-file>` directly: with no plan and a documentation-only
+`evidence:` it activates the ADR without a plan. `plan:` stays empty.
 
 ## Invocation
 

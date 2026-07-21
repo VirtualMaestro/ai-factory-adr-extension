@@ -51,7 +51,7 @@ parse mechanically. You read and map; the commands place and check.
        its prior live status (`accepted`/`active`) and let `adr supersede` move
        it. Import directly as `superseded` **only** when there is no live
        replacement to run the command against (e.g. a decision dropped with no
-       successor); then fill `- **Replaced by:**` by hand.
+       successor); then fill the frontmatter `replaced_by:` by hand.
 
    State the full mapping (old file → id + status) before moving anything.
 
@@ -65,16 +65,22 @@ parse mechanically. You read and map; the commands place and check.
 
      Then edit that file to match `templates/adr.md`: frontmatter (`id`,
      `type: adr`, `status`, `owners`, `depends_on`, `affects`, `supersedes`,
-     `code`) and
+     `code`, `plan`, `evidence`, `replaced_by`) and
      the sections **Context** (Problem / Constraints / Decision drivers),
      **Decision**, **Alternatives considered**, **Consequences** (Positive /
-     Negative / Risks), **Implementation** (Plan / Evidence), **References**
-     (Code / Issue / Replaced by). Port the old content into these; **resolve
-     every template placeholder** — do not leave `not implemented`, `[decision]`,
-     etc. The `status` field must equal the directory it now lives in. For
-     `active`/`superseded` imports, backfill `code:` with the primary
+     Negative / Risks), **References** (Code / Issue). Port the old content into
+     these; **resolve every template placeholder** — do not leave `[decision]`,
+     `not implemented`, etc. The `status` field must equal the directory it now
+     lives in. For `active` imports, record a short `evidence:` in frontmatter.
+     For `active`/`superseded` imports, backfill `code:` with the primary
      entry-point anchors (repo-root paths, POSIX `/`, optional `#symbol`) when
      the implementation location is known; otherwise leave it `[]`.
+   - **ADRs written for pre-1.6 versions of this extension** — the machine fields
+     lived in the body; hoist them into frontmatter: `- **Plan:** <id>` →
+     `plan: <id>`, `- **Evidence:** …` → `evidence: …` (short string),
+     `- **Replaced by:** …` → `replaced_by: <new-id>`; remove the plan id from
+     `affects`; delete the now-empty `## Implementation` section and the
+     `- **Replaced by:**` reference line.
    - **Messy/partial legacy, or one legacy file that must split into several
      ADRs** — scaffold each target from the template instead, then fill it and
      drop the source:
@@ -87,9 +93,9 @@ parse mechanically. You read and map; the commands place and check.
      `import` writes a conformant skeleton at `<root>/<status-dir>/<id>.md`. The
      skeleton keeps template placeholders on purpose — it is *expected* to fail
      `validate` until you fill it.
-   - **Documentation-only decisions** — inside `## Implementation` declare
-     `- **Plan:** not required` (or an Evidence line stating a documentation-only
-     decision). Prose elsewhere does not bypass planning.
+   - **Documentation-only decisions** — set `evidence: documentation-only` in
+     the frontmatter (`plan:` stays empty). Prose in the body does not bypass
+     planning.
 
 4. **Reconstruct supersede relationships.** For a replace pair, prefer the
    deterministic command over hand-linking. The command **requires the old ADR to
@@ -101,10 +107,10 @@ parse mechanically. You read and map; the commands place and check.
    ```
 
    It writes `supersedes: [<old-id>]` on the new ADR, a reciprocal
-   `- **Replaced by:** …` into the old, and moves the old ADR to `superseded/`.
-   Only when there is no live replacement to supersede against, place the old ADR
-   directly in `superseded/` (per step 3) and fill
-   `- **Replaced by:** <relative link>` by hand.
+   `replaced_by: <new-id>` into the old ADR's frontmatter, and moves the old ADR
+   to `superseded/`. Only when there is no live replacement to supersede against,
+   place the old ADR directly in `superseded/` (per step 3) and fill
+   `replaced_by: <new-id>` by hand.
 
 5. **Carry over plans (if any).** If a legacy decision referenced an
    implementation plan, place the plan doc under AI Factory's `paths.plans` and

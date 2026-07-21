@@ -17,7 +17,7 @@ class ImportError extends Error {}
  * to any lifecycle status — used by migration (§19.1 for proposals; migration for existing decisions).
  * Deterministic core: derives/validates the id, guards duplicates, places the file in the status dir.
  *
- * The skeleton keeps the template placeholders (`not implemented`, `[decision]`, …) on purpose: a
+ * The skeleton keeps the template placeholders (`[decision]`, `[scope]`, …) on purpose: a
  * freshly imported accepted/active skeleton is *expected* to fail `adr validate` until the agent fills
  * it. The command owns id/status/placement; the skill (agent) owns content.
  *

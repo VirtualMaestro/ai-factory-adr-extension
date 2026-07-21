@@ -17,8 +17,8 @@ edits the ADR or the code.
    every `code:` frontmatter anchor (and any `#symbol`) exists on disk. Missing anchors ⇒ the
    ADR points at moved/deleted code (drift or stale anchors); note them.
 2. **Gather context.** `ai-factory adr resolve-plan <file>` (linked / archived plan) and
-   `ai-factory adr status <file>` (status, Implementation evidence). A doc-only ADR
-   (`Plan: not required` / documentation-only evidence) has nothing to verify — report N/A.
+   `ai-factory adr status <file>` (status, frontmatter `evidence:`). A doc-only ADR
+   (`evidence: documentation-only`) has nothing to verify — report N/A.
 3. **Judge conformance.** Open the anchored code (start from `code:`, trace outward as needed).
    Compare it against the `## Decision` and, where testable, `## Consequences`/risks. Classify:
 

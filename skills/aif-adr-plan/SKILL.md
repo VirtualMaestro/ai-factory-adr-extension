@@ -1,6 +1,6 @@
 ---
 name: aif-adr-plan
-description: Create an implementation plan for an accepted ADR with reciprocal implements/affects links.
+description: Create an implementation plan for an accepted ADR with reciprocal implements/plan links.
 ---
 
 # aif-adr-plan
@@ -45,13 +45,13 @@ Do not plan unless **all** hold:
    ai-factory adr link-plan <adr-file> <plan-file>
    ```
 
-   It adds the plan id to the ADR `affects` relationship (which also clears the built-in
-   `audit-artifacts` warning "Accepted ADR without `affects` links"), sets the ADR
-   Implementation **Plan:** field, and adds `implements`/`depends_on` to the plan.
-4. **Evidence stays non-sentinel.** The ADR Implementation section must **not** contain the
-   literal `not implemented` — that is a blocking placeholder sentinel (inv 6) and will fail
-   `adr validate` / `status --check` on an accepted ADR. Use a neutral value such as
-   `- **Evidence:** pending`; `aif-adr-finalize` flips it to `implemented` later.
+   It sets the ADR frontmatter `plan:` field to the plan id and adds `implements`/`depends_on`
+   to the plan. The ADR body is never touched, and the plan id does **not** go into `affects`
+   (that list is for genuinely affected artifacts only — the built-in `audit-artifacts` warning
+   "Accepted ADR without `affects` links" is therefore expected while `affects` is honestly
+   empty, and is safe to accept).
+4. **Leave `evidence:` empty.** `plan:` filled + `evidence:` empty *is* the "pending" state;
+   `aif-adr-finalize` sets `evidence: implemented` later.
 5. **Audit** — `ai-factory adr status --check`. It honors the configured ADR root; resolve
    any failures.
 6. **Leave the ADR `accepted`.** Creating a plan never advances the decision.

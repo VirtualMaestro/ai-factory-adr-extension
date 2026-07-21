@@ -15,7 +15,7 @@ import { mkProject, writeAdr, writePlan } from './helpers.js';
 test('status warns until every known ADR dependency is active', async () => {
   const dir = await mkProject();
   for (const status of ['proposed', 'draft', 'accepted', 'active', 'superseded']) {
-    await writeAdr(dir, { id: `adr-dep-${status}`, status });
+    await writeAdr(dir, { id: `adr-dep-${status}`, status, evidence: 'implemented', replaced_by: 'adr-x' });
   }
   await writeFile(path.join(dir, 'docs/adr/drafts/broken.md'), '---\nid: [\n---\n', 'utf8');
   const adr = await writeAdr(dir, {
@@ -43,14 +43,17 @@ test('link-plan writes reciprocal ADR↔plan links (inv 8,9)', async () => {
   const dir = await mkProject();
   const adr = await writeAdr(dir, { id: 'adr-lp', status: 'accepted', affects: [] });
   const plan = await writePlan(dir, { id: 'plan-adr-lp', implements: [] });
+  const bodyBefore = (await read(adr)).body;
 
   await linkPlan(adr, plan, { projectDir: dir });
 
-  assert.ok((await read(adr)).data.affects.includes('plan-adr-lp'));
+  const adrDoc = await read(adr);
+  assert.equal(adrDoc.data.plan, 'plan-adr-lp');
+  assert.deepEqual(adrDoc.data.affects, [], 'affects is not polluted with the plan id');
+  assert.equal(adrDoc.body, bodyBefore, 'ADR body untouched');
   const planFm = (await read(plan)).data;
   assert.ok(planFm.implements.includes('adr-lp'));
   assert.ok(planFm.depends_on.includes('adr-lp'));
-  assert.match((await read(adr)).body, /- \*\*Plan:\*\* plan-adr-lp/);
 });
 
 test('link-plan restores both files when its second write fails', async () => {
@@ -71,16 +74,16 @@ test('link-plan restores both files when its second write fails', async () => {
 
 test('finalize activates a plan-backed ADR and archives the plan (Acc 20)', async () => {
   const dir = await mkProject();
-  const body = '\n# T\n\n## Decision\n\nUse X.\n\n## Implementation\n\n- **Plan:** plan-adr-fin\n- **Evidence:** ready\n';
-  const adr = await writeAdr(dir, { id: 'adr-fin', status: 'accepted', body, affects: ['plan-adr-fin'] });
+  const adr = await writeAdr(dir, { id: 'adr-fin', status: 'accepted', plan: 'plan-adr-fin', evidence: 'ready' });
   const plan = await writePlan(dir, { id: 'plan-adr-fin', implements: ['adr-fin'] });
 
   const res = await finalize(adr, { projectDir: dir });
 
   assert.ok(!existsSync(adr) && existsSync(res.active), 'ADR moved to active/');
   assert.match(res.active, /active[\\/]adr-fin\.md$/);
-  assert.equal((await read(res.active)).data.status, 'active');
-  assert.match((await read(res.active)).body, /- \*\*Evidence:\*\* ready/, 'authored Evidence is preserved, not clobbered');
+  const fm = (await read(res.active)).data;
+  assert.equal(fm.status, 'active');
+  assert.equal(fm.evidence, 'ready', 'authored evidence is preserved, not clobbered');
 
   assert.ok(!existsSync(plan), 'plan left the live plans dir');
   const archived = path.join(dir, '.ai-factory/archive/plans/plan-adr-fin.md');
@@ -90,44 +93,29 @@ test('finalize activates a plan-backed ADR and archives the plan (Acc 20)', asyn
   assert.match(pf.archived, /^\d{4}-\d{2}-\d{2}$/);
 });
 
-test('finalize sets Evidence=implemented only when it is empty/sentinel', async () => {
+test('finalize sets evidence=implemented only when it is empty', async () => {
   const dir = await mkProject();
-  for (const [id, evidence] of [['adr-fin-sent', 'not implemented'], ['adr-fin-empty', '—']]) {
-    const body = `\n# T\n\n## Decision\n\nUse X.\n\n## Implementation\n\n- **Plan:** ${id}-plan\n- **Evidence:** ${evidence}\n`;
-    const adr = await writeAdr(dir, { id, status: 'accepted', body, affects: [`${id}-plan`] });
+  for (const [id, evidence] of [['adr-fin-null', null], ['adr-fin-blank', '  ']]) {
+    const adr = await writeAdr(dir, { id, status: 'accepted', plan: `${id}-plan`, evidence });
     await writePlan(dir, { id: `${id}-plan`, implements: [id] });
     const res = await finalize(adr, { projectDir: dir });
-    assert.match((await read(res.active)).body, /- \*\*Evidence:\*\* implemented/, `${evidence} → implemented`);
+    assert.equal((await read(res.active)).data.evidence, 'implemented', `${JSON.stringify(evidence)} → implemented`);
+    assert.equal((await validateAdr(res.active, { projectDir: dir })).errors.length, 0, 'validate passes');
   }
-});
-
-test('finalize preserves multiline authored Evidence without leaving an orphan line', async () => {
-  const dir = await mkProject();
-  const evidence = '- **Evidence:** implemented. Baseline scaffold landed in commit `1fbe059` (Node 24 via `.nvmrc`\n  + `engines.node ">=24 <25"`, `"type":"module"`)';
-  const body = `\n# T\n\n## Decision\n\nUse X.\n\n## Implementation\n\n- **Plan:** adr-ml-plan\n${evidence}\n`;
-  const adr = await writeAdr(dir, { id: 'adr-ml', status: 'accepted', body, affects: ['adr-ml-plan'] });
-  await writePlan(dir, { id: 'adr-ml-plan', implements: ['adr-ml'] });
-
-  const res = await finalize(adr, { projectDir: dir });
-  const out = (await read(res.active)).body;
-  assert.ok(out.includes('Baseline scaffold landed in commit'), 'authored body kept');
-  assert.ok(out.includes('+ `engines.node ">=24 <25"`, `"type":"module"`)'), 'continuation line kept, closing paren intact');
-  assert.equal((await validateAdr(res.active, { projectDir: dir })).errors.length, 0, 'validate passes');
 });
 
 test('finalize activates a documentation-only ADR without a plan (Acc 22)', async () => {
   const dir = await mkProject();
-  const body = '\n# T\n\n## Implementation\n\n- **Plan:** not required\n- **Evidence:** documentation-only\n'.replaceAll('\n', '\r\n');
-  const adr = await writeAdr(dir, { id: 'adr-doc', status: 'accepted', body });
+  const adr = await writeAdr(dir, { id: 'adr-doc', status: 'accepted', evidence: 'documentation-only' });
 
   const res = await finalize(adr, { projectDir: dir });
   assert.equal((await read(res.active)).data.status, 'active');
   assert.equal(res.archivedPlan, null);
 });
 
-test('documentation-only words outside structured Implementation fields do not bypass a plan', async () => {
+test('documentation-only words in the body do not bypass a plan', async () => {
   const dir = await mkProject();
-  const body = '\n# T\n\n## Context\n\nThis is documentation-only background; implementation is not required by another option.\n\n## Implementation\n\n- **Plan:** none\n- **Evidence:** pending\n';
+  const body = '\n# T\n\n## Context\n\nThis is documentation-only background; implementation is not required by another option.\n';
   const adr = await writeAdr(dir, { id: 'adr-doc-false-positive', status: 'accepted', body });
   await assert.rejects(() => finalize(adr, { projectDir: dir }), /No plan to finalize/);
   assert.ok(existsSync(adr));
@@ -135,8 +123,7 @@ test('documentation-only words outside structured Implementation fields do not b
 
 test('finalize rolls back the ADR when plan archival fails', async () => {
   const dir = await mkProject();
-  const body = '\n# T\n\n## Implementation\n\n- **Plan:** plan-rollback\n- **Evidence:** ready\n';
-  const adr = await writeAdr(dir, { id: 'adr-fin-rollback', status: 'accepted', body });
+  const adr = await writeAdr(dir, { id: 'adr-fin-rollback', status: 'accepted', plan: 'plan-rollback' });
   const plan = await writePlan(dir, { id: 'plan-rollback', implements: ['adr-fin-rollback'] });
   const collision = await writePlan(dir, { id: 'unrelated-archive', status: 'done', name: 'plan-rollback', subdir: 'archive/plans' });
   const before = [await readFile(adr, 'utf8'), await readFile(plan, 'utf8'), await readFile(collision, 'utf8')];
@@ -157,24 +144,26 @@ test('finalize refuses a non-accepted ADR', async () => {
 
 test('supersede links reciprocally and moves the old ADR to superseded (Acc 23,24)', async () => {
   const dir = await mkProject();
-  const oldAdr = await writeAdr(dir, { id: 'adr-old', status: 'active', body: '\n# Old\n\n## References\n\n- **Replaced by:** —\n' });
+  const oldAdr = await writeAdr(dir, { id: 'adr-old', status: 'active', evidence: 'implemented' });
   const newAdr = await writeAdr(dir, { id: 'adr-new', status: 'accepted' });
+  const bodyBefore = (await read(oldAdr)).body;
 
   const res = await supersede(oldAdr, newAdr, { projectDir: dir });
 
   assert.ok(!existsSync(oldAdr) && existsSync(res.superseded));
-  assert.equal((await read(res.superseded)).data.status, 'superseded');
-  assert.match((await read(res.superseded)).body, /- \*\*Replaced by:\*\* \.\.\/accepted\/adr-new\.md/);
+  const oldDoc = await read(res.superseded);
+  assert.equal(oldDoc.data.status, 'superseded');
+  assert.equal(oldDoc.data.replaced_by, 'adr-new');
+  assert.equal(oldDoc.body, bodyBefore, 'old ADR body untouched');
   assert.ok((await read(newAdr)).data.supersedes.includes('adr-old'));
-  assert.equal((await buildFileStatus(res.superseded, dir)).replacedBy, '../accepted/adr-new.md');
+  assert.equal((await buildFileStatus(res.superseded, dir)).replacedBy, 'adr-new');
 });
 
 test('supersede restores links when the final move fails', async () => {
   const dir = await mkProject();
-  const body = '\n# Old\n\n## References\n\n- **Replaced by:** —\n';
-  const oldAdr = await writeAdr(dir, { id: 'adr-old-rollback', status: 'active', body });
+  const oldAdr = await writeAdr(dir, { id: 'adr-old-rollback', status: 'active', evidence: 'implemented' });
   const newAdr = await writeAdr(dir, { id: 'adr-new-rollback', status: 'accepted' });
-  const collision = await writeAdr(dir, { id: 'adr-old-rollback', status: 'superseded', body });
+  const collision = await writeAdr(dir, { id: 'adr-old-rollback', status: 'superseded', replaced_by: 'adr-x' });
   const before = [await readFile(oldAdr, 'utf8'), await readFile(newAdr, 'utf8'), await readFile(collision, 'utf8')];
 
   await assert.rejects(() => supersede(oldAdr, newAdr, { projectDir: dir }), /Target already exists/);

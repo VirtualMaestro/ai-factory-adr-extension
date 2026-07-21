@@ -48,9 +48,9 @@ of rewriting an active decision.
    ai-factory adr supersede <old-file> <new-file> [--archive-plan | --delete-plan]
    ```
 
-   It adds `supersedes: [<old-id>]` to the new ADR, writes a relative
-   `- **Replaced by:** …` reference into the old ADR, atomically moves the old
-   ADR to `superseded/`, and disposes the plan per the flag.
+   It adds `supersedes: [<old-id>]` to the new ADR, sets `replaced_by: <new-id>`
+   in the old ADR's frontmatter, atomically moves the old ADR to `superseded/`,
+   and disposes the plan per the flag.
 5. **Audit** — `ai-factory adr status --check`. Resolve any failures; the old
    ADR must appear under `superseded` and the reciprocal links must validate.
 

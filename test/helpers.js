@@ -14,7 +14,7 @@ export async function mkProject() {
   return dir;
 }
 
-const CLEAN_BODY = `\n# Title\n\n## Decision\n\nWe will use X for Y because Z.\n\n## Implementation\n\n- **Plan:** none\n- **Evidence:** not implemented\n`;
+const CLEAN_BODY = `\n# Title\n\n## Decision\n\nWe will use X for Y because Z.\n`;
 
 /** Write an ADR into its status directory. Returns the absolute file path. */
 export async function writeAdr(dir, { id, status, type = 'adr', body = CLEAN_BODY, ...fm }) {

@@ -111,9 +111,13 @@ and reserve raw commands for scripting and CI.
 rather than `transition`. Returning `accepted → draft` is rejected while a
 non-archived plan still implements the ADR.
 
-A documentation-only ADR must declare `Plan: not required` or
-`Evidence: documentation-only decision` as a structured field inside its
-`## Implementation` section; matching prose elsewhere does not bypass planning.
+A documentation-only ADR must declare `evidence: documentation-only` in its
+frontmatter; matching prose in the body does not bypass planning.
+
+The machine state of an ADR lives in frontmatter: `plan:` names the linked plan
+(empty = no plan yet), `evidence:` holds a short implementation-evidence string
+(empty = not implemented), and `replaced_by:` names the superseding ADR id.
+The body stays pure decision content.
 
 ### `code` source anchors
 

@@ -1,4 +1,3 @@
-import path from 'node:path';
 import { read, serialize } from './frontmatter.js';
 import { atomicWrite, resolveInside, withFileRollback } from '../util/safe-path.js';
 
@@ -9,19 +8,8 @@ function uniqPush(value, item) {
 }
 
 /**
- * Replace a `- **Label:** …` field in the body; append under a heading is out of scope
- * (template seeds it). Multiline-aware: the match extends over any indented continuation lines
- * of the value, so replacing a multiline value does not leave orphaned continuation lines.
- */
-export function setField(body, label, value) {
-  const re = new RegExp(`^- \\*\\*${label}:\\*\\* .*(?:\\r?\\n[ \\t]+\\S.*)*$`, 'm');
-  const line = `- **${label}:** ${value}`;
-  return re.test(body) ? body.replace(re, line) : body;
-}
-
-/**
  * Reciprocal ADR↔plan link (§19.4, inv 8,9): plan `implements`/`depends_on` the ADR;
- * ADR `affects` the plan and its Implementation section names the plan.
+ * ADR `plan:` frontmatter names the plan. The ADR body is never touched.
  */
 export async function linkPlan(adrFile, planFile, { projectDir = process.cwd(), write = atomicWrite } = {}) {
   const adrPath = resolveInside(projectDir, adrFile);
@@ -31,22 +19,21 @@ export async function linkPlan(adrFile, planFile, { projectDir = process.cwd(), 
   const adrId = adr.data.id;
   const planId = plan.data.id;
 
-  adr.data.affects = uniqPush(adr.data.affects, planId);
+  adr.data.plan = planId;
   plan.data.implements = uniqPush(plan.data.implements, adrId);
   plan.data.depends_on = uniqPush(plan.data.depends_on, adrId);
-  const adrBody = setField(adr.body, 'Plan', planId);
 
   return withFileRollback([adrPath, planPath], async () => {
     await write(planPath, serialize(plan.data, plan.body));
-    await write(adrPath, serialize(adr.data, adrBody));
+    await write(adrPath, serialize(adr.data, adr.body));
     return { adrId, planId };
   });
 }
 
 /**
  * Reciprocal supersede link (§19.7, inv 11,12): new ADR `supersedes` old id; old ADR's
- * `Replaced by` reference points at the new file with a correct relative path.
- * (Status/dir change is done separately by the atomic move.)
+ * `replaced_by:` frontmatter names the new id. (Status/dir change is done separately
+ * by the atomic move.)
  */
 export async function supersedeLink(oldFile, newFile, { projectDir = process.cwd(), write = atomicWrite } = {}) {
   const oldPath = resolveInside(projectDir, oldFile);
@@ -57,14 +44,11 @@ export async function supersedeLink(oldFile, newFile, { projectDir = process.cwd
   const newId = newAdr.data.id;
 
   newAdr.data.supersedes = uniqPush(newAdr.data.supersedes, oldId);
-  // All status dirs are siblings at equal depth, so the relative path is stable across the old file's
-  // pending move into superseded/.
-  const rel = path.relative(path.dirname(oldPath), newPath).split(path.sep).join('/');
-  const oldBody = setField(oldAdr.body, 'Replaced by', rel);
+  oldAdr.data.replaced_by = newId;
 
   return withFileRollback([oldPath, newPath], async () => {
     await write(newPath, serialize(newAdr.data, newAdr.body));
-    await write(oldPath, serialize(oldAdr.data, oldBody));
-    return { oldId, newId, replacedBy: rel };
+    await write(oldPath, serialize(oldAdr.data, oldAdr.body));
+    return { oldId, newId, replacedBy: newId };
   });
 }

@@ -18,14 +18,14 @@ export async function verifyAnchors(file, { projectDir = process.cwd() } = {}) {
   const abs = resolveInside(projectDir, file);
   if (!existsSync(abs)) return { errors: [`File not found: ${file}`] };
 
-  let data, body;
+  let data;
   try {
-    ({ data, body } = await read(abs));
+    ({ data } = await read(abs));
   } catch (err) {
     return { errors: [err.message] };
   }
 
-  const docOnly = isDocumentationOnly(body);
+  const docOnly = isDocumentationOnly(data);
   const list = Array.isArray(data.code) ? data.code : [];
   const anchors = [];
   const missing = [];

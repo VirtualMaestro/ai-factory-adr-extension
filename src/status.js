@@ -86,19 +86,20 @@ export async function buildStatus(projectDir = process.cwd()) {
 
 /** Single-ADR detail (§19.8): id, status, location, linked plan, evidence, relations, validation. */
 export async function buildFileStatus(file, projectDir = process.cwd()) {
-  const { data, body } = await read(file);
+  const { data } = await read(file);
   const { active, plans } = await resolvePlans(data.id, { projectDir });
   const { errors, warnings } = await validateAdr(file, { projectDir });
   const dependencyWarnings = checkDependencies(
     data,
     await indexAdrsById(await adrRoot(projectDir)),
   );
-  const evidence = body.match(/- \*\*Evidence:\*\* (.*)/)?.[1]?.trim() ?? null;
-  const replacedBy = body.match(/- \*\*Replaced by:\*\* (.*)/)?.[1]?.trim() ?? null;
+  const evidence = String(data.evidence ?? '').trim() || null;
+  const replacedBy = String(data.replaced_by ?? '').trim() || null;
   return {
     id: data.id,
     status: data.status,
     location: path.relative(projectDir, path.resolve(file)),
+    plan: data.plan ?? null,
     activePlan: active[0]?.id ?? null,
     archivedPlans: plans.filter((p) => p.archived).map((p) => p.id),
     evidence,

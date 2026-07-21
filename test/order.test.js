@@ -3,11 +3,11 @@ import assert from 'node:assert/strict';
 import { buildOrder } from '../src/order.js';
 import { mkProject, writeAdr } from './helpers.js';
 
-const EV = '\n# T\n\n## Decision\n\nUse X.\n\n## Implementation\n\n- **Plan:** none\n- **Evidence:** implemented\n';
+const EV = { evidence: 'implemented' };
 
 test('linear chain: only the deps-satisfied accepted ADR is next; the rest follow in order', async () => {
   const dir = await mkProject();
-  await writeAdr(dir, { id: 'adr-a', status: 'active', body: EV });
+  await writeAdr(dir, { id: 'adr-a', status: 'active', ...EV });
   await writeAdr(dir, { id: 'adr-b', status: 'accepted', depends_on: ['adr-a'] });
   await writeAdr(dir, { id: 'adr-c', status: 'accepted', depends_on: ['adr-b'] });
 
@@ -70,7 +70,7 @@ test('overlapping cycles keep every member (SCC, not a single back-edge)', async
 
 test('a superseded dep permanently blocks and carries a repoint note', async () => {
   const dir = await mkProject();
-  await writeAdr(dir, { id: 'adr-old', status: 'superseded', body: '\n# T\n\n## References\n\n- **Replaced by:** ../active/adr-new.md\n' });
+  await writeAdr(dir, { id: 'adr-old', status: 'superseded', replaced_by: 'adr-new' });
   await writeAdr(dir, { id: 'adr-s', status: 'accepted', depends_on: ['adr-old'] });
 
   const res = await buildOrder({ projectDir: dir });

@@ -486,6 +486,10 @@ owners: [maintainer]
 depends_on: []
 affects: []
 supersedes: []
+code: []
+plan:
+evidence:
+replaced_by:
 ---
 
 # Short decision title
@@ -511,21 +515,16 @@ We will use **[decision]** for **[scope]** because **[main reason]**.
 - **Negative:** ...
 - **Risks:** ...
 
-## Implementation
-
-- **Plan:** not created
-- **Evidence:** not implemented
-
 ## References
 
 - **Code:** —
 - **Issue:** —
-- **Replaced by:** —
 ```
 
 Rules:
 
-- frontmatter follows the AI Factory artifact schema (`id`, `type`, `status`, `owners`/`owner`, `depends_on`, `affects`, `supersedes`); `owners` (array) is preferred, `owner` (scalar) is accepted;
+- frontmatter follows the AI Factory artifact schema (`id`, `type`, `status`, `owners`/`owner`, `depends_on`, `affects`, `supersedes`) plus the extension's machine fields (`code`, `plan`, `evidence`, `replaced_by`); `owners` (array) is preferred, `owner` (scalar) is accepted;
+- the machine state of a decision lives in frontmatter, never in the body: `plan:` names the linked plan (empty = no plan yet), `evidence:` is a short implementation-evidence string (empty = not implemented; `documentation-only` marks a doc-only decision), `replaced_by:` names the superseding ADR id;
 - frontmatter keys and section headings remain in English for consistent parsing and agent behavior;
 - section content may use the project artifact language (`language.artifacts` from AI Factory config);
 - optional empty arrays may be omitted;
@@ -711,16 +710,16 @@ implements:
 ---
 ```
 
-5. Add the plan artifact ID to the ADR `affects` relationship (this also satisfies the built-in `audit-artifacts` warning "Accepted ADR without `affects` links").
-6. Update the ADR Implementation section:
+5. Set the ADR frontmatter `plan:` field to the plan artifact ID:
 
-```markdown
-- **Plan:** plan-adr-short-stable-name
-- **Evidence:** not implemented
+```yaml
+plan: plan-adr-short-stable-name
 ```
 
-7. Run artifact auditing.
-8. Leave the ADR in `accepted`.
+The plan id is **not** added to `affects` — that relation is reserved for genuinely affected artifacts, so the built-in `audit-artifacts` warning "Accepted ADR without `affects` links" is expected (and acceptable) while `affects` is honestly empty. `evidence:` stays empty until finalize — a filled `plan:` with empty `evidence:` *is* the pending state.
+
+6. Run artifact auditing.
+7. Leave the ADR in `accepted`.
 
 The implementation plan is a separate artifact and remains in the AI Factory plans directory.
 
@@ -768,23 +767,18 @@ For a plan-backed ADR:
 10. Run artifact auditing.
 11. Post-MVP only: trigger optional memory synchronization when Phase 5 is implemented.
 
-Example evidence:
+Example evidence (frontmatter; `evidence:` is a short string — detailed notes belong in the body under References, entry points in `code:`):
 
-```markdown
-## Implementation
-
-- **Plan:** plan-adr-logic-view-boundary
-- **Evidence:** implemented
-- **Commit:** abc1234
-- **Code:** `src/logic/`, `src/view/`, `src/bridge/`
-- **Verification:** build, tests, lint, architecture checks
+```yaml
+plan: plan-adr-logic-view-boundary
+evidence: implemented, commit abc1234, verified by build+tests+lint
+code: [src/logic/index.js, src/view/index.js, src/bridge/index.js]
 ```
 
-For a documentation-only ADR:
+For a documentation-only ADR (`plan:` stays empty):
 
-```markdown
-- **Plan:** not required
-- **Evidence:** documentation-only decision
+```yaml
+evidence: documentation-only
 ```
 
 Such an ADR may become active without a plan after validation.
@@ -812,13 +806,11 @@ supersedes:
   - adr-old-decision
 ```
 
-2. Add to the old ADR:
+2. Add to the old ADR's frontmatter:
 
-```markdown
-- **Replaced by:** ../active/adr-new-decision.md
+```yaml
+replaced_by: adr-new-decision
 ```
-
-The relative path must reflect the actual new ADR location.
 
 3. Set the old ADR status to `superseded`.
 4. Move the old ADR atomically to `docs/adr/superseded`.
@@ -877,7 +869,7 @@ Responsibilities:
 - create reciprocal artifact links;
 - move files atomically (status edit + move as one operation with rollback on failure);
 - prevent target-path collisions;
-- update references after moves (e.g. `Replaced by` relative paths);
+- update references after moves (frontmatter references are id-based, so moves do not invalidate them);
 - invoke `ai-factory audit-artifacts` (passing the ADR root explicitly when it is outside default discovery);
 - post-MVP only, call the configured optional memory adapter;
 - produce machine-readable (`--json`) and human-readable results.
@@ -898,7 +890,7 @@ The system must enforce:
 6. Accepted and active ADRs contain no unresolved placeholders.
 7. An accepted ADR has at most one non-archived implementation plan.
 8. A plan implementing an ADR contains the ADR ID in `implements`.
-9. The ADR links back to its plan (`affects` + Implementation section).
+9. The ADR links back to its plan (frontmatter `plan:` field).
 10. An active ADR contains implementation evidence or explicitly states that implementation is not required.
 11. A superseded ADR references its replacement.
 12. The replacement ADR references the superseded ADR in `supersedes`.
@@ -1238,7 +1230,7 @@ The MVP is complete when all of the following are true.
 14. An invalid draft cannot be accepted.
 15. A linked implementation plan can be generated into `paths.plans`.
 16. Plan metadata references the ADR through `implements`.
-17. ADR metadata references the plan through `affects` and the Implementation section.
+17. ADR metadata references the plan through the frontmatter `plan:` field.
 18. Implementation can be started from the ADR alone (plan resolved via metadata).
 19. Finalization performs strict verification.
 20. Successful finalization activates the ADR and archives the plan (`status: done`, `archived:` date, moved to `paths.archive/plans/`).

@@ -4,6 +4,39 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and the project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.6.0] — 2026-07-21
+
+### Changed
+
+- **ADR machine state moved from the body into frontmatter.** The plan link, implementation
+  evidence, and supersede back-reference are now structured frontmatter fields — `plan:`,
+  `evidence:`, `replaced_by:` — instead of `- **Plan:** / - **Evidence:**` lines in a
+  `## Implementation` section and a `- **Replaced by:**` reference line. The section and the
+  reference line are removed from the template; the ADR body is now pure decision content and
+  is never rewritten by `link-plan`, `finalize`, or `supersede`. Semantics: empty `plan:` =
+  no plan yet; empty `evidence:` = not implemented (a filled `plan:` with empty `evidence:`
+  is the pending state — the old `Evidence: pending` convention is gone); `evidence:
+  documentation-only` marks a doc-only decision (replaces the `Plan: not required` sentinel);
+  `replaced_by:` holds the superseding ADR **id**, not a relative path.
+- **`link-plan` no longer writes the plan id into `affects`.** That relation is reserved for
+  genuinely affected artifacts. Consequence: the parent `ai-factory audit-artifacts` warning
+  "Accepted ADR without `affects` links" reappears while `affects` is honestly empty — this is
+  expected and acceptable.
+- **`validate` reads the frontmatter fields** (inv 10 on `evidence:`, inv 11 on
+  `replaced_by:`) and gains a denormalization guard: a `plan:` value with no plan (live or
+  archived) implementing the ADR is warned about. Legacy body-format ADRs fail inv 10 with a
+  hint to run `aif-adr-migrate`, which now documents the body→frontmatter hoisting steps.
+- **`adr status <file>` JSON** now reports `plan` (declared frontmatter link) alongside
+  `activePlan`, and `evidence` / `replacedBy` come from frontmatter (`replacedBy` is an id,
+  not a path).
+
+### Migration
+
+For each pre-1.6 ADR: hoist `- **Plan:** <id>` → `plan: <id>`, `- **Evidence:** …` →
+`evidence: …`, `- **Replaced by:** …` → `replaced_by: <new-id>`; remove the plan id from
+`affects`; delete the emptied `## Implementation` section and `Replaced by` reference line.
+`/aif-adr-migrate` covers this.
+
 ## [1.5.1] — 2026-07-18
 
 ### Fixed
