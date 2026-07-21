@@ -17,6 +17,23 @@ Do not implement unless **all** hold:
 - exactly one non-archived plan implements it;
 - the ADR↔plan links are reciprocal.
 
+## Evaluating solutions
+
+The architectural decision is already made — do not re-litigate it. Judgments here are
+about conformance and tactics:
+
+- **Ground every verdict** in a concrete rule, ADR clause, plan step, or code location.
+  No ground named — no verdict: research until you can name it, never guess.
+- **Deviations surface, they don't decide.** Code or plan diverging from the Decision is
+  reported as a deviation with evidence — never resolved by quietly reshaping the
+  judgment to fit, and never excused because fixing it would be laborious.
+- **Tactical choices** (how exactly to realize a step) follow the project's existing
+  conventions and invariants; agent convenience — "faster", "easier" for this session —
+  is not an argument.
+- **Revise on reasons, not on pushback.** Change a verdict on a new fact, a found
+  reasoning error, or an explicit operator decision — and name what changed.
+  Disagreement alone is not new information.
+
 ## Workflow
 
 1. **Resolve the plan by metadata**, never by filename guessing:

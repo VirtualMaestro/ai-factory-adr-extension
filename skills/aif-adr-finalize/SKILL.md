@@ -15,6 +15,23 @@ and the contradiction check — that must pass first.
 - the ADR status is `accepted` and it is not superseded;
 - a linked plan exists **or** the ADR explicitly states no implementation is required.
 
+## Evaluating solutions
+
+The architectural decision is already made — do not re-litigate it. Judgments here are
+about conformance and tactics:
+
+- **Ground every verdict** in a concrete rule, ADR clause, plan step, or code location.
+  No ground named — no verdict: research until you can name it, never guess.
+- **Deviations surface, they don't decide.** Code or plan diverging from the Decision is
+  reported as a deviation with evidence — never resolved by quietly reshaping the
+  judgment to fit, and never excused because fixing it would be laborious.
+- **Tactical choices** (how exactly to realize a step) follow the project's existing
+  conventions and invariants; agent convenience — "faster", "easier" for this session —
+  is not an argument.
+- **Revise on reasons, not on pushback.** Change a verdict on a new fact, a found
+  reasoning error, or an explicit operator decision — and name what changed.
+  Disagreement alone is not new information.
+
 ## Plan-backed workflow
 
 1. **Resolve the plan.** `ai-factory adr resolve-plan <adr-file>` — verification must target

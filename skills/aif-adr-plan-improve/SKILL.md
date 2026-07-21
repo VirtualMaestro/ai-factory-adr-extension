@@ -20,6 +20,42 @@ shortcut for the manual "resolve the plan, then run `aif-improve`" flow document
 - the ADR status is `accepted` and it is not superseded;
 - exactly one non-archived plan implements it (the workflow checks this).
 
+## Evaluating solutions
+
+When this skill weighs options or makes a recommendation, the measure is what serves the
+project best over its lifetime. Delivery cost, risk, and timeline are real inputs —
+surface them explicitly for the operator; never let your own convenience in this session
+stand in for them.
+
+1. **Invariants and grounds first.** Name the project invariants the change touches
+   (module boundaries, public APIs, data schemas, active ADRs, `.ai-factory/RULES.md` /
+   `.ai-factory/ARCHITECTURE.md`) and cite the concrete rule, ADR, or code location each
+   judgment rests on. No ground named — no recommendation: research until you can name
+   it, never fill the gap with a guess.
+2. **Architectural changes need real alternatives.** If the change touches a module
+   boundary, public API, data schema, or architectural invariant, present at least two
+   *viable* approaches — if only one is viable, say so and why the others are not. For
+   each: consequences over the next 6–12 months of project evolution, effect on
+   coupling, hidden risks. Steelman rejected options, so you reject their strongest
+   version, and state the reason.
+3. **Agent convenience is not an argument; blast radius is.** "Faster to write",
+   "easier", "smaller diff for me now" never justify an option that violates an
+   invariant or the codebase's established conventions (a divergent local pattern
+   creates two ways of doing one thing — that cost needs explicit justification). But a
+   large blast radius — many call sites, data migrations, compatibility breaks — is a
+   genuine risk and cost: name it as such. At equal architectural correctness, prefer
+   the smaller change; no abstractions for hypothetical needs. Effort already sunk into
+   existing code counts for nothing by itself — the compatibility and migration cost of
+   replacing it does count.
+4. **If the right option costs more — say so.** Present the correct option and the cheap
+   option, each with its cost, risk, and reversibility (hard-to-reverse choices — data
+   schemas, public APIs — demand stronger grounds), plus one explicit recommendation.
+   The operator decides; never silently downgrade to the cheap one.
+5. **Revise on reasons, not on pushback.** Change a recommendation when a new fact or
+   constraint surfaces, a reasoning error is found, the goal is clarified, or the
+   operator explicitly decides — and name what changed. Disagreement alone is not new
+   information; flipping without new grounds means the original was ungrounded.
+
 ## Workflow
 
 1. **Resolve the plan from the ADR** — never guess the filename:

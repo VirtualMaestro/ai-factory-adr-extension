@@ -4,6 +4,27 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and the project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.9.0] — 2026-07-21
+
+### Added
+
+- **"Evaluating solutions" decision-quality rubric in nine skills.** The judging skills now
+  carry an explicit rubric so recommendations are ranked by what serves the project long-term,
+  not by session-local convenience ("faster", "easier", "smaller diff"). Two variants:
+  - **Full rubric** (design-time, open solution space): `aif-adr-propose`, `aif-adr-refine`,
+    `aif-adr-reconcile`, `aif-adr-plan`, `aif-adr-plan-improve` — invariants and concrete
+    grounds behind every judgment, at least two viable alternatives for architectural changes,
+    agent convenience banned as an argument while blast radius stays a named cost, honest
+    presentation of the correct-but-costlier option, and position changes only on new facts —
+    never on mere pushback.
+  - **Evidence/deviation variant** (decision already made): `aif-adr-implement`,
+    `aif-adr-verify`, `aif-adr-finalize`, `aif-adr-accept` — grounded verdicts, deviations
+    surfaced instead of quietly absorbed, tactics follow existing conventions.
+
+  `aif-adr-next` (deterministic dependency ordering) and `aif-adr-migrate` (own explicit
+  mapping rules) are deliberately excluded. A new `test/skill-rubric.test.js` keeps the copies
+  byte-identical within each variant group and correctly positioned.
+
 ## [1.8.0] — 2026-07-21
 
 ### Added
