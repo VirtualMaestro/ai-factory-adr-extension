@@ -7,6 +7,7 @@ depends_on: []
 affects: []
 supersedes: []
 code: []
+issue:
 plan:
 evidence:
 replaced_by:
@@ -34,8 +35,3 @@ We will use **[decision]** for **[scope]** because **[main reason]**.
 - **Positive:** ...
 - **Negative:** ...
 - **Risks:** ...
-
-## References
-
-- **Code:** —
-- **Issue:** —

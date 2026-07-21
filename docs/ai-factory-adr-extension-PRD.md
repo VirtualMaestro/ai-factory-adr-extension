@@ -487,6 +487,7 @@ depends_on: []
 affects: []
 supersedes: []
 code: []
+issue:
 plan:
 evidence:
 replaced_by:
@@ -514,17 +515,12 @@ We will use **[decision]** for **[scope]** because **[main reason]**.
 - **Positive:** ...
 - **Negative:** ...
 - **Risks:** ...
-
-## References
-
-- **Code:** —
-- **Issue:** —
 ```
 
 Rules:
 
-- frontmatter follows the AI Factory artifact schema (`id`, `type`, `status`, `owners`/`owner`, `depends_on`, `affects`, `supersedes`) plus the extension's machine fields (`code`, `plan`, `evidence`, `replaced_by`); `owners` (array) is preferred, `owner` (scalar) is accepted;
-- the machine state of a decision lives in frontmatter, never in the body: `plan:` names the linked plan (empty = no plan yet), `evidence:` is a short implementation-evidence string (empty = not implemented; `documentation-only` marks a doc-only decision), `replaced_by:` names the superseding ADR id;
+- frontmatter follows the AI Factory artifact schema (`id`, `type`, `status`, `owners`/`owner`, `depends_on`, `affects`, `supersedes`) plus the extension's machine fields (`code`, `issue`, `plan`, `evidence`, `replaced_by`); `owners` (array) is preferred, `owner` (scalar) is accepted;
+- the machine state of a decision lives in frontmatter, never in the body: `plan:` names the linked plan (empty = no plan yet), `evidence:` is a short implementation-evidence string (empty = not implemented; `documentation-only` marks a doc-only decision), `replaced_by:` names the superseding ADR id, `issue:` holds an external tracker link or ticket id;
 - frontmatter keys and section headings remain in English for consistent parsing and agent behavior;
 - section content may use the project artifact language (`language.artifacts` from AI Factory config);
 - optional empty arrays may be omitted;
@@ -767,7 +763,7 @@ For a plan-backed ADR:
 10. Run artifact auditing.
 11. Post-MVP only: trigger optional memory synchronization when Phase 5 is implemented.
 
-Example evidence (frontmatter; `evidence:` is a short string — detailed notes belong in the body under References, entry points in `code:`):
+Example evidence (frontmatter; `evidence:` is a short string — detailed notes stay as prose in the body, entry points go in `code:`, the tracker link in `issue:`):
 
 ```yaml
 plan: plan-adr-logic-view-boundary

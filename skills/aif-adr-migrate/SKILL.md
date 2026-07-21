@@ -65,11 +65,12 @@ parse mechanically. You read and map; the commands place and check.
 
      Then edit that file to match `templates/adr.md`: frontmatter (`id`,
      `type: adr`, `status`, `owners`, `depends_on`, `affects`, `supersedes`,
-     `code`, `plan`, `evidence`, `replaced_by`) and
+     `code`, `issue`, `plan`, `evidence`, `replaced_by`) and
      the sections **Context** (Problem / Constraints / Decision drivers),
      **Decision**, **Alternatives considered**, **Consequences** (Positive /
-     Negative / Risks), **References** (Code / Issue). Port the old content into
-     these; **resolve every template placeholder** — do not leave `[decision]`,
+     Negative / Risks). Port the old content into these; legacy code/issue
+     references go into the frontmatter `code:` / `issue:` fields, not the body;
+     **resolve every template placeholder** — do not leave `[decision]`,
      `not implemented`, etc. The `status` field must equal the directory it now
      lives in. For `active` imports, record a short `evidence:` in frontmatter.
      For `active`/`superseded` imports, backfill `code:` with the primary
@@ -78,9 +79,10 @@ parse mechanically. You read and map; the commands place and check.
    - **ADRs written for pre-1.6 versions of this extension** — the machine fields
      lived in the body; hoist them into frontmatter: `- **Plan:** <id>` →
      `plan: <id>`, `- **Evidence:** …` → `evidence: …` (short string),
-     `- **Replaced by:** …` → `replaced_by: <new-id>`; remove the plan id from
-     `affects`; delete the now-empty `## Implementation` section and the
-     `- **Replaced by:**` reference line.
+     `- **Replaced by:** …` → `replaced_by: <new-id>`, `- **Issue:** …` →
+     `issue: …`; remove the plan id from `affects`; delete the emptied
+     `## Implementation` and `## References` sections (the `- **Code:**` line
+     was always a duplicate of the `code:` frontmatter — just drop it).
    - **Messy/partial legacy, or one legacy file that must split into several
      ADRs** — scaffold each target from the template instead, then fill it and
      drop the source:

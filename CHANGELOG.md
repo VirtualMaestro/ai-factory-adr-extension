@@ -18,6 +18,11 @@ All notable changes to this project are documented here. The format follows
   is the pending state — the old `Evidence: pending` convention is gone); `evidence:
   documentation-only` marks a doc-only decision (replaces the `Plan: not required` sentinel);
   `replaced_by:` holds the superseding ADR **id**, not a relative path.
+- **The `## References` section is gone too.** Its `- **Code:**` line was always a duplicate
+  of the machine-read `code:` frontmatter array; its `- **Issue:**` line moved to a new
+  frontmatter `issue:` field (external tracker link or ticket id). Nothing parsed either body
+  line. With `## Implementation` and `## References` both removed, the ADR body is pure
+  decision content (Context / Decision / Alternatives / Consequences).
 - **`link-plan` no longer writes the plan id into `affects`.** That relation is reserved for
   genuinely affected artifacts. Consequence: the parent `ai-factory audit-artifacts` warning
   "Accepted ADR without `affects` links" reappears while `affects` is honestly empty — this is
@@ -33,8 +38,9 @@ All notable changes to this project are documented here. The format follows
 ### Migration
 
 For each pre-1.6 ADR: hoist `- **Plan:** <id>` → `plan: <id>`, `- **Evidence:** …` →
-`evidence: …`, `- **Replaced by:** …` → `replaced_by: <new-id>`; remove the plan id from
-`affects`; delete the emptied `## Implementation` section and `Replaced by` reference line.
+`evidence: …`, `- **Replaced by:** …` → `replaced_by: <new-id>`, `- **Issue:** …` →
+`issue: …`; remove the plan id from `affects`; delete the emptied `## Implementation` and
+`## References` sections (`- **Code:**` was a duplicate of the `code:` frontmatter — drop it).
 `/aif-adr-migrate` covers this.
 
 ## [1.5.1] — 2026-07-18

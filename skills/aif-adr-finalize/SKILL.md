@@ -32,8 +32,9 @@ and the contradiction check — that must pass first.
    evidence: implemented, commit abc1234, verified by tests+lint
    ```
 
-   Detailed implementation notes (commit lists, verification steps) belong in the ADR body
-   under References, not in `evidence:`. Also fill the frontmatter `code:` array — the primary
+   Detailed implementation notes (commit lists, verification steps) stay as prose in the ADR
+   body, not in `evidence:`; a tracker link goes in the frontmatter `issue:` field. Also fill
+   the frontmatter `code:` array — the primary
    entry-point anchors an agent starts tracing from, not every touched file. Convention:
    paths relative to the repo root, POSIX `/` separators, optional `#symbol` suffix
    (`src/status.js#validateDirStatus`); verify each anchor exists before writing it.
