@@ -4,6 +4,19 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and the project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.8.0] — 2026-07-21
+
+### Added
+
+- **New skill `aif-adr-reconcile`.** After a refine, a second reviewer often proposes further
+  improvements to an ADR or its plan. This skill encodes the prompt you kept retyping: it
+  critically adjudicates each suggestion (ADOPT / PARTIAL / REJECT, each with a one-line
+  justification), applies the adopted ones to the document, and rejects the rest — a second
+  opinion is treated as input, not instruction. It detects whether the target is an ADR or a plan
+  and judges with the matching lens (ADR-specific criteria, as `aif-adr-refine`; stock
+  `aif-improve` semantics, as `aif-adr-plan-improve`). It never advances status, implements, or
+  touches frontmatter/links. No new CLI code.
+
 ## [1.7.0] — 2026-07-21
 
 ### Added

@@ -51,6 +51,10 @@ none ───────────────────▶ proposed ─�
 - **`aif-adr-verify <adr>`** — off the linear flow: re-runnable, read-only check
   of an accepted/active ADR against the implemented code (do the `code:` anchors
   resolve, does the code honor the Decision). Answers "is this ADR really done?".
+- **`aif-adr-reconcile <target>`** — off the linear flow: after a refine, critically
+  adjudicate a second reviewer's proposed improvements to an ADR or its plan —
+  adopt the sound ones and reject the rest, each with a reason, then apply the
+  adopted ones. Never advances status or implements.
 - **`aif-adr-next`** — off the linear flow: reads the `depends_on` graph and
   recommends which ADR to implement next (ready = `accepted` with all deps
   `active`), plus the topological order, blocked ADRs, and any cycles.
