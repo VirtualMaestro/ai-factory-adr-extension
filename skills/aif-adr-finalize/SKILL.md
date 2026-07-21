@@ -52,6 +52,14 @@ and the contradiction check — that must pass first.
    plan following `aif-archive` semantics (→ `paths.archive/plans/`, `status: done`,
    `archived: YYYY-MM-DD`, filename preserved).
 7. **Audit** — `ai-factory adr status --check`. Resolve any failures.
+8. **Report the status footer** — on success, end with one line so the activated ADR and its now
+   archived plan are obvious at a glance:
+
+   ```text
+   ✔ aif-adr-finalize · ADR: <adr-id> [active] · Plan: <plan-id> (archived)
+   ```
+
+   Fill it from `ai-factory adr status <adr-file>`. For a documentation-only ADR, use `Plan: none`.
 
 ## Documentation-only ADRs
 

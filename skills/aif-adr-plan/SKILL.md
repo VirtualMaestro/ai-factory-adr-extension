@@ -55,22 +55,33 @@ Do not plan unless **all** hold:
 5. **Audit** — `ai-factory adr status --check`. It honors the configured ADR root; resolve
    any failures.
 6. **Leave the ADR `accepted`.** Creating a plan never advances the decision.
+7. **Report the status footer** — end with one line so the ADR and its new plan are obvious at a
+   glance:
+
+   ```text
+   ✔ aif-adr-plan · ADR: <adr-id> [<status>] · Plan: <plan-id> (<plan-status>)
+   ```
+
+   Fill it from `ai-factory adr status <adr-file>` (id, status, active plan).
 
 ## Improving the plan
 
-The plan is a **standard AI Factory plan artifact**, so improve it with the stock **`aif-improve`**
-— do not add an ADR-specific improve skill (`aif-adr-refine` avoids `aif-improve` only because it
-sharpens the **decision**, a different task).
+The plan is a **standard AI Factory plan artifact**, so its improvement logic stays the stock
+**`aif-improve`** — do not reimplement improve logic for ADRs (`aif-adr-refine` avoids `aif-improve`
+only because it sharpens the **decision**, a different task).
 
-`aif-improve` targets the plan by **path or auto-resolution — not by id**: it takes an optional
-`@<plan-path>`, and with no argument it resolves the active plan from the current git branch
-(`paths.plans/<branch-slug>.md`) or, failing that, the single plan in `paths.plans`. So on the
-branch where the plan was created just run `aif-improve`; otherwise pass `@<plan-path>` (find it
-with `aif-improve --list`, or `ai-factory adr resolve-plan <adr-file>` to identify the plan). A
-bare ADR/plan **id** does not resolve here — that shortcut is ours (`resolve-plan`), not
-`aif-improve`'s.
+The easy path is **`aif-adr-plan-improve @adr-file`** — it applies `aif-improve` to this plan but
+you name the **ADR**, and it resolves the plan for you. Use that so you never have to track the
+plan's path.
 
-`aif-improve` edits the plan **body**, not its frontmatter, so the reciprocal
+If you improve the plan directly instead, `aif-improve` targets it by **path or auto-resolution —
+not by id**: an optional `@<plan-path>`, or with no argument the active plan on the current git
+branch (`paths.plans/<branch-slug>.md`) or the single plan in `paths.plans`. So on the branch where
+the plan was created just run `aif-improve`; otherwise pass `@<plan-path>` (find it with
+`aif-improve --list`, or `ai-factory adr resolve-plan <adr-file>`). A bare ADR/plan **id** does not
+resolve here — that shortcut is ours (`resolve-plan`), not `aif-improve`'s.
+
+Either way, `aif-improve` edits the plan **body**, not its frontmatter, so the reciprocal
 `implements`/`depends_on` links survive — but after improving, re-verify before implementing:
 `ai-factory adr resolve-plan <adr-file>` (still resolves to exactly one plan) and
 `ai-factory adr status --check` (links/audit clean).

@@ -4,6 +4,27 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and the project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.7.0] — 2026-07-21
+
+### Added
+
+- **New skill `aif-adr-plan-improve`.** Improve an ADR's implementation plan by naming the
+  **ADR**, not the plan file: it resolves the single active plan via
+  `ai-factory adr resolve-plan <adr-file>` and applies the stock `aif-improve` semantics to it.
+  Removes the friction of having to remember or look up the plan's path. No new CLI code — it
+  reuses existing plan resolution.
+
+### Changed
+
+- **Every single-ADR skill now ends with a one-line status footer** naming the ADR (and its
+  plan, where relevant), so a run's context is obvious at a glance when switching between many
+  parallel sessions — e.g. `✔ aif-adr-plan · ADR: <id> [accepted] · Plan: <plan-id>
+  (in_progress)`. Fields come from the existing `ai-factory adr status <adr-file>`. Read-only
+  reporters `aif-adr-status` / `aif-adr-overview` are unchanged. Some skills' existing free-text
+  report steps were standardized to this format.
+- **`aif-adr-plan`'s "Improving the plan" note** now points at `aif-adr-plan-improve` as the
+  by-ADR-name shortcut (the manual `resolve-plan` → `aif-improve` path is still documented).
+
 ## [1.6.0] — 2026-07-21
 
 ### Changed

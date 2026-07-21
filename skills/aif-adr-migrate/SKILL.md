@@ -155,6 +155,15 @@ parse mechanically. You read and map; the commands place and check.
 
    Leave everything on the branch for the maintainer to review and merge.
 
+9. **Report the status footer** — end with one line so the scope of this migration is obvious at a
+   glance: the count and the ids migrated, by resulting status.
+
+   ```text
+   ✔ aif-adr-migrate · 4 ADRs → 2 active, 1 accepted, 1 superseded · branch: adr-migration
+   ```
+
+   Take the ids/counts from `ai-factory adr status --json`.
+
 ## Rules that hold throughout
 
 - **Source of truth = the Markdown ADR files in Git.** Any prior external index

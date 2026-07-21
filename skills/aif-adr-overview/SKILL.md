@@ -37,8 +37,9 @@ none ───────────────────▶ proposed ─�
   `draft → accepted`.
 - **`aif-adr-plan`** — create the implementation plan (in `paths.plans`) with
   reciprocal `implements`/`plan:` links. *Skip for documentation-only ADRs.*
-  Improve a created plan with the standard `aif-improve` (a plan is a normal AIF
-  plan artifact); `aif-adr-refine` is for the **decision**, not the plan.
+- **`aif-adr-plan-improve <adr>`** — improve that plan by naming the **ADR**, not
+  the plan file: it resolves the plan and applies the standard `aif-improve`.
+  (`aif-adr-refine` is for the **decision**, not the plan.)
 - **`aif-adr-implement`** — resolve the plan by metadata and implement; the ADR
   stays `accepted`.
 - **`aif-adr-finalize`** — strict verification, then `accepted → active` and

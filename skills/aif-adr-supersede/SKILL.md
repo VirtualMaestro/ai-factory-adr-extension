@@ -53,6 +53,14 @@ of rewriting an active decision.
    and disposes the plan per the flag.
 5. **Audit** — `ai-factory adr status --check`. Resolve any failures; the old
    ADR must appear under `superseded` and the reciprocal links must validate.
+6. **Report the status footer** — end with one line naming both ADRs so what this run replaced is
+   obvious at a glance:
+
+   ```text
+   ✔ aif-adr-supersede · ADR: <old-id> [superseded] → <new-id> [<new-status>]
+   ```
+
+   Fill it from `ai-factory adr status <old-file>` / `<new-file>`.
 
 If a precondition fails the command changes nothing (§27) — fix the cause and
 retry. Optional memory synchronization is post-MVP and is not provided by this skill.

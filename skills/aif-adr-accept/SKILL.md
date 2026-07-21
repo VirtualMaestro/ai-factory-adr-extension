@@ -42,7 +42,14 @@ If any precondition fails, stop and recommend `aif-adr-refine` — do not accept
    ai-factory adr transition <file> accepted
    ```
 
-4. **Report** warnings and the resulting `accepted/` path.
+4. **Report** any warnings, then end with the status footer so the ADR this run touched is obvious
+   at a glance:
+
+   ```text
+   ✔ aif-adr-accept · ADR: <adr-id> [accepted] · Plan: <plan-id or none>
+   ```
+
+   Fill it from `ai-factory adr status <adr-file>` (id, status, active plan).
 
 Optional memory synchronization is post-MVP and is not provided by this skill.
 

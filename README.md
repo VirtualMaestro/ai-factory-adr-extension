@@ -32,7 +32,7 @@ ai-factory extension add ai-factory-adr-extension        # npm
 The extension requires the valid `.ai-factory.json` marker created by
 `ai-factory init`; a directory named `.ai-factory/` alone is not sufficient.
 
-This installs the twelve skills into each configured runtime (`.claude/skills/`,
+This installs the 13 skills into each configured runtime (`.claude/skills/`,
 `.codex/skills/`) and registers the `adr` command. Then scaffold the ADR
 directories:
 

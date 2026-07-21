@@ -39,6 +39,14 @@ nothing more. If the user wants implementation, they invoke the implementation s
 
    The transition command owns the atomic move and legality check (§17); do not move files
    by hand.
+8. **Report the status footer** — after stating what changed, end with one line so the ADR this
+   run touched is obvious at a glance:
+
+   ```text
+   ✔ aif-adr-refine · ADR: <adr-id> [<status>] · Plan: <plan-id or none>
+   ```
+
+   Fill it from `ai-factory adr status <adr-file>` (id, status, active plan).
 
 ## Invocation
 

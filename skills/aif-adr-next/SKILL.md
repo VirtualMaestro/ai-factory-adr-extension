@@ -34,6 +34,16 @@ recommends, it never transitions or edits anything.
    `draft`/`proposed`, move it forward first (`aif-adr-refine`/`aif-adr-accept`). Recommend that,
    don't invent work.
 
+5. **Report the status footer** — end with one line naming the ADR you recommend, so the pick is
+   obvious at a glance:
+
+   ```text
+   ✔ aif-adr-next · Next: <adr-id> [accepted] → aif-adr-plan
+   ```
+
+   If nothing is ready (or a cycle blocks everything), say so in the footer instead of naming a
+   pick — e.g. `✔ aif-adr-next · Next: none (waiting on <adr-id>)`.
+
 Do not call other skills as nested skills — apply their semantics inline in this run.
 
 ## Invocation

@@ -34,6 +34,14 @@ an accepted project rule.
    them by guessing.
 7. **Keep it a proposal.** Leave `status: proposed`. Do not present the decision as settled;
    acceptance happens later via `aif-adr-refine` → `aif-adr-accept`.
+8. **Report the status footer** — end with one line so the ADR this run created is obvious at a
+   glance:
+
+   ```text
+   ✔ aif-adr-propose · ADR: <adr-id> [proposed] · Plan: none
+   ```
+
+   Fill it from `ai-factory adr status <adr-file>` (a fresh proposal has no plan).
 
 ## Invocation
 

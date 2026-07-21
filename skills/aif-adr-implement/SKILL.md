@@ -37,7 +37,14 @@ Do not implement unless **all** hold:
    invoke `aif-implement` as a nested skill.
 5. **Keep the ADR `accepted`.** Do not transition it merely because implementation work
    finished.
-6. **Report the plan used** (its id and path).
+6. **Report the status footer** — end with one line naming the plan you worked against, so the
+   ADR/plan this run touched is obvious at a glance:
+
+   ```text
+   ✔ aif-adr-implement · ADR: <adr-id> [<status>] · Plan: <plan-id> (<plan-status>)
+   ```
+
+   Fill it from `ai-factory adr status <adr-file>` (id, status, active plan).
 
 ## Invocation
 
