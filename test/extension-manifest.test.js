@@ -23,11 +23,12 @@ test('commands use the corrected object shape (not string paths)', async () => {
   assert.deepEqual(Object.keys(cmd).sort(), ['description', 'module', 'name']);
 });
 
-test('all fourteen ADR skills are listed, including the migration, verify, next, plan-improve, and reconcile skills', async () => {
+test('all fifteen ADR skills are listed, including the migration, verify, verify-all, next, plan-improve, and reconcile skills', async () => {
   const manifest = await load('extension.json');
-  assert.equal(manifest.skills.length, 14);
+  assert.equal(manifest.skills.length, 15);
   assert.ok(manifest.skills.includes('skills/aif-adr-migrate'), 'aif-adr-migrate is installed');
   assert.ok(manifest.skills.includes('skills/aif-adr-verify'), 'aif-adr-verify is installed');
+  assert.ok(manifest.skills.includes('skills/aif-adr-verify-all'), 'aif-adr-verify-all is installed');
   assert.ok(manifest.skills.includes('skills/aif-adr-next'), 'aif-adr-next is installed');
   assert.ok(manifest.skills.includes('skills/aif-adr-plan-improve'), 'aif-adr-plan-improve is installed');
   assert.ok(manifest.skills.includes('skills/aif-adr-reconcile'), 'aif-adr-reconcile is installed');

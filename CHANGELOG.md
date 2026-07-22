@@ -4,6 +4,20 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and the project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.10.0] — 2026-07-22
+
+### Added
+
+- **New skill `aif-adr-verify-all`.** Runs the `aif-adr-verify` conformance check over **every
+  active ADR** in one sweep and reports an aggregated verdict table (implemented / partial /
+  drift / not-implemented / doc-only), sorted worst-first, plus a summary footer with per-verdict
+  counts. Read-only — never edits an ADR or the code. Scope is **active** ADRs only: an
+  `accepted` ADR is decided but not yet implemented (a half-implemented one stays `accepted`
+  until finalize), so there is no finished code to judge — those stay with `aif-adr-next` /
+  `aif-adr-implement`. No new CLI code — it orchestrates the existing `ai-factory adr status`,
+  `verify-anchors`, and `resolve-plan` commands. Carries the evidence/deviation "Evaluating
+  solutions" rubric, matching the single `aif-adr-verify`.
+
 ## [1.9.0] — 2026-07-21
 
 ### Added

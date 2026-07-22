@@ -13,7 +13,7 @@ const FULL = [
   'aif-adr-plan',
   'aif-adr-plan-improve'
 ];
-const SHORT = ['aif-adr-implement', 'aif-adr-verify', 'aif-adr-finalize', 'aif-adr-accept'];
+const SHORT = ['aif-adr-implement', 'aif-adr-verify', 'aif-adr-verify-all', 'aif-adr-finalize', 'aif-adr-accept'];
 const NONE = ['aif-adr-next', 'aif-adr-migrate', 'aif-adr-supersede', 'aif-adr-status', 'aif-adr-overview'];
 
 const HEADING = '## Evaluating solutions';

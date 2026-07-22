@@ -32,7 +32,7 @@ ai-factory extension add ai-factory-adr-extension        # npm
 The extension requires the valid `.ai-factory.json` marker created by
 `ai-factory init`; a directory named `.ai-factory/` alone is not sufficient.
 
-This installs the 14 skills into each configured runtime (`.claude/skills/`,
+This installs the 15 skills into each configured runtime (`.claude/skills/`,
 `.codex/skills/`) and registers the `adr` command. Then scaffold the ADR
 directories:
 
@@ -75,8 +75,9 @@ For the agent, start with the **`/aif-adr-overview`** skill (Codex:
 `$aif-adr-overview`) — it maps every stage to its skill and states the
 retrieval/immutability rules. The stage skills are `aif-adr-{propose, refine,
 accept, plan, implement, finalize, supersede, status}`. Off the linear flow,
-`aif-adr-verify` checks any accepted/active ADR against the implemented code,
-`aif-adr-next` reads the `depends_on` graph to tell you which ADR to implement next,
+`aif-adr-verify` checks any accepted/active ADR against the implemented code
+(`aif-adr-verify-all` runs that check over every active ADR in one sweep and reports a
+conformance table), `aif-adr-next` reads the `depends_on` graph to tell you which ADR to implement next,
 and `aif-adr-reconcile` adjudicates a second reviewer's proposed improvements to an
 ADR or plan — adopting the sound ones and rejecting the rest, each with a reason.
 
