@@ -1,6 +1,6 @@
 # Proposal: migrate the ADR skill set to a CNL-P-like controlled format
 
-Status: draft (v3) · Decision required before any skill is rewritten.
+Status: draft (v3.1) · Decision required before any skill is rewritten.
 
 ## 1. Context
 
@@ -22,9 +22,12 @@ The concrete symptoms this proposal targets:
   running prose.
 - **Soft obligation.** "Do not end with offers like…" and "must **never** implement" sit
   in the same paragraph at different strengths, with nothing marking which is which.
-- **Hidden branching.** `skills/aif-adr-migrate/SKILL.md:58-101` contains four mutually
-  exclusive cases (1:1 rename, pre-1.6 hoist, split, documentation-only) as nested
-  bullets under one numbered step.
+- **Hidden branching.** `skills/aif-adr-migrate/SKILL.md:58-101` contains four branches
+  (1:1 rename, pre-1.6 hoist, split, documentation-only) as nested bullets under one
+  numbered step, with no statement of how they compose. **[v3.1]** The pilot established
+  that they are not one dimension and not mutually exclusive — this document said they
+  were, until formalizing them proved otherwise (§11.1.1, defect 1). A reader cannot tell
+  from the prose, which is the symptom.
 - **Guard drift.** The refine transition table (`skills/aif-adr-refine/SKILL.md:68-74`)
   is preceded by the guard "only when the file is actually improved" in a heading, not in
   any row — so the guard is easy to lose on the next edit.
@@ -42,6 +45,10 @@ None of this is a defect in the current authoring. It is the ceiling of the form
   already falsified, a rollout that would leave the test suite red between waves, an
   understated scope, over-specified identifiers, five open questions that blocked the
   contract, and an unqualified `§17`. Each fix is marked **[v3]** where it lands.
+- **v3.1** folds in pilot part A (§11.1.1). Three contract amendments the pilot forced —
+  normative lines inside cases, case-set composition modes, preconditions versus entry
+  actions — plus the size unit corrected from characters to bytes, and one false premise
+  in §1 above corrected from the evidence. Marked **[v3.1]**.
 
 ## 2. What "CNL-P-like" means here
 
@@ -169,7 +176,27 @@ line references it — `W11 MUST apply the row of ## Transitions whose guard hol
 | `A<n>` | Abort conditions |
 | `O<n>` | Output |
 | `C<n>` | Cases (labels — data, referenced by a `W<n>`) |
+| `C<n>.<m>` | an obligation inside case `C<n>` — normative, see below |
 | `T<n>` | Transitions (table rows — data, referenced by a `W<n>`) |
+
+**Obligations inside a case are normative. [v3.1]** A case label `C<n>` states its
+discriminator and carries no modal. The obligations that apply once that case is selected
+are `C<n>.<m>` lines, one modal each, scoped to their case. The pilot established this
+(§11.1): `aif-adr-migrate`'s four file-shape cases carry 21 obligations between them, and
+pushing those into `## Workflow` would produce a forty-step conditional sequence — the
+shape the migration exists to remove.
+
+**A skill may have several case sets, and each states its composition mode. [v3.1]** Each
+set is a `###` subsection inside `## Cases` naming three things: its discriminator, its
+composition mode — `select exactly one` or `apply in addition when it matches` — and the
+workflow step that applies it. Ids stay flat across all sets in the file (`C1`…`C9`), so
+uniqueness and reference resolution are unaffected.
+
+The composition mode is not decoration. `aif-adr-migrate`'s four step-3 branches read as
+one list and are three orthogonal dimensions — movement method, source format, decision
+semantics — so a single ADR can match three of them at once. The pilot's first rewrite
+forced them into one exclusive set, which silently produced a skill that would hoist a
+pre-1.6 file's frontmatter and then never move or rewrite it (§11.1.1, defect 1).
 
 **Identifiers are unique within their file and every reference resolves within that
 file.** That is the whole rule. **[v3]** v2 additionally forbade renumbering and required
@@ -182,16 +209,22 @@ v2 set one budget of +10% lines and its own worked example broke it by 33%. Two 
 measure the cost that is actually paid, and set the limit per profile before measuring,
 not after.
 
-- **Unit: characters, not lines.** Characters are monotone with context tokens; line
-  count is not (one prose line can hold four obligations).
+- **Unit: UTF-8 bytes, not lines and not characters. [v3.1]** Bytes are monotone with
+  context tokens and count the multibyte punctuation this corpus is full of (`—`, `→`,
+  `✔`) at something closer to its real cost; line count is monotone with nothing, since
+  one prose line can hold four obligations and one obligation can wrap over three lines.
+  v3 wrote "characters" while measuring `Buffer.byteLength`; the unit is bytes and the
+  numbers were always bytes.
 - **Budgets:** judgment ≤ +45%, procedural ≤ +20%, wrapper ≤ +20%, against the current
   file. Judgment gets the larger allowance because its prose rules pack several
   obligations per sentence and splitting them is the point of the exercise.
 - **Over budget is not resolved by raising the budget.** It is resolved by cutting rules
   on their own merits, or by rejecting the migration for that profile.
+- **A budget measured against an unverified rewrite is worthless. [v3.1]** The pilot's
+  first `migrate` rewrite came in at +4.3% and was semantically wrong; correcting it cost
+  four times that (§11.1.1). Size is only meaningful once the §8 map is clean.
 
-Current baseline, characters: `refine` 4966 · `status` 1259 · `migrate` 8384 · corpus
-total ≈ 46k.
+Current baseline, bytes: `refine` 4966 · `status` 1259 · `migrate` 8384 · corpus ≈ 46k.
 
 ## 5. Skill profiles
 
@@ -213,7 +246,7 @@ The corpus has three shapes, distinguished by where the skill's value sits.
 | `Decision rules` | **see below** | **see below** | **see below** |
 | `Workflow` | required | required | required |
 | `Cases` | optional | optional | forbidden |
-| `Transitions` | required where the skill moves an ADR | required where the skill moves an ADR | forbidden |
+| `Transitions` | required where the skill changes the lifecycle status of an ADR already under management | same | forbidden |
 | `Abort conditions` | required | required | optional |
 | `Output` | required | required | required |
 | `Invocation` | required | required | required |
@@ -252,9 +285,9 @@ One entry per legal section. The order below is the mandated file order.
 | `Commands` | table: the exact CLI invocation and what it owns | prose about the CLI |
 | `Decision rules` | `R<n>`: standing judgment policy applied throughout, not at one step | ordered actions |
 | `Workflow` | `W<n>`: ordered actions, one observable action each, referencing rules, cases and transitions by id | judgment criteria; branching detail |
-| `Cases` | `C<n>` labels: mutually exclusive branches with the discriminator that selects one | anything a step can state inline |
+| `Cases` | `C<n>` labels with their discriminator, grouped in `###` sets; `C<n>.<m>` obligations scoped to a case | anything a step can state inline |
 | `Transitions` | `T<n>` table rows: from, guard, command | file moves by hand |
-| `Abort conditions` | `A<n>`: when the skill stops without completing, and what it reports instead | error prose scattered in steps |
+| `Abort conditions` | `A<n>`: when the skill stops without completing, and what it reports instead. Precondition failure is the canonical abort — collapse it into one line referencing the range (`A1 … when any of P1–P6 cannot be satisfied`), never one `A<n>` per `P<n>` | error prose scattered in steps |
 | `Output` | `O<n>`: everything the agent may emit, what it must omit, the footer and its source | analysis instructions |
 | `Invocation` | the Claude Code and Codex invocation lines | anything else |
 
@@ -284,6 +317,9 @@ question 4.
 7. **Transition formalization** — every transition becomes a row with an explicit guard
    column, so no guard survives only in a heading.
 8. **Preconditions extraction** — entry conditions become `P<n>`, each with its check.
+   **[v3.1]** Entry *actions* — running a setup command, creating a branch, reading a
+   config — move to the front of `Workflow`; only checkable state stays a `P<n>`. Eight
+   skills carry a `## Preconditions` section today and most of them mix the two.
 9. **Case formalization** — nested conditional bullets become `## Cases` with a stated
    discriminator.
 10. **Command-contract extraction** — the CLI calls a skill wraps are listed once.
@@ -516,6 +552,64 @@ its content without a `##` heading outside the catalog, without prose smuggled b
 and inside the procedural budget. If it does not, the contract is wrong and §6 changes
 before any wave.
 
+### 11.1.1 Result — **passed, with three amendments to the contract**
+
+Artifacts under `docs/proposals/cnlp-pilot/`: `aif-adr-migrate.SKILL.md` (the rewrite),
+`aif-adr-migrate.fidelity.md` (the §8 two-way map, 87 original clauses × 82 result lines),
+`check.mjs` (contract linter), `check.test.mjs` (15 mutation tests, all firing). Nothing
+landed; the live skill is untouched. Full detail in the fidelity map; the load-bearing
+results:
+
+**Held.** No `##` heading outside the catalog was needed — the original's
+`## Rules that hold throughout` distributed into `Scope`, `Forbidden`, and
+`Preconditions`, and that bucket is exactly where unenforceable prose accumulates.
+`## Commands` absorbed six "what the command owns" statements previously rediscovered
+inside four different steps. The verbatim `AGENTS.md` pointer sits as a fenced block on a
+workflow step under the existing §4.1 rule 4. **9900 bytes versus 8384, +18.1%**, inside
+the +20% procedural budget with 1.9 points of margin.
+
+**Amendment 1 (applied, §4.2):** `## Cases` must permit normative `C<n>.<m>` lines. The
+30 obligations in `migrate`'s cases would otherwise become a conditional workflow twice
+the length of the skill.
+**Amendment 2 (applied, §4.2):** several case sets per skill, each declaring its
+discriminator, its **composition mode**, and the step that applies it.
+**Amendment 3 (applied, §7):** entry *actions* belong at the front of `Workflow`; only
+checkable state stays a `P<n>`.
+**Clarification (applied, §5, §6):** when `Transitions` is required; precondition failures
+collapse into one `A<n>`.
+
+**Three defects in the original surfaced, two resolved, one for the skill's owner:**
+
+1. **The four step-3 branches are not mutually exclusive** (`:58-101`). 1:1 versus split
+   is the movement method; pre-1.6 is a property of the source format; documentation-only
+   is a property of the decision. One file can be all three. Resolved as three sets with
+   declared composition. This is what amendment 2 exists for.
+2. **"Deprecated with no successor" cannot be represented.** The original imports it as
+   `superseded` and then fills `replaced_by:` by hand (`:53-56`), but
+   `src/lifecycle/validate.js:71-72` rejects a `superseded` ADR with an empty
+   `replaced_by:` (inv 11), and the original's own step 6 requires `validate` to pass.
+   The instruction cannot be carried out on the input it names as its own example.
+   Resolved by splitting the case; **the status a successor-less decision should carry is
+   the one open item this pilot hands back.**
+3. **The footer contradicts itself** — `:159` demands "the count and the ids", `:162`'s
+   mandated format string has no id slot. Resolved: ids live in the mapping output, the
+   footer stays count-only. `adr status --json` does return per-status id arrays
+   (`src/status.js:74-81`), so this was a presentation choice, not a capability limit.
+
+**Two process results, both about method rather than about `migrate`:**
+
+- **The first rewrite of `migrate` came in at +4.3% and was wrong.** It forced the
+  non-exclusive branches into one exclusive set — a skill that would hoist a pre-1.6
+  file's frontmatter and never move it — and carried the original's mixed
+  `## Preconditions` across unchanged. Correcting both cost 14 points of budget. A size
+  number taken before the §8 map is clean measures nothing (§4.3).
+- **The §6 no-duplication rule and the two-way map each caught what the other could not.**
+  The rule found two prohibitions that were positive obligations with the polarity
+  flipped; the map found five `added` lines and four `strengthened` ones. Neither
+  mechanism would have surfaced the reference in `S1` that resolved to the wrong workflow
+  step — the linter checks that a reference resolves, never that it points where intended.
+  That is the argument for the map being human-reviewed rather than generated.
+
 ### 11.2 Part B — behavioural measurement
 
 **Hypothesis.** A skill in the controlled format produces fewer contract violations per
@@ -647,7 +741,7 @@ atomic step, before any structural work.
 | Wave | Content | Test state |
 |---|---|---|
 | **0** | rename `## Evaluating solutions` → `## Decision rules` in all ten rubric skills + the one test constant. Pure rename, no other edit, one commit. | green |
-| **pilot A** | rewrite `migrate` on a branch for contract coverage (§11.1); land nothing until the contract is confirmed | untouched |
+| **pilot A** | ✅ done — `migrate` rewritten for contract coverage (§11.1.1). Passed at +18.1%, three contract amendments applied, three defects in the original surfaced. Nothing landed. | untouched |
 | **pilot B** | variants A/B/C, measurement (§11.2); results committed under `docs/proposals/cnlp-pilot/` | untouched |
 | **decide** | proceed / narrow to a subset of profiles / reject. Record the outcome in this file and in an ADR. | — |
 | **1** | judgment profile (5 skills), one commit per skill, each carrying its §8 fidelity map | green |
