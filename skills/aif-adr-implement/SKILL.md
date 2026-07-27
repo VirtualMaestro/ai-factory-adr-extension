@@ -15,7 +15,7 @@ inputs:
 
 preconditions:
 - the ADR status is `accepted` and it is not superseded
-- exactly one non-archived plan implements it
+- exactly 1 non-archived plan implements it
 - the ADR↔plan links are reciprocal
 
 forbidden_behaviors:
@@ -41,7 +41,7 @@ quality_rules:
 
 workflow:
 1. run `ai-factory adr resolve-plan <adr-file>`, which resolves via the plan's `implements` frontmatter
-2. stop and fix first when it exits non-zero: more than one non-archived plan matches (inv 7)
+2. stop and fix first when it exits non-zero: more than 1 non-archived plan matches (inv 7)
 3. run `ai-factory adr status <adr-file>` to check dependency readiness
 4. state every dependency warning it reports to the operator and confirm they want to continue before implementing
 5. run `ai-factory adr status --check`, which covers the ADR invariants and runs the artifact audit against the configured ADR root

@@ -14,7 +14,7 @@ inputs:
 
 preconditions:
 - the file is in the configured ADR root's `drafts/` directory and its status is `draft`
-- exactly one primary decision is stated
+- exactly 1 primary decision is stated
 - Context describes the problem
 - relevant constraints are present
 - the Decision is concrete

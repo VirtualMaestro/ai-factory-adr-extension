@@ -4,6 +4,24 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and the project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.11.3] — 2026-07-27
+
+### Changed
+
+- **A threshold is now written as a digit.** `exactly 1 primary decision`,
+  `at least 2 viable approaches`, `more than 1 non-archived plan` — 28 occurrences across
+  the skills and the standard. A digit stands out against lowercase prose and reads as a
+  parameter rather than as a word that has to be mapped to a number first; spelling out
+  numbers under ten is a prose-style convention, which is the register this format left.
+- Numbers that are **not** thresholds stay words: inside an idiom (`two ways of doing one
+  thing`), inside a hyphenated adjective (`one-line`, `two-space-indented`), or as an
+  ordinal (`first refine`). Digits there read as a typo.
+- `docs/cnlp-format.md` §8 states the rule and the split between what the test enforces —
+  a number after `at least`, `exactly`, `more than`, `fewer than`, `no more than`, `only` —
+  and what stays a judgment call, mirroring §4's 150-character target versus 250-character
+  hard limit.
+- `test/skill-format.test.js` gains that assertion, verified to fire before being trusted.
+
 ## [1.11.2] — 2026-07-27
 
 ### Added

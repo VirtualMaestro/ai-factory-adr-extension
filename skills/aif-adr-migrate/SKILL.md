@@ -63,7 +63,7 @@ workflow:
 21. emit the mapping, then the status footer
 
 status_mapping:
-- the three overlays below are independent of this list: a file gets exactly one status here
+- the overlays below are independent of this list: a file gets exactly 1 status here
 - legacy status *accepted* or *approved*: map to `accepted`, or to `active` only when the decision is demonstrably implemented and concrete evidence can be recorded
 - legacy status *proposed*, *draft*, or *RFC*: map to `proposed` or `draft`
 - legacy status *deprecated* or *replaced*, replacement also being migrated: import at its prior live status, `accepted` or `active`, and let the supersede step move it
@@ -73,7 +73,7 @@ status_mapping:
 - that case has no `superseded/` option: `ai-factory adr validate` rejects a `superseded` ADR whose `replaced_by:` is empty (inv 11), so the validation step could never pass
 
 file_shape:
-- select exactly one of the two cases below, then apply any matching overlay on top of it
+- select exactly 1 of the cases below, then apply any matching overlay on top of it
 - one legacy file becomes one ADR, the common case:
   - preserve history with a rename: `git mv <legacy-file> <root>/<status-dir>/<id>.md`
   - edit the moved file to match `templates/adr.md`

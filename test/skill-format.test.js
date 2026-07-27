@@ -27,6 +27,7 @@ const KNOWN = new Set([
 const ORDER = ['mode', 'purpose', 'inputs', 'preconditions', 'scope', 'forbidden_behaviors',
   'outputs', 'quality_rules', 'workflow', 'transitions', 'status_footer', 'invocation'];
 const DENY = /\b(surface[sd]?|sharpen[s]?|weigh[s]?|leverage[sd]?|robust|sanity-check|ensure[sd]?)\b/i;
+const SPELLED_THRESHOLD = /\b(at least|exactly|more than|fewer than|no more than|only) (one|two|three|four|five|six|seven|eight|nine|ten)\b/i;
 const HARD_LIMIT = 250; // §4: 150 is the target, 250 is compound whatever it claims
 const REFERENCE_ONLY = new Set(['aif-adr-overview']); // §5: the one skill with no workflow
 
@@ -98,6 +99,16 @@ test('no deny-list word appears in a body', async () => {
     lines.forEach((l, i) => {
       const hit = l.match(DENY);
       assert.ok(!hit, `${name}:${i + 1}: deny-list word "${hit?.[0]}" — see docs/cnlp-format.md §8`);
+    });
+  }
+});
+
+test('a quantified threshold is written as a digit', async () => {
+  for (const name of skills) {
+    const { lines } = await parse(name);
+    lines.forEach((l, i) => {
+      const hit = l.match(SPELLED_THRESHOLD);
+      assert.ok(!hit, `${name}:${i + 1}: "${hit?.[0]}" — a threshold is a digit, see docs/cnlp-format.md §8`);
     });
   }
 });

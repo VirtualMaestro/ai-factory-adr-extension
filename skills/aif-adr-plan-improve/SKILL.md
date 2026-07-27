@@ -15,7 +15,7 @@ inputs:
 
 preconditions:
 - the ADR status is `accepted` and it is not superseded
-- exactly one non-archived plan implements it, which the workflow checks
+- exactly 1 non-archived plan implements it, which the workflow checks
 
 scope:
 - refine the plan body only
@@ -39,8 +39,8 @@ quality_rules:
 - name the project invariants the change touches: module boundaries, public APIs, data schemas, active ADRs, `.ai-factory/RULES.md`, `.ai-factory/ARCHITECTURE.md`
 - cite the concrete rule, ADR, architecture document, or code location each judgment rests on
 - no ground named, no recommendation: research until you can name it, never fill the gap with a guess
-- present at least two viable approaches when the change touches a module boundary, public API, data schema, or architectural invariant
-- if only one approach is viable, say so and why the others are not
+- present at least 2 viable approaches when the change touches a module boundary, public API, data schema, or architectural invariant
+- if only 1 approach is viable, say so and why the others are not
 - give per approach: consequences over the next 6–12 months of project evolution, effect on coupling, hidden risks
 - reject each alternative in its strongest version, and name the reason
 - do not accept "faster to write", "easier", or "smaller diff for me now" as justification for violating an invariant or an established convention of the codebase
@@ -50,16 +50,16 @@ quality_rules:
 - count effort already sunk into existing code as nothing by itself; the compatibility and migration cost of replacing it does count
 - when the correct option costs more, present it alongside the cheap one, each with its cost, risk, and reversibility
 - demand stronger grounds for hard-to-reverse choices such as data schemas and public APIs
-- end with exactly one explicit recommendation; the operator decides, never silently downgrade to the cheap option
+- end with exactly 1 explicit recommendation; the operator decides, never silently downgrade to the cheap option
 - revise a recommendation only on a new fact, a new constraint, a found reasoning error, a clarified goal, or an explicit operator decision, and name what changed
 - disagreement alone is not new information: a flip with no new grounds means the original was ungrounded
 
 workflow:
 1. run `ai-factory adr resolve-plan <adr-file>`, which resolves via the plan's `implements` frontmatter; add `--json` for the plan's `file`
 2. stop and recommend `aif-adr-plan` first when there is no active plan: there is nothing to improve yet
-3. report the error and stop when more than one active plan exists: the command exits non-zero and that must be resolved before improving
+3. report the error and stop when more than 1 active plan exists: the command exits non-zero and that must be resolved before improving
 4. improve the resolved plan by applying `aif-improve` semantics in this run against that plan file
-5. re-verify: `ai-factory adr resolve-plan <adr-file>` still resolves to exactly one plan, and `ai-factory adr status --check` is clean
+5. re-verify: `ai-factory adr resolve-plan <adr-file>` still resolves to exactly 1 plan, and `ai-factory adr status --check` is clean
 6. leave the ADR `accepted`
 7. report the status footer
 

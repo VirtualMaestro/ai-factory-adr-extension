@@ -262,6 +262,20 @@ filled. A finished ADR contains none.
 one term. `never` inside a sentence, qualifying a clause, is fine
 (`the operator decides, do not silently downgrade`).
 
+**A threshold is a digit.** `exactly 1 primary decision`, `at least 2 viable approaches`,
+`more than 1 non-archived plan` — the reader has to check the value against something, so
+it is written as a value. A digit also stands out against lowercase prose, and reads as a
+parameter rather than as a word that must first be mapped to a number.
+
+A number that is not a threshold stays a word: inside an idiom (`two ways of doing one
+thing is a real cost`), inside a hyphenated adjective (`one-line`, `two-space-indented`),
+or as an ordinal (`first refine`). Digits there read as a typo.
+
+The conformance test enforces the quantified form — a number after `at least`, `exactly`,
+`more than`, `fewer than`, `no more than` or `only`. A limit stated without one of those
+words is a judgment call, the same split §4 makes between the 150-character target and the
+250-character hard limit.
+
 Canonical verbs: `run`, `read`, `inspect`, `identify`, `name`, `cite`, `compare`,
 `present`, `ask`, `update`, `transition`, `report`, `record`, `state`, `stop`, `verify`,
 `validate`.

@@ -31,8 +31,8 @@ quality_rules:
 - name the project invariants the change touches: module boundaries, public APIs, data schemas, active ADRs, `.ai-factory/RULES.md`, `.ai-factory/ARCHITECTURE.md`
 - cite the concrete rule, ADR, architecture document, or code location each judgment rests on
 - no ground named, no recommendation: research until you can name it, never fill the gap with a guess
-- present at least two viable approaches when the change touches a module boundary, public API, data schema, or architectural invariant
-- if only one approach is viable, say so and why the others are not
+- present at least 2 viable approaches when the change touches a module boundary, public API, data schema, or architectural invariant
+- if only 1 approach is viable, say so and why the others are not
 - give per approach: consequences over the next 6–12 months of project evolution, effect on coupling, hidden risks
 - reject each alternative in its strongest version, and name the reason
 - do not accept "faster to write", "easier", or "smaller diff for me now" as justification for violating an invariant or an established convention of the codebase
@@ -42,7 +42,7 @@ quality_rules:
 - count effort already sunk into existing code as nothing by itself; the compatibility and migration cost of replacing it does count
 - when the correct option costs more, present it alongside the cheap one, each with its cost, risk, and reversibility
 - demand stronger grounds for hard-to-reverse choices such as data schemas and public APIs
-- end with exactly one explicit recommendation; the operator decides, never silently downgrade to the cheap option
+- end with exactly 1 explicit recommendation; the operator decides, never silently downgrade to the cheap option
 - revise a recommendation only on a new fact, a new constraint, a found reasoning error, a clarified goal, or an explicit operator decision, and name what changed
 - disagreement alone is not new information: a flip with no new grounds means the original was ungrounded
 
