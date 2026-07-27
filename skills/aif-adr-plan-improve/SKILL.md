@@ -36,7 +36,7 @@ outputs:
 quality_rules:
 - measure every option by what serves the project best over its lifetime
 - state delivery cost, risk, and timeline explicitly for the operator
-- never let your own convenience in this session stand in for them
+- do not let your own convenience in this session stand in for them
 - name the project invariants the change touches: module boundaries, public APIs, data schemas, active ADRs, `.ai-factory/RULES.md`, `.ai-factory/ARCHITECTURE.md`
 - cite the concrete rule, ADR, architecture document, or code location each judgment rests on
 - no ground named, no recommendation: research until you can name it, never fill the gap with a guess
@@ -44,7 +44,7 @@ quality_rules:
 - if only one approach is viable, say so and why the others are not
 - give per approach: consequences over the next 6–12 months of project evolution, effect on coupling, hidden risks
 - reject each alternative in its strongest version, and name the reason
-- never accept "faster to write", "easier", or "smaller diff for me now" as justification for violating an invariant or an established convention of the codebase
+- do not accept "faster to write", "easier", or "smaller diff for me now" as justification for violating an invariant or an established convention of the codebase
 - justify any divergent local pattern explicitly: two ways of doing one thing is a real cost
 - name a large blast radius — many call sites, data migrations, compatibility breaks — as the genuine risk and cost it is
 - prefer the smaller change at equal architectural correctness, and add no abstractions for hypothetical needs
@@ -58,7 +58,7 @@ quality_rules:
 workflow:
 1. run `ai-factory adr resolve-plan <adr-file>`, which resolves via the plan's `implements` frontmatter; add `--json` for the plan's `file`
 2. stop and recommend `aif-adr-plan` first when there is no active plan: there is nothing to improve yet
-3. surface the error and stop when more than one active plan exists: the command exits non-zero and that must be resolved before improving
+3. report the error and stop when more than one active plan exists: the command exits non-zero and that must be resolved before improving
 4. improve the resolved plan by applying `aif-improve` semantics in this run against that plan file
 5. re-verify: `ai-factory adr resolve-plan <adr-file>` still resolves to exactly one plan, and `ai-factory adr status --check` is clean
 6. leave the ADR `accepted`

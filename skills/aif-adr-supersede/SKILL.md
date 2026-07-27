@@ -21,7 +21,6 @@ preconditions:
 - the new decision genuinely replaces the old one, rather than duplicating it or changing something tangential
 
 forbidden_behaviors:
-- do not supersede before the replacement is accepted: if the new ADR is still `proposed` or `draft`, stop and accept it via `aif-adr-accept` first
 - do not supersede to paper over a conflict: if the two ADRs are in tension, resolve that first by refining or by a fresh proposal
 - do not pick the plan disposition silently: the user chooses explicitly
 - do not move files by hand: the command owns the atomic move
@@ -36,21 +35,14 @@ plan_disposition:
 - `--archive-plan`: archive it with a superseded note, `archived_reason: superseded by <new-id>`, into `paths.archive/plans/`
 - `--delete-plan`: delete it
 
-outputs:
-- reciprocal `supersedes` and `replaced_by` links
-- the old ADR in `superseded/`
-- the plan disposed per the chosen flag
-- status footer
-
 workflow:
 1. search accepted, active, and superseded ADRs for context
-2. confirm the replacement supersedes the old decision rather than conflicting with or duplicating it
-3. confirm the replacement is `accepted` or `active`
-4. ask the user to choose the plan disposition when the old ADR still has a non-archived plan
-5. run `ai-factory adr supersede <old-file> <new-file> [--archive-plan | --delete-plan]`
-6. run `ai-factory adr status --check` and resolve any failures
-7. confirm the old ADR appears under `superseded` and the reciprocal links validate
-8. report the status footer
+2. verify every precondition; stop and accept the replacement via `aif-adr-accept` first when it is still `proposed` or `draft`
+3. ask the user to choose the plan disposition when the old ADR still has a non-archived plan
+4. run `ai-factory adr supersede <old-file> <new-file> [--archive-plan | --delete-plan]`
+5. run `ai-factory adr status --check` and resolve any failures
+6. verify the old ADR appears under `superseded` and the reciprocal links validate
+7. report the status footer
 
 command_behaviour:
 - adds `supersedes: [<old-id>]` to the new ADR

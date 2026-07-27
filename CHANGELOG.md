@@ -4,6 +4,32 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and the project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.11.1] — 2026-07-27
+
+### Added
+
+- **`docs/cnlp-format.md` — the CNL-P format standard.** The rules that produced the 1.11.0
+  skill rewrite, written down once: file shape, the section vocabulary for skills and for
+  ADRs, line rules, the lexicon with its deny-list, the no-section-restates-another rule,
+  and the migration procedure. It is the reference for migrating ADR documents next, and
+  the place to extend when the format grows.
+
+### Changed
+
+- **Lexicon applied to all 15 skills.** `ensure` → `verify`, `surface` → `report`, and one
+  reworded `sharpens`. Prohibition is now a single term: 25 bullets opening with `never`
+  became `do not`, so one concept is written one way across the corpus.
+- **`aif-adr-supersede` deduplicated.** One rule was stated three times — as a
+  precondition, a `forbidden_behaviors` bullet, and a workflow step — and `outputs:`
+  repeated `command_behaviour:`. Both removed; the workflow now names the check instead of
+  restating the rule.
+
+### Removed
+
+- `docs/proposals/cnlp-pilot/` — pilot material for a format that was not adopted. Its
+  test files were also being picked up by the bare `node --test` script, inflating the
+  suite from 94 to 109.
+
 ## [1.11.0] — 2026-07-27
 
 ### Changed

@@ -36,10 +36,10 @@ quality_rules:
 - ground every verdict in a concrete rule, ADR clause, plan step, or code location
 - no ground named, no verdict: research until you can name it, never guess
 - report code or a plan diverging from the Decision as a deviation, with evidence
-- never resolve a deviation by reshaping the judgment to fit it
-- never excuse a deviation because fixing it would be laborious
+- do not resolve a deviation by reshaping the judgment to fit it
+- do not excuse a deviation because fixing it would be laborious
 - follow the project's existing conventions and invariants for tactical choices
-- never accept agent convenience — "faster", "easier" for this session — as an argument
+- do not accept agent convenience — "faster", "easier" for this session — as an argument
 - revise a verdict only on a new fact, a found reasoning error, or an explicit operator decision, and name what changed
 - disagreement alone is not new information
 

@@ -46,7 +46,7 @@ implements: [<adr-short-stable-name>]
 quality_rules:
 - measure every option by what serves the project best over its lifetime
 - state delivery cost, risk, and timeline explicitly for the operator
-- never let your own convenience in this session stand in for them
+- do not let your own convenience in this session stand in for them
 - name the project invariants the change touches: module boundaries, public APIs, data schemas, active ADRs, `.ai-factory/RULES.md`, `.ai-factory/ARCHITECTURE.md`
 - cite the concrete rule, ADR, architecture document, or code location each judgment rests on
 - no ground named, no recommendation: research until you can name it, never fill the gap with a guess
@@ -54,7 +54,7 @@ quality_rules:
 - if only one approach is viable, say so and why the others are not
 - give per approach: consequences over the next 6–12 months of project evolution, effect on coupling, hidden risks
 - reject each alternative in its strongest version, and name the reason
-- never accept "faster to write", "easier", or "smaller diff for me now" as justification for violating an invariant or an established convention of the codebase
+- do not accept "faster to write", "easier", or "smaller diff for me now" as justification for violating an invariant or an established convention of the codebase
 - justify any divergent local pattern explicitly: two ways of doing one thing is a real cost
 - name a large blast radius — many call sites, data migrations, compatibility breaks — as the genuine risk and cost it is
 - prefer the smaller change at equal architectural correctness, and add no abstractions for hypothetical needs
@@ -80,7 +80,7 @@ expected_warnings:
 
 improving_the_plan:
 - the plan is a standard AI Factory plan artifact, so its improvement logic stays the stock `aif-improve`
-- do not reimplement improve logic for ADRs; `aif-adr-refine` avoids `aif-improve` only because it sharpens the decision, a different task
+- do not reimplement improve logic for ADRs; `aif-adr-refine` avoids `aif-improve` only because it works on the decision, a different task
 - the easy path is `aif-adr-plan-improve @adr-file`, which applies `aif-improve` to this plan while you name the ADR, so you never track the plan's path
 - improving the plan directly instead: `aif-improve` targets by path or auto-resolution, never by id
 - with no argument it takes the active plan on the current git branch (`paths.plans/<branch-slug>.md`) or the single plan in `paths.plans`
