@@ -3,77 +3,74 @@ name: aif-adr-supersede
 description: Supersede an old ADR with a newer one — reciprocal supersedes/Replaced-by links and an atomic move to superseded, preserving history.
 ---
 
-# aif-adr-supersede
+mode: adr_supersession
 
-Replace an accepted or active decision **while preserving history** (PRD §19.7):
-link the new ADR to the old, move the old one to `superseded/`, and dispose of
-any orphaned plan. The `ai-factory adr supersede` command does the deterministic
-file mechanics; **this skill owns the judgment** — confirming the replacement
-truly supersedes and choosing the plan disposition.
+purpose:
+- replace an accepted or active decision while preserving history (PRD §19.7)
+- link the new ADR to the old, move the old one to `superseded/`, and dispose of any orphaned plan
+- own the judgment — confirming the replacement truly supersedes, and choosing the plan disposition — while `ai-factory adr supersede` owns the file mechanics
 
-## Preconditions
+inputs:
+- old_adr_file
+- new_adr_file
 
-- old ADR status is `accepted` or `active`;
-- the replacement ADR exists and is **already** `accepted` or `active` — never
-  supersede before the replacement is accepted;
-- the two IDs differ;
-- the new decision genuinely replaces the old one (not a duplicate or a
-  tangential change).
+preconditions:
+- the old ADR status is `accepted` or `active`
+- the replacement ADR exists and is already `accepted` or `active`
+- the two ids differ
+- the new decision genuinely replaces the old one, rather than duplicating it or changing something tangential
 
-## When to supersede vs. edit in place (§18.3)
+forbidden_behaviors:
+- do not supersede before the replacement is accepted: if the new ADR is still `proposed` or `draft`, stop and accept it via `aif-adr-accept` first
+- do not supersede to paper over a conflict: if the two ADRs are in tension, resolve that first by refining or by a fresh proposal
+- do not pick the plan disposition silently: the user chooses explicitly
+- do not move files by hand: the command owns the atomic move
+- do not attempt optional memory synchronization: it is post-MVP and not provided by this skill
 
-An **active** ADR may be edited directly only for non-material changes: code
-links, commit/PR references, implementation evidence, file paths, spelling and
-formatting. A **material** change to the Decision, constraints, scope, or
-consequences is *not* an in-place edit — it requires a **new** ADR that
-supersedes the current one. That is the reason to reach for this skill instead
-of rewriting an active decision.
+when_to_supersede_instead_of_editing:
+- an active ADR may be edited directly only for non-material changes: code links, commit and PR references, implementation evidence, file paths, spelling, formatting
+- a material change to the Decision, constraints, scope, or consequences is not an in-place edit: it requires a new ADR that supersedes the current one (PRD §18.3)
+- that is the reason to reach for this skill instead of rewriting an active decision
 
-## Workflow
+plan_disposition:
+- `--archive-plan`: archive it with a superseded note, `archived_reason: superseded by <new-id>`, into `paths.archive/plans/`
+- `--delete-plan`: delete it
 
-1. **Analyze.** Search accepted, active, and superseded ADRs for context.
-   Confirm the replacement supersedes the old decision rather than conflicting
-   with or duplicating it. If the two are actually in tension, resolve that first
-   (refine or a fresh proposal) — do not supersede to paper over a conflict.
-2. **Confirm the replacement is accepted.** If the new ADR is still `proposed`
-   or `draft`, stop: accept it via `aif-adr-accept` before superseding.
-3. **Decide the plan disposition.** If the old ADR still has a non-archived
-   plan, the user must choose explicitly — **never** pick silently:
-   - `--archive-plan` — archive it with a superseded note
-     (`archived_reason: superseded by <new-id>`, → `paths.archive/plans/`);
-   - `--delete-plan` — delete it.
-4. **Supersede** — one deterministic call:
+outputs:
+- reciprocal `supersedes` and `replaced_by` links
+- the old ADR in `superseded/`
+- the plan disposed per the chosen flag
+- status footer
 
-   ```text
-   ai-factory adr supersede <old-file> <new-file> [--archive-plan | --delete-plan]
-   ```
+workflow:
+1. search accepted, active, and superseded ADRs for context
+2. confirm the replacement supersedes the old decision rather than conflicting with or duplicating it
+3. confirm the replacement is `accepted` or `active`
+4. ask the user to choose the plan disposition when the old ADR still has a non-archived plan
+5. run `ai-factory adr supersede <old-file> <new-file> [--archive-plan | --delete-plan]`
+6. run `ai-factory adr status --check` and resolve any failures
+7. confirm the old ADR appears under `superseded` and the reciprocal links validate
+8. report the status footer
 
-   It adds `supersedes: [<old-id>]` to the new ADR, sets `replaced_by: <new-id>`
-   in the old ADR's frontmatter, atomically moves the old ADR to `superseded/`,
-   and disposes the plan per the flag.
-5. **Audit** — `ai-factory adr status --check`. Resolve any failures; the old
-   ADR must appear under `superseded` and the reciprocal links must validate.
-6. **Report the status footer** — end with one line naming both ADRs so what this run replaced is
-   obvious at a glance:
+command_behaviour:
+- adds `supersedes: [<old-id>]` to the new ADR
+- sets `replaced_by: <new-id>` in the old ADR's frontmatter
+- atomically moves the old ADR to `superseded/`
+- disposes the plan per the flag
+- changes nothing if a precondition fails (PRD §27): fix the cause and retry
 
-   ```text
-   ✔ aif-adr-supersede · ADR: <old-id> [superseded] → <new-id> [<new-status>]
-   ```
+retrieval_order_afterwards:
+- a superseded ADR stays in Git as history, not as a rule (PRD §23)
+- read active ADRs first
+- treat accepted ADRs as pending decisions
+- use superseded ADRs only for historical reasoning
+- always open the source Markdown after any semantic lookup
+- resolve contradictions in favor of the authoritative file and its lifecycle status
 
-   Fill it from `ai-factory adr status <old-file>` / `<new-file>`.
+status_footer:
+format: "✔ aif-adr-supersede · ADR: <old-id> [superseded] → <new-id> [<new-status>]"
+source: `ai-factory adr status <old-file>` and `ai-factory adr status <new-file>`
 
-If a precondition fails the command changes nothing (§27) — fix the cause and
-retry. Optional memory synchronization is post-MVP and is not provided by this skill.
-
-## After superseding — retrieval order (§23)
-
-A superseded ADR stays in Git as history, not as a rule. When reasoning over
-ADRs later: read **active** ADRs first; treat **accepted** ones as pending
-decisions; use **superseded** ones only for historical reasoning. Always open
-the source Markdown after any semantic lookup, and resolve contradictions in
-favor of the authoritative file and its lifecycle status.
-
-## Invocation
-
-Claude Code: `/aif-adr-supersede @old-adr @new-adr` ·
-Codex: `$aif-adr-supersede @old-adr @new-adr`.
+invocation:
+- Claude Code: `/aif-adr-supersede @old-adr @new-adr`
+- Codex: `$aif-adr-supersede @old-adr @new-adr`

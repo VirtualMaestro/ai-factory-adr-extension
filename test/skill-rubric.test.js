@@ -16,11 +16,14 @@ const FULL = [
 const SHORT = ['aif-adr-implement', 'aif-adr-verify', 'aif-adr-verify-all', 'aif-adr-finalize', 'aif-adr-accept'];
 const NONE = ['aif-adr-next', 'aif-adr-migrate', 'aif-adr-supersede', 'aif-adr-status', 'aif-adr-overview'];
 
-const HEADING = '## Evaluating solutions';
+const HEADING = 'quality_rules:';
 
 async function skillBody(name) {
   return readFile(path.join(repoRoot, 'skills', name, 'SKILL.md'), 'utf8');
 }
+
+// A CNL-P section runs from its `key:` line to the next top-level `key:` line.
+const SECTION_KEY = /^[a-z_]+:/;
 
 function extractSection(body) {
   const lines = body.split(/\r?\n/);
@@ -29,7 +32,7 @@ function extractSection(body) {
   const start = starts[0];
   let end = lines.length;
   for (let i = start + 1; i < lines.length; i++) {
-    if (/^## /.test(lines[i])) {
+    if (SECTION_KEY.test(lines[i])) {
       end = i;
       break;
     }
@@ -37,14 +40,14 @@ function extractSection(body) {
   return { count: 1, start, text: lines.slice(start, end).join('\n').trimEnd() };
 }
 
-test('each target skill has exactly one rubric section, placed before the workflow heading', async () => {
+test('each target skill has exactly one rubric section, placed before the workflow section', async () => {
   for (const name of [...FULL, ...SHORT]) {
     const body = await skillBody(name);
     const section = extractSection(body);
     assert.equal(section.count, 1, `${name}: expected exactly one "${HEADING}" section`);
-    const workflowIndex = body.split(/\r?\n/).findIndex((line) => /^## .*workflow/i.test(line));
-    assert.ok(workflowIndex !== -1, `${name}: no workflow heading found`);
-    assert.ok(section.start < workflowIndex, `${name}: rubric must precede the workflow heading`);
+    const workflowIndex = body.split(/\r?\n/).findIndex((line) => /^workflow:/.test(line));
+    assert.ok(workflowIndex !== -1, `${name}: no workflow section found`);
+    assert.ok(section.start < workflowIndex, `${name}: rubric must precede the workflow section`);
   }
 });
 

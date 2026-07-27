@@ -3,33 +3,27 @@ name: aif-adr-status
 description: Report ADR status by wrapping the `ai-factory adr status` command.
 ---
 
-# aif-adr-status
+mode: adr_reporting
 
-Read-only overview and diagnosis of ADR state (PRD §19.8). This skill **wraps
-`ai-factory adr status` and never mutates state.**
+purpose:
+- read-only overview and diagnosis of ADR state (PRD §19.8)
+- wrap `ai-factory adr status`
 
-## Workflow
+inputs:
+- optional adr_file
 
-### Overview (no argument)
+forbidden_behaviors:
+- do not mutate any state
+- do not report optional-memory diagnostics: they are post-MVP and are not currently produced
 
-Run `ai-factory adr status` (add `--json` for machine-readable output). Report:
+workflow:
+1. pick the mode: no argument selects the overview, `@adr-file` selects the single-ADR report
+2. run `ai-factory adr status` for the overview; add `--json` for machine-readable output
+3. report from it: proposals; drafts; accepted ADRs without plans; accepted ADRs with active plans; active ADRs; superseded ADRs; status-directory mismatches; ADR validation errors; ADRs with more than one non-archived plan
+4. run `ai-factory adr status <file>` for a single ADR
+5. report from it: id; status; lifecycle location; linked active plan; archived plan references; implementation evidence; dependencies; affected artifacts; superseding and replacement relationships; validation errors and warnings
+6. run `ai-factory adr status --check` for duplicate ids, broken artifact references, and other cross-artifact diagnostics; it also runs the strict artifact audit and exits non-zero on blocking errors
 
-- proposals; drafts;
-- accepted ADRs without plans; accepted ADRs with active plans;
-- active ADRs; superseded ADRs;
-- status-directory mismatches and ADR validation errors;
-- multiple non-archived plans for one ADR.
-
-For duplicate IDs, broken artifact references, and other cross-artifact diagnostics, run
-`ai-factory adr status --check`; it also runs the strict artifact audit and exits non-zero on
-blocking errors. Optional-memory diagnostics are post-MVP and are not currently reported.
-
-### Single ADR (`@adr-file`)
-
-Run `ai-factory adr status <file>`. Report: ID; status; lifecycle location; linked active
-plan; archived plan references; implementation evidence; dependencies; affected artifacts;
-superseding and replacement relationships; validation errors and warnings.
-
-## Invocation
-
-Claude Code: `/aif-adr-status [@adr-file]` · Codex: `$aif-adr-status [@adr-file]`.
+invocation:
+- Claude Code: `/aif-adr-status [@adr-file]`
+- Codex: `$aif-adr-status [@adr-file]`

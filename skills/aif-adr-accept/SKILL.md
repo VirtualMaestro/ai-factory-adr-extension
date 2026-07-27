@@ -3,73 +3,62 @@ name: aif-adr-accept
 description: Accept a draft ADR — check preconditions, run the artifact audit, and atomically move draft to accepted.
 ---
 
-# aif-adr-accept
+mode: adr_acceptance
 
-Declare the decision complete enough to guide implementation (PRD §19.3): move a
-`draft` ADR to `accepted`.
+purpose:
+- declare the decision complete enough to guide implementation (PRD §19.3)
+- move a `draft` ADR to `accepted`
 
-## Preconditions
+inputs:
+- adr_file
 
-Do not accept unless **all** hold:
+preconditions:
+- the file is in the configured ADR root's `drafts/` directory and its status is `draft`
+- exactly one primary decision is stated
+- Context describes the problem
+- relevant constraints are present
+- the Decision is concrete
+- meaningful alternatives are recorded
+- Consequences include disadvantages or risks
+- no blocking questions remain
+- conflicts with active ADRs are resolved or explicitly addressed
+- artifact metadata is valid
 
-- the file is in the configured ADR root's `drafts/` directory and its status is `draft`;
-- exactly one primary decision is stated;
-- Context describes the problem;
-- relevant constraints are present;
-- the Decision is concrete;
-- meaningful alternatives are recorded;
-- Consequences include disadvantages or risks;
-- no blocking questions remain;
-- conflicts with active ADRs are resolved or explicitly addressed;
-- artifact metadata is valid.
+forbidden_behaviors:
+- do not accept when any precondition fails: stop and recommend `aif-adr-refine`
+- do not move the file by hand: `ai-factory adr transition` owns the atomic move
+- do not continue past audit failures
+- do not attempt optional memory synchronization: it is post-MVP and not provided by this skill
 
-If any precondition fails, stop and recommend `aif-adr-refine` — do not accept.
+outputs:
+- accepted ADR in `accepted/`
+- any warnings raised along the way
+- status footer
 
-## Evaluating solutions
+quality_rules:
+- the architectural decision is already made: do not re-litigate it
+- ground every verdict in a concrete rule, ADR clause, plan step, or code location
+- no ground named, no verdict: research until you can name it, never guess
+- report code or a plan diverging from the Decision as a deviation, with evidence
+- never resolve a deviation by reshaping the judgment to fit it
+- never excuse a deviation because fixing it would be laborious
+- follow the project's existing conventions and invariants for tactical choices
+- never accept agent convenience — "faster", "easier" for this session — as an argument
+- revise a verdict only on a new fact, a found reasoning error, or an explicit operator decision, and name what changed
+- disagreement alone is not new information
 
-The architectural decision is already made — do not re-litigate it. Judgments here are
-about conformance and tactics:
+workflow:
+1. run `ai-factory adr validate <file>`
+2. run `ai-factory adr status --check`, which resolves `adr.root` and passes it to the artifact audit
+3. resolve any audit failures before continuing
+4. run `ai-factory adr transition <file> accepted`: a single atomic move of the status edit plus `drafts/` to `accepted/`
+5. report any warnings
+6. report the status footer
 
-- **Ground every verdict** in a concrete rule, ADR clause, plan step, or code location.
-  No ground named — no verdict: research until you can name it, never guess.
-- **Deviations surface, they don't decide.** Code or plan diverging from the Decision is
-  reported as a deviation with evidence — never resolved by quietly reshaping the
-  judgment to fit, and never excused because fixing it would be laborious.
-- **Tactical choices** (how exactly to realize a step) follow the project's existing
-  conventions and invariants; agent convenience — "faster", "easier" for this session —
-  is not an argument.
-- **Revise on reasons, not on pushback.** Change a verdict on a new fact, a found
-  reasoning error, or an explicit operator decision — and name what changed.
-  Disagreement alone is not new information.
+status_footer:
+format: "✔ aif-adr-accept · ADR: <adr-id> [accepted] · Plan: <plan-id or none>"
+source: `ai-factory adr status <adr-file>`
 
-## Workflow
-
-1. **Validate.** `ai-factory adr validate <file>`.
-2. **Audit** the configured ADR root and `.ai-factory`:
-
-   ```text
-   ai-factory adr status --check
-   ```
-
-   The command resolves `adr.root` and passes it to the artifact audit. Resolve any failures
-   before continuing.
-3. **Accept** — single atomic move (status edit + `drafts/` → `accepted/`):
-
-   ```text
-   ai-factory adr transition <file> accepted
-   ```
-
-4. **Report** any warnings, then end with the status footer so the ADR this run touched is obvious
-   at a glance:
-
-   ```text
-   ✔ aif-adr-accept · ADR: <adr-id> [accepted] · Plan: <plan-id or none>
-   ```
-
-   Fill it from `ai-factory adr status <adr-file>` (id, status, active plan).
-
-Optional memory synchronization is post-MVP and is not provided by this skill.
-
-## Invocation
-
-Claude Code: `/aif-adr-accept @adr-file` · Codex: `$aif-adr-accept @adr-file`.
+invocation:
+- Claude Code: `/aif-adr-accept @adr-file`
+- Codex: `$aif-adr-accept @adr-file`

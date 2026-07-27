@@ -3,82 +3,70 @@ name: aif-adr-propose
 description: Create a new ADR proposal — scan for duplicate/conflicting decisions, generate a stable ID, and write it to proposals/ with status proposed.
 ---
 
-# aif-adr-propose
+mode: adr_proposal
 
-Capture and investigate a potential architectural decision (PRD §19.1). Produce a
-`status: proposed` ADR that records what is known and names what is still open — **not**
-an accepted project rule.
+purpose:
+- capture and investigate a potential architectural decision (PRD §19.1)
+- produce a `status: proposed` ADR that records what is known and names what is still open
+- do not produce an accepted project rule
 
-## Evaluating solutions
+inputs:
+- topic
 
-When this skill weighs options or makes a recommendation, the measure is what serves the
-project best over its lifetime. Delivery cost, risk, and timeline are real inputs —
-surface them explicitly for the operator; never let your own convenience in this session
-stand in for them.
+scope:
+- scan existing ADRs for duplicates and conflicts before writing
+- fill known Context: Problem, Constraints, Decision drivers
+- record unresolved assumptions as explicit placeholders
 
-1. **Invariants and grounds first.** Name the project invariants the change touches
-   (module boundaries, public APIs, data schemas, active ADRs, `.ai-factory/RULES.md` /
-   `.ai-factory/ARCHITECTURE.md`) and cite the concrete rule, ADR, or code location each
-   judgment rests on. No ground named — no recommendation: research until you can name
-   it, never fill the gap with a guess.
-2. **Architectural changes need real alternatives.** If the change touches a module
-   boundary, public API, data schema, or architectural invariant, present at least two
-   *viable* approaches — if only one is viable, say so and why the others are not. For
-   each: consequences over the next 6–12 months of project evolution, effect on
-   coupling, hidden risks. Steelman rejected options, so you reject their strongest
-   version, and state the reason.
-3. **Agent convenience is not an argument; blast radius is.** "Faster to write",
-   "easier", "smaller diff for me now" never justify an option that violates an
-   invariant or the codebase's established conventions (a divergent local pattern
-   creates two ways of doing one thing — that cost needs explicit justification). But a
-   large blast radius — many call sites, data migrations, compatibility breaks — is a
-   genuine risk and cost: name it as such. At equal architectural correctness, prefer
-   the smaller change; no abstractions for hypothetical needs. Effort already sunk into
-   existing code counts for nothing by itself — the compatibility and migration cost of
-   replacing it does count.
-4. **If the right option costs more — say so.** Present the correct option and the cheap
-   option, each with its cost, risk, and reversibility (hard-to-reverse choices — data
-   schemas, public APIs — demand stronger grounds), plus one explicit recommendation.
-   The operator decides; never silently downgrade to the cheap one.
-5. **Revise on reasons, not on pushback.** Change a recommendation when a new fact or
-   constraint surfaces, a reasoning error is found, the goal is clarified, or the
-   operator explicitly decides — and name what changed. Disagreement alone is not new
-   information; flipping without new grounds means the original was ungrounded.
+forbidden_behaviors:
+- do not hand-write the ADR file or invent its id: `ai-factory adr new` owns both
+- do not create a near-duplicate of an ADR that is already accepted or active
+- do not resolve an unresolved assumption by guessing
+- do not present the decision as settled
+- do not change `status: proposed`
+- do not invoke `aif-explore` as a nested call: apply its read-only research posture inline
 
-## Workflow
+outputs:
+- a `proposed` ADR at `<adr-root>/proposals/adr-<slug>.md`
+- status footer
 
-1. **Inventory existing decisions.** Run `ai-factory adr status --json` to list accepted,
-   active, and superseded ADRs. Read the candidates that look related.
-2. **Detect duplicates and conflicts** *before* writing. If an accepted/active ADR already
-   covers this decision, stop and recommend `aif-adr-refine` on it (or `aif-adr-supersede`)
-   instead of creating a near-duplicate.
-3. **Research the context.** Inspect `.ai-factory/ARCHITECTURE.md`, `.ai-factory/RULES.md`,
-   any research artifacts, and the relevant source. Use the `aif-explore` research posture
-   (broad read-only investigation) — describe that work here; do not assume this skill can
-   invoke `aif-explore` as a nested call.
-4. **Scaffold deterministically.** Run:
+quality_rules:
+- measure every option by what serves the project best over its lifetime
+- state delivery cost, risk, and timeline explicitly for the operator
+- never let your own convenience in this session stand in for them
+- name the project invariants the change touches: module boundaries, public APIs, data schemas, active ADRs, `.ai-factory/RULES.md`, `.ai-factory/ARCHITECTURE.md`
+- cite the concrete rule, ADR, architecture document, or code location each judgment rests on
+- no ground named, no recommendation: research until you can name it, never fill the gap with a guess
+- present at least two viable approaches when the change touches a module boundary, public API, data schema, or architectural invariant
+- if only one approach is viable, say so and why the others are not
+- give per approach: consequences over the next 6–12 months of project evolution, effect on coupling, hidden risks
+- reject each alternative in its strongest version, and name the reason
+- never accept "faster to write", "easier", or "smaller diff for me now" as justification for violating an invariant or an established convention of the codebase
+- justify any divergent local pattern explicitly: two ways of doing one thing is a real cost
+- name a large blast radius — many call sites, data migrations, compatibility breaks — as the genuine risk and cost it is
+- prefer the smaller change at equal architectural correctness, and add no abstractions for hypothetical needs
+- count effort already sunk into existing code as nothing by itself; the compatibility and migration cost of replacing it does count
+- when the correct option costs more, present it alongside the cheap one, each with its cost, risk, and reversibility
+- demand stronger grounds for hard-to-reverse choices such as data schemas and public APIs
+- end with exactly one explicit recommendation; the operator decides, never silently downgrade to the cheap option
+- revise a recommendation only on a new fact, a new constraint, a found reasoning error, a clarified goal, or an explicit operator decision, and name what changed
+- disagreement alone is not new information: a flip with no new grounds means the original was ungrounded
 
-   ```text
-   ai-factory adr new "<topic>"
-   ```
+workflow:
+1. run `ai-factory adr status --json` to inventory accepted, active, and superseded ADRs
+2. read the candidates that look related
+3. stop and recommend `aif-adr-refine` or `aif-adr-supersede` on the existing ADR when one already covers this decision
+4. inspect `.ai-factory/ARCHITECTURE.md`, `.ai-factory/RULES.md`, any research artifacts, and the relevant source
+5. run `ai-factory adr new "<topic>"`: it generates the stable id, creates `<adr-root>/proposals/adr-<slug>.md` with `status: proposed` from the template, and refuses if that id already exists
+6. fill known Context in the created file: Problem, Constraints, Decision drivers
+7. record unresolved assumptions as placeholders in the body
+8. leave `status: proposed`; acceptance happens later via `aif-adr-refine` then `aif-adr-accept`
+9. report the status footer
 
-   This generates the stable ID, creates `<configured-adr-root>/proposals/adr-<slug>.md` with
-   `status: proposed` from the template, and refuses if that ID already exists. Do not
-   hand-write the file or invent the ID — the command owns ID generation and the filename.
-5. **Fill known Context** in the created file: Problem, Constraints, Decision drivers.
-6. **Record unresolved assumptions explicitly** as placeholders in the body — do not resolve
-   them by guessing.
-7. **Keep it a proposal.** Leave `status: proposed`. Do not present the decision as settled;
-   acceptance happens later via `aif-adr-refine` → `aif-adr-accept`.
-8. **Report the status footer** — end with one line so the ADR this run created is obvious at a
-   glance:
+status_footer:
+format: "✔ aif-adr-propose · ADR: <adr-id> [proposed] · Plan: none"
+source: `ai-factory adr status <adr-file>`, where a fresh proposal has no plan
 
-   ```text
-   ✔ aif-adr-propose · ADR: <adr-id> [proposed] · Plan: none
-   ```
-
-   Fill it from `ai-factory adr status <adr-file>` (a fresh proposal has no plan).
-
-## Invocation
-
-Claude Code: `/aif-adr-propose <topic>` · Codex: `$aif-adr-propose <topic>`.
+invocation:
+- Claude Code: `/aif-adr-propose <topic>`
+- Codex: `$aif-adr-propose <topic>`

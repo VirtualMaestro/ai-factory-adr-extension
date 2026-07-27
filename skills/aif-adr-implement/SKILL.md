@@ -3,66 +3,60 @@ name: aif-adr-implement
 description: Implement an ADR's plan — resolve the plan by metadata, validate reciprocal links, keep the ADR accepted.
 ---
 
-# aif-adr-implement
+mode: adr_implementation
 
-Start or continue implementation from an accepted decision (PRD §19.5). This skill drives the
-work against the linked plan; it **never** advances the ADR — completing implementation is not
-the same as finalizing the decision (that is `aif-adr-finalize`).
+purpose:
+- start or continue implementation from an accepted decision (PRD §19.5)
+- drive the work against the linked plan
+- leave finalization to `aif-adr-finalize`: completing implementation is not finalizing the decision
 
-## Preconditions
+inputs:
+- adr_file
 
-Do not implement unless **all** hold:
+preconditions:
+- the ADR status is `accepted` and it is not superseded
+- exactly one non-archived plan implements it
+- the ADR↔plan links are reciprocal
 
-- the ADR status is `accepted` and it is not superseded;
-- exactly one non-archived plan implements it;
-- the ADR↔plan links are reciprocal.
+scope:
+- implement the resolved plan by applying `aif-implement` semantics inline
 
-## Evaluating solutions
+forbidden_behaviors:
+- do not advance the ADR, and do not transition it merely because implementation work finished
+- do not guess the plan filename: resolve it by metadata
+- do not invoke `aif-implement` as a nested skill: apply its semantics in this run
+- do not proceed on a link mismatch
 
-The architectural decision is already made — do not re-litigate it. Judgments here are
-about conformance and tactics:
+outputs:
+- implemented plan steps
+- status footer
 
-- **Ground every verdict** in a concrete rule, ADR clause, plan step, or code location.
-  No ground named — no verdict: research until you can name it, never guess.
-- **Deviations surface, they don't decide.** Code or plan diverging from the Decision is
-  reported as a deviation with evidence — never resolved by quietly reshaping the
-  judgment to fit, and never excused because fixing it would be laborious.
-- **Tactical choices** (how exactly to realize a step) follow the project's existing
-  conventions and invariants; agent convenience — "faster", "easier" for this session —
-  is not an argument.
-- **Revise on reasons, not on pushback.** Change a verdict on a new fact, a found
-  reasoning error, or an explicit operator decision — and name what changed.
-  Disagreement alone is not new information.
+quality_rules:
+- the architectural decision is already made: do not re-litigate it
+- ground every verdict in a concrete rule, ADR clause, plan step, or code location
+- no ground named, no verdict: research until you can name it, never guess
+- report code or a plan diverging from the Decision as a deviation, with evidence
+- never resolve a deviation by reshaping the judgment to fit it
+- never excuse a deviation because fixing it would be laborious
+- follow the project's existing conventions and invariants for tactical choices
+- never accept agent convenience — "faster", "easier" for this session — as an argument
+- revise a verdict only on a new fact, a found reasoning error, or an explicit operator decision, and name what changed
+- disagreement alone is not new information
 
-## Workflow
+workflow:
+1. run `ai-factory adr resolve-plan <adr-file>`, which resolves via the plan's `implements` frontmatter
+2. stop and fix first when it exits non-zero: more than one non-archived plan matches (inv 7)
+3. run `ai-factory adr status <adr-file>` to check dependency readiness
+4. state every dependency warning it reports to the operator and confirm they want to continue before implementing
+5. run `ai-factory adr status --check`, which covers the ADR invariants and runs the artifact audit against the configured ADR root
+6. implement the resolved plan by applying `aif-implement` semantics in this run
+7. keep the ADR `accepted`
+8. report the status footer
 
-1. **Resolve the plan by metadata**, never by filename guessing:
+status_footer:
+format: "✔ aif-adr-implement · ADR: <adr-id> [<status>] · Plan: <plan-id> (<plan-status>)"
+source: `ai-factory adr status <adr-file>`
 
-   ```text
-   ai-factory adr resolve-plan <adr-file>
-   ```
-
-   It resolves via the plan's `implements` frontmatter and exits non-zero if more than one
-   non-archived plan matches (inv 7) — stop and fix that before continuing.
-2. **Check dependency readiness.** Run `ai-factory adr status <adr-file>`. If it reports
-   dependency warnings, state each warning to the operator and confirm they want to continue
-   before implementing.
-3. **Validate the links.** `ai-factory adr status --check` covers ADR invariants and runs
-   the artifact audit using the configured ADR root. The `implements` side is also confirmed
-   by `resolve-plan`. Do not proceed on a mismatch.
-4. **Implement** the resolved plan by applying `aif-implement` semantics in this run; do not
-   invoke `aif-implement` as a nested skill.
-5. **Keep the ADR `accepted`.** Do not transition it merely because implementation work
-   finished.
-6. **Report the status footer** — end with one line naming the plan you worked against, so the
-   ADR/plan this run touched is obvious at a glance:
-
-   ```text
-   ✔ aif-adr-implement · ADR: <adr-id> [<status>] · Plan: <plan-id> (<plan-status>)
-   ```
-
-   Fill it from `ai-factory adr status <adr-file>` (id, status, active plan).
-
-## Invocation
-
-Claude Code: `/aif-adr-implement @adr-file` · Codex: `$aif-adr-implement @adr-file`.
+invocation:
+- Claude Code: `/aif-adr-implement @adr-file`
+- Codex: `$aif-adr-implement @adr-file`

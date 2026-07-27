@@ -3,125 +3,96 @@ name: aif-adr-plan
 description: Create an implementation plan for an accepted ADR with reciprocal implements/plan links.
 ---
 
-# aif-adr-plan
+mode: adr_planning
 
-Turn an accepted decision into an AI Factory implementation plan (PRD §19.4). The plan is a
-**separate artifact** that lives in the project's plans directory — this skill creates it and
-wires the reciprocal ADR↔plan links; it does not change the ADR's status.
+purpose:
+- turn an accepted decision into an AI Factory implementation plan (PRD §19.4)
+- create the plan as a separate artifact in the project's plans directory
+- wire the reciprocal ADR↔plan links
 
-## Preconditions
+inputs:
+- adr_file
 
-Do not plan unless **all** hold:
+preconditions:
+- the ADR status is `accepted` and it is not superseded
+- no non-archived plan already implements it: check with `ai-factory adr resolve-plan <adr-file>`, which must report no active plan and exits non-zero on more than one
+- the ADR actually requires implementation; documentation-only decisions skip straight to `aif-adr-finalize`
 
-- the ADR status is `accepted` and it is not superseded;
-- no non-archived plan already implements it — check with
-  `ai-factory adr resolve-plan <adr-file>` (it must report no active plan; it exits non-zero
-  on more than one — resolve that first);
-- the ADR actually requires implementation (documentation-only decisions skip straight to
-  `aif-adr-finalize`).
+scope:
+- create the plan and link it to the ADR
+- apply `aif-plan full` planning semantics inline
 
-## Evaluating solutions
+forbidden_behaviors:
+- do not change the ADR's status: creating a plan never advances the decision
+- do not hand-place the plan file or guess its path: AI Factory owns the plans directory (`paths.plans`) and the filename format, including sequential `NNNN_` numbering when configured
+- do not invoke `aif-plan` as a nested skill: apply its semantics in this run
+- do not fill `evidence:`; `plan:` filled with `evidence:` empty is the pending state, and `aif-adr-finalize` sets `evidence: implemented` later
+- do not put the plan id into `affects`: that list is for genuinely affected artifacts only
 
-When this skill weighs options or makes a recommendation, the measure is what serves the
-project best over its lifetime. Delivery cost, risk, and timeline are real inputs —
-surface them explicitly for the operator; never let your own convenience in this session
-stand in for them.
+outputs:
+- an `in_progress` plan artifact
+- reciprocal ADR↔plan links
+- status footer
 
-1. **Invariants and grounds first.** Name the project invariants the change touches
-   (module boundaries, public APIs, data schemas, active ADRs, `.ai-factory/RULES.md` /
-   `.ai-factory/ARCHITECTURE.md`) and cite the concrete rule, ADR, or code location each
-   judgment rests on. No ground named — no recommendation: research until you can name
-   it, never fill the gap with a guess.
-2. **Architectural changes need real alternatives.** If the change touches a module
-   boundary, public API, data schema, or architectural invariant, present at least two
-   *viable* approaches — if only one is viable, say so and why the others are not. For
-   each: consequences over the next 6–12 months of project evolution, effect on
-   coupling, hidden risks. Steelman rejected options, so you reject their strongest
-   version, and state the reason.
-3. **Agent convenience is not an argument; blast radius is.** "Faster to write",
-   "easier", "smaller diff for me now" never justify an option that violates an
-   invariant or the codebase's established conventions (a divergent local pattern
-   creates two ways of doing one thing — that cost needs explicit justification). But a
-   large blast radius — many call sites, data migrations, compatibility breaks — is a
-   genuine risk and cost: name it as such. At equal architectural correctness, prefer
-   the smaller change; no abstractions for hypothetical needs. Effort already sunk into
-   existing code counts for nothing by itself — the compatibility and migration cost of
-   replacing it does count.
-4. **If the right option costs more — say so.** Present the correct option and the cheap
-   option, each with its cost, risk, and reversibility (hard-to-reverse choices — data
-   schemas, public APIs — demand stronger grounds), plus one explicit recommendation.
-   The operator decides; never silently downgrade to the cheap one.
-5. **Revise on reasons, not on pushback.** Change a recommendation when a new fact or
-   constraint surfaces, a reasoning error is found, the goal is clarified, or the
-   operator explicitly decides — and name what changed. Disagreement alone is not new
-   information; flipping without new grounds means the original was ungrounded.
+plan_frontmatter:
+```yaml
+id: plan-<adr-short-stable-name>
+type: plan
+status: in_progress
+depends_on: [<adr-short-stable-name>]
+implements: [<adr-short-stable-name>]
+```
 
-## Workflow
+quality_rules:
+- measure every option by what serves the project best over its lifetime
+- state delivery cost, risk, and timeline explicitly for the operator
+- never let your own convenience in this session stand in for them
+- name the project invariants the change touches: module boundaries, public APIs, data schemas, active ADRs, `.ai-factory/RULES.md`, `.ai-factory/ARCHITECTURE.md`
+- cite the concrete rule, ADR, architecture document, or code location each judgment rests on
+- no ground named, no recommendation: research until you can name it, never fill the gap with a guess
+- present at least two viable approaches when the change touches a module boundary, public API, data schema, or architectural invariant
+- if only one approach is viable, say so and why the others are not
+- give per approach: consequences over the next 6–12 months of project evolution, effect on coupling, hidden risks
+- reject each alternative in its strongest version, and name the reason
+- never accept "faster to write", "easier", or "smaller diff for me now" as justification for violating an invariant or an established convention of the codebase
+- justify any divergent local pattern explicitly: two ways of doing one thing is a real cost
+- name a large blast radius — many call sites, data migrations, compatibility breaks — as the genuine risk and cost it is
+- prefer the smaller change at equal architectural correctness, and add no abstractions for hypothetical needs
+- count effort already sunk into existing code as nothing by itself; the compatibility and migration cost of replacing it does count
+- when the correct option costs more, present it alongside the cheap one, each with its cost, risk, and reversibility
+- demand stronger grounds for hard-to-reverse choices such as data schemas and public APIs
+- end with exactly one explicit recommendation; the operator decides, never silently downgrade to the cheap option
+- revise a recommendation only on a new fact, a new constraint, a found reasoning error, a clarified goal, or an explicit operator decision, and name what changed
+- disagreement alone is not new information: a flip with no new grounds means the original was ungrounded
 
-1. **Inspect** the accepted ADR and any relevant active decisions. Run
-   `ai-factory adr status <adr-file>` first. If it reports dependency warnings, state each
-   warning to the operator and confirm they want to continue before creating the plan.
-2. **Create the plan** by applying `aif-plan full` planning semantics in this run; do not
-   invoke `aif-plan` as a nested skill. AI Factory owns plan
-   creation, the plans directory (`paths.plans`), and the filename format (including
-   sequential `NNNN_` numbering when configured) — do **not** hand-place the file or guess
-   its path. Give the plan frontmatter:
+workflow:
+1. run `ai-factory adr status <adr-file>` and inspect the accepted ADR and any relevant active decisions
+2. state every dependency warning it reports to the operator and confirm they want to continue before creating the plan
+3. create the plan by applying `aif-plan full` planning semantics in this run, with the frontmatter above
+4. run `ai-factory adr link-plan <adr-file> <plan-file>`: it sets the ADR's `plan:` field to the plan id and adds `implements` and `depends_on` to the plan, leaving the ADR body untouched
+5. leave `evidence:` empty
+6. run `ai-factory adr status --check` and resolve any failures; it honors the configured ADR root
+7. leave the ADR `accepted`
+8. report the status footer
 
-   ```yaml
-   id: plan-<adr-short-stable-name>
-   type: plan
-   status: in_progress
-   depends_on: [<adr-short-stable-name>]
-   implements: [<adr-short-stable-name>]
-   ```
+expected_warnings:
+- the built-in `audit-artifacts` warning "Accepted ADR without `affects` links" is expected while `affects` is honestly empty, and is safe to accept
 
-3. **Link reciprocally** — one command wires both sides:
+improving_the_plan:
+- the plan is a standard AI Factory plan artifact, so its improvement logic stays the stock `aif-improve`
+- do not reimplement improve logic for ADRs; `aif-adr-refine` avoids `aif-improve` only because it sharpens the decision, a different task
+- the easy path is `aif-adr-plan-improve @adr-file`, which applies `aif-improve` to this plan while you name the ADR, so you never track the plan's path
+- improving the plan directly instead: `aif-improve` targets by path or auto-resolution, never by id
+- with no argument it takes the active plan on the current git branch (`paths.plans/<branch-slug>.md`) or the single plan in `paths.plans`
+- otherwise pass `@<plan-path>`, found with `aif-improve --list` or `ai-factory adr resolve-plan <adr-file>`
+- a bare ADR or plan id does not resolve here: that shortcut is `resolve-plan`, not `aif-improve`
+- either way `aif-improve` edits the plan body, not its frontmatter, so the reciprocal links survive
+- after improving, re-verify: `ai-factory adr resolve-plan <adr-file>` still resolves to exactly one plan, and `ai-factory adr status --check` is clean
 
-   ```text
-   ai-factory adr link-plan <adr-file> <plan-file>
-   ```
+status_footer:
+format: "✔ aif-adr-plan · ADR: <adr-id> [<status>] · Plan: <plan-id> (<plan-status>)"
+source: `ai-factory adr status <adr-file>`
 
-   It sets the ADR frontmatter `plan:` field to the plan id and adds `implements`/`depends_on`
-   to the plan. The ADR body is never touched, and the plan id does **not** go into `affects`
-   (that list is for genuinely affected artifacts only — the built-in `audit-artifacts` warning
-   "Accepted ADR without `affects` links" is therefore expected while `affects` is honestly
-   empty, and is safe to accept).
-4. **Leave `evidence:` empty.** `plan:` filled + `evidence:` empty *is* the "pending" state;
-   `aif-adr-finalize` sets `evidence: implemented` later.
-5. **Audit** — `ai-factory adr status --check`. It honors the configured ADR root; resolve
-   any failures.
-6. **Leave the ADR `accepted`.** Creating a plan never advances the decision.
-7. **Report the status footer** — end with one line so the ADR and its new plan are obvious at a
-   glance:
-
-   ```text
-   ✔ aif-adr-plan · ADR: <adr-id> [<status>] · Plan: <plan-id> (<plan-status>)
-   ```
-
-   Fill it from `ai-factory adr status <adr-file>` (id, status, active plan).
-
-## Improving the plan
-
-The plan is a **standard AI Factory plan artifact**, so its improvement logic stays the stock
-**`aif-improve`** — do not reimplement improve logic for ADRs (`aif-adr-refine` avoids `aif-improve`
-only because it sharpens the **decision**, a different task).
-
-The easy path is **`aif-adr-plan-improve @adr-file`** — it applies `aif-improve` to this plan but
-you name the **ADR**, and it resolves the plan for you. Use that so you never have to track the
-plan's path.
-
-If you improve the plan directly instead, `aif-improve` targets it by **path or auto-resolution —
-not by id**: an optional `@<plan-path>`, or with no argument the active plan on the current git
-branch (`paths.plans/<branch-slug>.md`) or the single plan in `paths.plans`. So on the branch where
-the plan was created just run `aif-improve`; otherwise pass `@<plan-path>` (find it with
-`aif-improve --list`, or `ai-factory adr resolve-plan <adr-file>`). A bare ADR/plan **id** does not
-resolve here — that shortcut is ours (`resolve-plan`), not `aif-improve`'s.
-
-Either way, `aif-improve` edits the plan **body**, not its frontmatter, so the reciprocal
-`implements`/`depends_on` links survive — but after improving, re-verify before implementing:
-`ai-factory adr resolve-plan <adr-file>` (still resolves to exactly one plan) and
-`ai-factory adr status --check` (links/audit clean).
-
-## Invocation
-
-Claude Code: `/aif-adr-plan @adr-file` · Codex: `$aif-adr-plan @adr-file`.
+invocation:
+- Claude Code: `/aif-adr-plan @adr-file`
+- Codex: `$aif-adr-plan @adr-file`

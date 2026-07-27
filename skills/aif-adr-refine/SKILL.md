@@ -3,87 +3,89 @@ name: aif-adr-refine
 description: Refine an ADR — on first refine move it from proposed to draft and apply ADR-specific quality criteria.
 ---
 
-# aif-adr-refine
+mode: adr_refinement
 
-Discuss and improve a proposal or draft (PRD §19.2). This skill uses **ADR-specific**
-refinement criteria — it must **not** delegate to `aif-improve`. Validating a decision
-record is a different task from validating an implementation plan.
+purpose:
+- refine a proposal or draft ADR (PRD §19.2)
+- apply ADR-specific criteria: validating a decision record is not validating an implementation plan
+- keep the task limited to ADR refinement
 
-## Scope — refinement only
+inputs:
+- adr_file
+- optional_user_context
 
-This skill **only improves the ADR document**. It must **never** implement the decision,
-write or modify production code, create an implementation plan, or propose doing any of
-that as a next step. Do not end with offers like "shall I implement this now?".
+scope:
+- refine the ADR document only
+- update Context, Decision, Alternatives, and Consequences
+- detect conflicts with active ADRs
+- ask blocking questions only
+- stop when refinement is done
 
-When refinement is done, stop. Report what changed in the ADR and any transition applied —
-nothing more. If the user wants implementation, they invoke the implementation skills
-(`aif-adr-next`, plan skills) themselves.
+forbidden_behaviors:
+- do not implement the decision
+- do not write or modify production code
+- do not create an implementation plan
+- do not delegate to `aif-improve`: its criteria are for implementation plans, not decision records
+- do not propose implementation as a next step, or end with an offer such as "shall I implement this now?"
+- do not act on implementation intent: the operator invokes `aif-adr-next` or the plan skills
+- do not report anything beyond what changed in the ADR and the transition applied
+- do not move ADR files by hand: the transition command owns the atomic move and the legality check (PRD §17)
 
-## Evaluating solutions
+outputs:
+- refined ADR text
+- change summary
+- transition summary when a transition is applied
+- status footer
 
-When this skill weighs options or makes a recommendation, the measure is what serves the
-project best over its lifetime. Delivery cost, risk, and timeline are real inputs —
-surface them explicitly for the operator; never let your own convenience in this session
-stand in for them.
+quality_rules:
+- measure every option by what serves the project best over its lifetime
+- state delivery cost, risk, and timeline explicitly for the operator
+- never let your own convenience in this session stand in for them
+- name the project invariants the change touches: module boundaries, public APIs, data schemas, active ADRs, `.ai-factory/RULES.md`, `.ai-factory/ARCHITECTURE.md`
+- cite the concrete rule, ADR, architecture document, or code location each judgment rests on
+- no ground named, no recommendation: research until you can name it, never fill the gap with a guess
+- present at least two viable approaches when the change touches a module boundary, public API, data schema, or architectural invariant
+- if only one approach is viable, say so and why the others are not
+- give per approach: consequences over the next 6–12 months of project evolution, effect on coupling, hidden risks
+- reject each alternative in its strongest version, and name the reason
+- never accept "faster to write", "easier", or "smaller diff for me now" as justification for violating an invariant or an established convention of the codebase
+- justify any divergent local pattern explicitly: two ways of doing one thing is a real cost
+- name a large blast radius — many call sites, data migrations, compatibility breaks — as the genuine risk and cost it is
+- prefer the smaller change at equal architectural correctness, and add no abstractions for hypothetical needs
+- count effort already sunk into existing code as nothing by itself; the compatibility and migration cost of replacing it does count
+- when the correct option costs more, present it alongside the cheap one, each with its cost, risk, and reversibility
+- demand stronger grounds for hard-to-reverse choices such as data schemas and public APIs
+- end with exactly one explicit recommendation; the operator decides, never silently downgrade to the cheap option
+- revise a recommendation only on a new fact, a new constraint, a found reasoning error, a clarified goal, or an explicit operator decision, and name what changed
+- disagreement alone is not new information: a flip with no new grounds means the original was ungrounded
 
-1. **Invariants and grounds first.** Name the project invariants the change touches
-   (module boundaries, public APIs, data schemas, active ADRs, `.ai-factory/RULES.md` /
-   `.ai-factory/ARCHITECTURE.md`) and cite the concrete rule, ADR, or code location each
-   judgment rests on. No ground named — no recommendation: research until you can name
-   it, never fill the gap with a guess.
-2. **Architectural changes need real alternatives.** If the change touches a module
-   boundary, public API, data schema, or architectural invariant, present at least two
-   *viable* approaches — if only one is viable, say so and why the others are not. For
-   each: consequences over the next 6–12 months of project evolution, effect on
-   coupling, hidden risks. Steelman rejected options, so you reject their strongest
-   version, and state the reason.
-3. **Agent convenience is not an argument; blast radius is.** "Faster to write",
-   "easier", "smaller diff for me now" never justify an option that violates an
-   invariant or the codebase's established conventions (a divergent local pattern
-   creates two ways of doing one thing — that cost needs explicit justification). But a
-   large blast radius — many call sites, data migrations, compatibility breaks — is a
-   genuine risk and cost: name it as such. At equal architectural correctness, prefer
-   the smaller change; no abstractions for hypothetical needs. Effort already sunk into
-   existing code counts for nothing by itself — the compatibility and migration cost of
-   replacing it does count.
-4. **If the right option costs more — say so.** Present the correct option and the cheap
-   option, each with its cost, risk, and reversibility (hard-to-reverse choices — data
-   schemas, public APIs — demand stronger grounds), plus one explicit recommendation.
-   The operator decides; never silently downgrade to the cheap one.
-5. **Revise on reasons, not on pushback.** Change a recommendation when a new fact or
-   constraint surfaces, a reasoning error is found, the goal is clarified, or the
-   operator explicitly decides — and name what changed. Disagreement alone is not new
-   information; flipping without new grounds means the original was ungrounded.
+workflow:
+1. run `ai-factory adr validate <file>`
+2. fix the validation errors it reports
+3. inspect project rules, architecture documents, relevant code, and active ADRs
+4. ensure the ADR states exactly one primary decision
+5. improve Context, Decision, Alternatives, and Consequences, keeping the rationale explicit rather than implied
+6. record every conflict found with an active ADR
+7. ask only questions that materially block the decision
+8. update the ADR
+9. apply the matching transition when its condition holds
+10. report the status footer
 
-## Workflow
+transitions:
+- from: proposed
+  condition: first refine and the file is actually improved
+  action: `ai-factory adr transition <file> draft`, which moves it to `drafts/`
+- from: draft
+  condition: repeat refine
+  action: none, it stays draft
+- from: accepted
+  condition: explicit user intent and its active plan archived or removed
+  action: transition back to draft
 
-1. **Validate first.** Run `ai-factory adr validate <file>` and address reported errors.
-2. **Research.** Inspect project rules, architecture, relevant code, and existing ADRs.
-3. **Sharpen the decision.** Ensure the document states exactly **one primary decision**.
-   Improve Context, Decision, Alternatives, and Consequences. Keep the rationale explicit,
-   not implied.
-4. **Detect conflicts** with active ADRs; surface them.
-5. **Ask only blocking questions** — questions that materially block the decision. Skip the rest.
-6. **Update the ADR** after the analysis.
-7. **Transition (only when the file is actually improved):**
+status_footer:
+format: "✔ aif-adr-refine · ADR: <adr-id> [<status>] · Plan: <plan-id or none>"
+source: `ai-factory adr status <adr-file>`
 
-   | From | Action |
-   |------|--------|
-   | `proposed` (first refine) | `ai-factory adr transition <file> draft` — moves it to `drafts/` |
-   | `draft` (repeat refines) | no transition — it stays `draft` |
-   | `accepted` → `draft` | only on **explicit user intent** and after its active plan is explicitly archived or removed |
-
-   The transition command owns the atomic move and legality check (§17); do not move files
-   by hand.
-8. **Report the status footer** — after stating what changed, end with one line so the ADR this
-   run touched is obvious at a glance:
-
-   ```text
-   ✔ aif-adr-refine · ADR: <adr-id> [<status>] · Plan: <plan-id or none>
-   ```
-
-   Fill it from `ai-factory adr status <adr-file>` (id, status, active plan).
-
-## Invocation
-
-Claude Code: `/aif-adr-refine @adr-file` · Codex: `$aif-adr-refine @adr-file`.
+invocation:
+- Claude Code: `/aif-adr-refine @adr-file`
+- Codex: `$aif-adr-refine @adr-file`

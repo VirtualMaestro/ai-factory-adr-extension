@@ -3,49 +3,50 @@ name: aif-adr-next
 description: Recommend which ADR to implement next — reads the dependency-ordered plan and points at the ready ADR to pick up. Read-only.
 ---
 
-# aif-adr-next
+mode: adr_scheduling
 
-Answer *"which ADR do I implement next, and in what order?"* when a project has many ADRs with
-`depends_on` links and the sequence is not obvious. This skill is **read-only**: it reports and
-recommends, it never transitions or edits anything.
+purpose:
+- answer which ADR to implement next, and in what order, when a project has many ADRs with `depends_on` links and the sequence is not obvious
 
-## Workflow
+inputs:
+- none; the skill reads the dependency graph itself
 
-1. **Compute the order.** Run `ai-factory adr order` (add `--json` for the raw structure). It
-   returns:
-   - `next` — ready now: `accepted` ADRs whose every dependency is already `active`;
-   - `order` — the full topological order of the schedulable backlog (each with what it waits on);
-   - `blocked` — ADRs no order can reach yet (a dependency is `superseded`, or they sit behind a
-     cycle);
-   - `cycles` — dependency cycles, if any;
-   - `active` — already-implemented decisions (context).
+scope:
+- read the computed order and recommend one ADR to start with
 
-2. **Cycles first.** If `cycles` is non-empty, no valid order exists. Report the cycle and
-   recommend breaking it — revisit one decision via `aif-adr-refine`, or replace one with
-   `aif-adr-supersede` — then re-run. Stop here.
+forbidden_behaviors:
+- do not transition anything
+- do not edit anything
+- do not invent work when nothing is ready
+- do not call other skills as nested calls: apply their semantics inline in this run
 
-3. **Recommend the next ADR.** From `next`, pick the one to start with. Prefer the ADR that
-   **unblocks the most downstream ADRs** (scan `order`/`blocked` for entries waiting on it) — that
-   keeps the frontier moving. State the pick and why, then hand off:
-   `aif-adr-plan` → `aif-adr-implement` → `aif-adr-finalize` for that ADR.
+outputs:
+- the recommended ADR and why
+- the handoff for it
+- status footer
 
-4. **Nothing ready?** If `next` is empty but `order`/`blocked` is not, the frontier is waiting on
-   an upstream decision — either finalize the dependency it names, or, if the blocker is still a
-   `draft`/`proposed`, move it forward first (`aif-adr-refine`/`aif-adr-accept`). Recommend that,
-   don't invent work.
+order_fields:
+- `next`: ready now, meaning `accepted` ADRs whose every dependency is already `active`
+- `order`: the full topological order of the schedulable backlog, each with what it waits on
+- `blocked`: ADRs no order can reach yet, because a dependency is `superseded` or they sit behind a cycle
+- `cycles`: dependency cycles, if any
+- `active`: already-implemented decisions, as context
 
-5. **Report the status footer** — end with one line naming the ADR you recommend, so the pick is
-   obvious at a glance:
+workflow:
+1. run `ai-factory adr order`; add `--json` for the raw structure
+2. report the cycle and stop when `cycles` is non-empty: no valid order exists
+3. recommend breaking the cycle by revisiting one decision via `aif-adr-refine` or replacing one via `aif-adr-supersede`, then re-running
+4. pick from `next` the ADR that unblocks the most downstream ADRs, scanning `order` and `blocked` for entries waiting on it
+5. state the pick and why, then hand off: `aif-adr-plan`, then `aif-adr-implement`, then `aif-adr-finalize`
+6. recommend finalizing the named dependency when `next` is empty but `order` or `blocked` is not
+7. recommend `aif-adr-refine` or `aif-adr-accept` instead when that blocker is still `draft` or `proposed`
+8. report the status footer
 
-   ```text
-   ✔ aif-adr-next · Next: <adr-id> [accepted] → aif-adr-plan
-   ```
+status_footer:
+format: "✔ aif-adr-next · Next: <adr-id> [accepted] → aif-adr-plan"
+empty_form: "✔ aif-adr-next · Next: none (waiting on <adr-id>)"
+source: the pick you made from `ai-factory adr order`
 
-   If nothing is ready (or a cycle blocks everything), say so in the footer instead of naming a
-   pick — e.g. `✔ aif-adr-next · Next: none (waiting on <adr-id>)`.
-
-Do not call other skills as nested skills — apply their semantics inline in this run.
-
-## Invocation
-
-Claude Code: `/aif-adr-next` · Codex: `$aif-adr-next`.
+invocation:
+- Claude Code: `/aif-adr-next`
+- Codex: `$aif-adr-next`

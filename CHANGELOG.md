@@ -4,6 +4,38 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and the project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.11.0] — 2026-07-27
+
+### Changed
+
+- **All 15 skill bodies rewritten in CNL-P form.** Every `skills/aif-adr-*/SKILL.md` body is
+  now a flat set of `key:` sections — `purpose`, `inputs`, `preconditions`, `scope`,
+  `forbidden_behaviors`, `outputs`, `quality_rules`, `workflow`, `transitions`,
+  `status_footer`, `invocation` — with one idea per bullet and a numbered workflow, instead of
+  documentation prose. Narrative connective tissue is gone; every rule the prose carried is
+  kept. Corpus size **1353 → 1155 lines, 68404 → 63591 bytes**. YAML frontmatter is untouched,
+  so skill discovery and routing are unaffected.
+- **`test/skill-rubric.test.js` repointed** from the `## Evaluating solutions` heading to the
+  `quality_rules:` section. It still asserts the rubric appears exactly once per target skill,
+  precedes the workflow, is byte-identical within the long-variant and short-variant groups,
+  and is absent from the five skills that never carried it.
+
+### Fixed
+
+- **`aif-adr-migrate`: the four step-3 branches were not mutually exclusive.** 1:1-versus-split
+  is the movement method, pre-1.6 is a source-format property, and documentation-only is a
+  property of the decision — one legacy file can be all three. Read as a single exclusive
+  list, a pre-1.6 ADR would have its frontmatter hoisted and never be moved or rewritten. The
+  movement cases are now a `file_shape` choice of exactly one, with `pre_1_6_overlay` and
+  `documentation_only_overlay` applied on top.
+- **`aif-adr-migrate`: "deprecated with no successor" was unimplementable.** It instructed
+  filing the ADR as `superseded` and hand-filling `replaced_by:`, but `validate` rejects a
+  `superseded` ADR with an empty `replaced_by:` (inv 11), so its own validation step could
+  never pass. That case now stops and asks the operator which status the decision should carry.
+- **`aif-adr-migrate`: the status footer contradicted itself.** It required reporting "the
+  count and the ids migrated" while the format string it mandated has no slot for ids. Ids
+  now live in the mapping output, one row per file; the footer stays count-only.
+
 ## [1.10.0] — 2026-07-22
 
 ### Added
