@@ -33,7 +33,6 @@ forbidden_behaviors:
 outputs:
 - accepted ADR in `accepted/`
 - any warnings raised along the way
-- status footer
 
 quality_rules:
 - the architectural decision is already made: do not re-litigate it
@@ -56,8 +55,8 @@ workflow:
 6. report the status footer
 
 status_footer:
-format: "✔ aif-adr-accept · ADR: <adr-id> [accepted] · Plan: <plan-id or none>"
-source: `ai-factory adr status <adr-file>`
+  format: "✔ aif-adr-accept · ADR: <adr-id> [accepted] · Plan: <plan-id or none>"
+  source: `ai-factory adr status <adr-file>`
 
 invocation:
 - Claude Code: `/aif-adr-accept @adr-file`

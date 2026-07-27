@@ -23,7 +23,6 @@ forbidden_behaviors:
 outputs:
 - the recommended ADR and why
 - the handoff for it
-- status footer
 
 order_fields:
 - `next`: ready now, meaning `accepted` ADRs whose every dependency is already `active`
@@ -43,9 +42,9 @@ workflow:
 8. report the status footer
 
 status_footer:
-format: "✔ aif-adr-next · Next: <adr-id> [accepted] → aif-adr-plan"
-empty_form: "✔ aif-adr-next · Next: none (waiting on <adr-id>)"
-source: the pick you made from `ai-factory adr order`
+  format: "✔ aif-adr-next · Next: <adr-id> [accepted] → aif-adr-plan"
+  empty_form: "✔ aif-adr-next · Next: none (waiting on <adr-id>)"
+  source: the pick you made from `ai-factory adr order`
 
 invocation:
 - Claude Code: `/aif-adr-next`

@@ -26,7 +26,6 @@ forbidden_behaviors:
 outputs:
 - verdict with its evidence and gaps
 - follow-up recommendation
-- status footer
 
 verdicts:
 - implemented: code present at the anchors and consistent with the Decision
@@ -65,8 +64,8 @@ follow_up:
 - partial or not-implemented on an accepted ADR: the implementation work is unfinished, point back to `aif-adr-implement`
 
 status_footer:
-format: "✔ aif-adr-verify · ADR: <adr-id> [<status>] · Plan: <plan-id or none> · verdict: <verdict>"
-source: `ai-factory adr status <adr-file>` plus the verdict you assigned
+  format: "✔ aif-adr-verify · ADR: <adr-id> [<status>] · Plan: <plan-id or none> · verdict: <verdict>"
+  source: `ai-factory adr status <adr-file>` plus the verdict you assigned
 
 invocation:
 - Claude Code: `/aif-adr-verify @adr-file`

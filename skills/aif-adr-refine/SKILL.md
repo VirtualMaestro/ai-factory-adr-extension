@@ -35,7 +35,6 @@ outputs:
 - refined ADR text
 - change summary
 - transition summary when a transition is applied
-- status footer
 
 quality_rules:
 - measure every option by what serves the project best over its lifetime
@@ -83,8 +82,8 @@ transitions:
   action: transition back to draft
 
 status_footer:
-format: "✔ aif-adr-refine · ADR: <adr-id> [<status>] · Plan: <plan-id or none>"
-source: `ai-factory adr status <adr-file>`
+  format: "✔ aif-adr-refine · ADR: <adr-id> [<status>] · Plan: <plan-id or none>"
+  source: `ai-factory adr status <adr-file>`
 
 invocation:
 - Claude Code: `/aif-adr-refine @adr-file`

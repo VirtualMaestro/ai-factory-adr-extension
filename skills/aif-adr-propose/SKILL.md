@@ -13,11 +13,6 @@ purpose:
 inputs:
 - topic
 
-scope:
-- scan existing ADRs for duplicates and conflicts before writing
-- fill known Context: Problem, Constraints, Decision drivers
-- record unresolved assumptions as explicit placeholders
-
 forbidden_behaviors:
 - do not hand-write the ADR file or invent its id: `ai-factory adr new` owns both
 - do not create a near-duplicate of an ADR that is already accepted or active
@@ -28,7 +23,6 @@ forbidden_behaviors:
 
 outputs:
 - a `proposed` ADR at `<adr-root>/proposals/adr-<slug>.md`
-- status footer
 
 quality_rules:
 - measure every option by what serves the project best over its lifetime
@@ -64,8 +58,8 @@ workflow:
 9. report the status footer
 
 status_footer:
-format: "✔ aif-adr-propose · ADR: <adr-id> [proposed] · Plan: none"
-source: `ai-factory adr status <adr-file>`, where a fresh proposal has no plan
+  format: "✔ aif-adr-propose · ADR: <adr-id> [proposed] · Plan: none"
+  source: `ai-factory adr status <adr-file>`, where a fresh proposal has no plan
 
 invocation:
 - Claude Code: `/aif-adr-propose <topic>`

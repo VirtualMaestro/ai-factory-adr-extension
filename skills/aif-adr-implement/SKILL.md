@@ -18,9 +18,6 @@ preconditions:
 - exactly one non-archived plan implements it
 - the ADR↔plan links are reciprocal
 
-scope:
-- implement the resolved plan by applying `aif-implement` semantics inline
-
 forbidden_behaviors:
 - do not advance the ADR, and do not transition it merely because implementation work finished
 - do not guess the plan filename: resolve it by metadata
@@ -29,7 +26,6 @@ forbidden_behaviors:
 
 outputs:
 - implemented plan steps
-- status footer
 
 quality_rules:
 - the architectural decision is already made: do not re-litigate it
@@ -54,8 +50,8 @@ workflow:
 8. report the status footer
 
 status_footer:
-format: "✔ aif-adr-implement · ADR: <adr-id> [<status>] · Plan: <plan-id> (<plan-status>)"
-source: `ai-factory adr status <adr-file>`
+  format: "✔ aif-adr-implement · ADR: <adr-id> [<status>] · Plan: <plan-id> (<plan-status>)"
+  source: `ai-factory adr status <adr-file>`
 
 invocation:
 - Claude Code: `/aif-adr-implement @adr-file`

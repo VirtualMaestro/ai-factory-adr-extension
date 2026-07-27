@@ -60,8 +60,8 @@ retrieval_order_afterwards:
 - resolve contradictions in favor of the authoritative file and its lifecycle status
 
 status_footer:
-format: "✔ aif-adr-supersede · ADR: <old-id> [superseded] → <new-id> [<new-status>]"
-source: `ai-factory adr status <old-file>` and `ai-factory adr status <new-file>`
+  format: "✔ aif-adr-supersede · ADR: <old-id> [superseded] → <new-id> [<new-status>]"
+  source: `ai-factory adr status <old-file>` and `ai-factory adr status <new-file>`
 
 invocation:
 - Claude Code: `/aif-adr-supersede @old-adr @new-adr`

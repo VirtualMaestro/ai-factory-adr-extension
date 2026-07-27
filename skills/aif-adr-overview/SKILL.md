@@ -31,33 +31,39 @@ none ───────────────────▶ proposed ─�
 ```
 
 linear_flow_skills:
-- `aif-adr-propose <topic>`: scan for duplicate and conflicting decisions, scaffold a `proposed` ADR in `proposals/`
-- `aif-adr-refine`: first refine moves `proposed` to `draft`; applies ADR-specific quality criteria
-- `aif-adr-accept`: check preconditions, run the audit, move `draft` to `accepted`
-- `aif-adr-plan`: create the implementation plan in `paths.plans` with reciprocal `implements` and `plan:` links; skip for documentation-only ADRs
-- `aif-adr-plan-improve <adr>`: improve that plan by naming the ADR, not the plan file; it resolves the plan and applies the standard `aif-improve`, whereas `aif-adr-refine` is for the decision
-- `aif-adr-implement`: resolve the plan by metadata and implement; the ADR stays `accepted`
-- `aif-adr-finalize`: strict verification, then `accepted` to `active`, and archive the plan; a documentation-only ADR goes straight to `active` with no plan
-- `aif-adr-supersede <old> <new>`: replace an accepted or active decision with a newer one via reciprocal links and a move to `superseded`, preserving history
+| Skill | Does | Constraint |
+|---|---|---|
+| `aif-adr-propose <topic>` | scaffolds a `proposed` ADR in `proposals/` | scans for duplicate and conflicting decisions first |
+| `aif-adr-refine` | applies ADR-specific quality criteria | first refine moves `proposed` to `draft` |
+| `aif-adr-accept` | moves `draft` to `accepted` | checks preconditions and runs the audit first |
+| `aif-adr-plan` | creates the plan in `paths.plans` with reciprocal `implements` and `plan:` links | skip for documentation-only ADRs |
+| `aif-adr-plan-improve <adr>` | improves that plan, named by the ADR | resolves the plan itself and applies the standard `aif-improve`; `aif-adr-refine` is for the decision |
+| `aif-adr-implement` | resolves the plan by metadata and implements | the ADR stays `accepted` |
+| `aif-adr-finalize` | strict verification, then `accepted` to `active`, and archives the plan | a documentation-only ADR goes straight to `active` with no plan |
+| `aif-adr-supersede <old> <new>` | replaces an accepted or active decision with a newer one | reciprocal links and a move to `superseded`, preserving history |
 
 off_flow_skills:
-- `aif-adr-status`: read-only overview and diagnostics, at any point
-- `aif-adr-verify <adr>`: re-runnable, read-only check of an accepted or active ADR against the implemented code — do the `code:` anchors resolve, does the code honor the Decision
-- `aif-adr-verify-all`: the same conformance check swept across every active ADR, as one table
-- `aif-adr-reconcile <target>`: after a refine, critically adjudicate a second reviewer's proposed improvements to an ADR or its plan, adopting the sound ones and rejecting the rest with a reason, then applying the adopted ones; never advances status or implements
-- `aif-adr-next`: reads the `depends_on` graph and recommends which ADR to implement next, where ready means `accepted` with all dependencies `active`, plus the topological order, blocked ADRs, and any cycles
-- `aif-adr-migrate`: one-time, brings a project's pre-existing legacy ADRs into this lifecycle; run it before authoring new ADRs in a project that already had its own ADR approach
+| Skill | Does | Constraint |
+|---|---|---|
+| `aif-adr-status` | read-only overview and diagnostics, at any point | never mutates |
+| `aif-adr-verify <adr>` | checks one accepted or active ADR against the implemented code | read-only, re-runnable; do the `code:` anchors resolve, does the code honor the Decision |
+| `aif-adr-verify-all` | the same check swept across every active ADR, as one table | read-only |
+| `aif-adr-reconcile <target>` | adjudicates a second reviewer's proposed improvements, adopting and rejecting each with a reason | never advances status, never implements |
+| `aif-adr-next` | reads the `depends_on` graph and recommends what to implement next | ready means `accepted` with all dependencies `active`; also reports order, blocked ADRs, cycles |
+| `aif-adr-migrate` | brings a project's pre-existing legacy ADRs into this lifecycle | one-time; run it before authoring new ADRs there |
 
 status_directories:
 - each status maps to one directory under the ADR root, default `docs/adr/`: `proposals/`, `drafts/`, `accepted/`, `active/`, `superseded/`
 - the filename stem always equals the ADR `id`
-- transitions are atomic file moves: never hand-edit the `status` field or move files manually, use the `adr` subcommands that the skills wrap
+- transitions are atomic file moves: do not hand-edit the `status` field or move files manually
+- use the `adr` subcommands that the skills wrap
 
 rules_that_always_hold:
 - source of truth is the Markdown ADR files in Git; any external index is advisory, never authoritative
 - retrieval order (PRD §23): read active ADRs first, treat accepted ones as pending decisions, use superseded ones only for historical reasoning, and never treat proposals or drafts as active rules
 - always open the source Markdown after any semantic lookup, and resolve contradictions in favor of the authoritative file and its lifecycle status
-- active decisions are protected (PRD §18.3): edit an active ADR in place only for non-material changes such as code links, evidence, paths, and formatting; a material change to the Decision, constraints, scope, or consequences requires a new ADR that supersedes, which is what `aif-adr-supersede` is for
+- active decisions are protected (PRD §18.3): edit an active ADR in place only for non-material changes such as code links, evidence, paths, and formatting
+- a material change to the Decision, constraints, scope, or consequences requires a new ADR that supersedes, which is what `aif-adr-supersede` is for
 - skills own judgment, the CLI owns file mechanics: `ai-factory adr …` performs deterministic moves, links, and audits, and the skills decide whether a transition is warranted
 
 invocation:

@@ -31,7 +31,6 @@ forbidden_behaviors:
 
 outputs:
 - improved plan body
-- status footer
 
 quality_rules:
 - measure every option by what serves the project best over its lifetime
@@ -65,8 +64,8 @@ workflow:
 7. report the status footer
 
 status_footer:
-format: "✔ aif-adr-plan-improve · ADR: <adr-id> [<status>] · Plan: <plan-id> (<plan-status>)"
-source: `ai-factory adr status <adr-file>`
+  format: "✔ aif-adr-plan-improve · ADR: <adr-id> [<status>] · Plan: <plan-id> (<plan-status>)"
+  source: `ai-factory adr status <adr-file>`
 
 invocation:
 - Claude Code: `/aif-adr-plan-improve @adr-file`

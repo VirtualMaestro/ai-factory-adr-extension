@@ -33,7 +33,6 @@ forbidden_behaviors:
 outputs:
 - adjudication table
 - revised target document body
-- status footer
 
 lenses:
 - target has `type: plan` or an `implements:` field: judge by stock `aif-improve` semantics, exactly as `aif-adr-plan-improve` uses them
@@ -87,8 +86,8 @@ report_format:
 ```
 
 status_footer:
-format: "✔ aif-adr-reconcile · ADR: <adr-id> [<status>] · Plan: <plan-id or none>"
-source: `ai-factory adr status <adr-file>`
+  format: "✔ aif-adr-reconcile · ADR: <adr-id> [<status>] · Plan: <plan-id or none>"
+  source: `ai-factory adr status <adr-file>`
 
 invocation:
 - Claude Code: `/aif-adr-reconcile @target-file`

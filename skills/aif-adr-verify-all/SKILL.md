@@ -31,7 +31,6 @@ forbidden_behaviors:
 outputs:
 - one conformance table, a row per ADR
 - per-ADR follow-up recommendations
-- status footer
 
 verdicts:
 - implemented: code present at the anchors and consistent with the Decision
@@ -78,8 +77,8 @@ follow_up:
 - partial: point back to `aif-adr-implement` for that ADR
 
 status_footer:
-format: "✔ aif-adr-verify-all · active: <n> · implemented <a> · partial <b> · drift <c> · not-implemented <d> · doc-only <e>"
-source: the verdicts you assigned
+  format: "✔ aif-adr-verify-all · active: <n> · implemented <a> · partial <b> · drift <c> · not-implemented <d> · doc-only <e>"
+  source: the verdicts you assigned
 
 invocation:
 - Claude Code: `/aif-adr-verify-all`

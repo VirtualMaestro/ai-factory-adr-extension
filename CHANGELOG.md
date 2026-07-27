@@ -4,6 +4,45 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and the project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.11.2] — 2026-07-27
+
+### Added
+
+- **`test/skill-format.test.js` — conformance check for the CNL-P grammar.** Seven
+  assertions: required sections present, no section name outside the known vocabulary,
+  standard sections in their declared order, `status_footer:` sub-keys indented, no bullet
+  opening with `never`, no deny-list word, no bullet over the 250-char hard limit. It parses
+  the body with fenced regions blanked, so the `id:`/`type:` lines inside a fenced example
+  are not mistaken for sections.
+- **`templates/adr.md` rewritten in CNL-P.** `## Context` now carries `problem`,
+  `constraints`, `decision_drivers`; `## Decision` carries `decision`, `scope`, `rules`;
+  alternatives are `id`/`description`/`rejected_because` records; consequences are
+  `positive`, `negative`, `risks`. The four headings and every placeholder sentinel are
+  unchanged, so `ai-factory adr new` still scaffolds a file that validates as a proposal and
+  is rejected at `accepted` until filled. **Without this a new ADR was born non-CNL-P and
+  the standard's ADR section applied to nothing.**
+
+### Changed
+
+- **`docs/cnlp-format.md` made self-consistent.** It defined where a section ends but never
+  what one contains. Added: five section types (scalar, bullet-list, numbered-list,
+  record-list, keyed-block) with their indentation; fenced blocks declared opaque; nesting
+  allowed for record-lists and keyed-blocks, not only cases; the required-section set;
+  a rule for adding a custom section plus the 23 already in use; a 250-char hard limit with
+  150 as the target. The "any growth is a defect" rule was wrong — splitting one prose
+  sentence into the obligations it hid legitimately adds lines — and now reads "measure it
+  and state the cause".
+- **`status_footer:` grammar fixed in 13 skills.** `format:`/`source:` were unindented, so
+  by the standard's own rule they were separate top-level sections and `status_footer:` was
+  empty.
+- **Duplication removed.** The redundant `status footer` bullet in `outputs:` (12 skills);
+  `scope:` in `aif-adr-propose` and `aif-adr-implement`, which restated `workflow:`;
+  `outputs:` in `aif-adr-plan`, which restated `purpose:`; and the verification-failure
+  clause duplicated between `forbidden_behaviors` and the workflow in `aif-adr-finalize`.
+- **`aif-adr-overview`** lists both skill groups as tables of skill → does → constraint. Its
+  bullets ran to 305 characters against a corpus median of 72.
+- Compound lines split in `aif-adr-migrate` and `aif-adr-finalize`.
+
 ## [1.11.1] — 2026-07-27
 
 ### Added

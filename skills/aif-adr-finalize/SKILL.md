@@ -25,7 +25,6 @@ scope:
 forbidden_behaviors:
 - do not rewrite the Decision to match the code
 - do not finalize when the implementation contradicts the accepted Decision: recommend returning the ADR to draft via `aif-adr-refine`
-- do not finalize on a verification failure: stop, leave the ADR `accepted`, and report what failed
 - do not invoke `aif-verify` as a nested skill: apply its strict semantics in this run
 - do not put detailed implementation notes in `evidence:`; prose belongs in the ADR body and a tracker link in the frontmatter `issue:` field
 - do not list every touched file in `code:`; it holds the primary entry-point anchors an agent starts tracing from
@@ -34,7 +33,6 @@ outputs:
 - verification result
 - `evidence:` and `code:` recorded in the ADR frontmatter
 - activated ADR and archived plan
-- status footer
 
 quality_rules:
 - the architectural decision is already made: do not re-litigate it
@@ -54,11 +52,12 @@ workflow:
 3. check that the implementation matches the ADR `## Decision` and, where testable, its known Consequences and risks
 4. stop and leave the ADR `accepted` on a verification failure, reporting what failed
 5. record `evidence:` in the ADR frontmatter as a short string, for example `evidence: implemented, commit abc1234, verified by tests+lint`
-6. fill the frontmatter `code:` array with the primary entry-point anchors: paths relative to the repo root, POSIX `/` separators, optional `#symbol` suffix such as `src/status.js#validateDirStatus`
-7. verify each anchor exists before writing it, so the ADR transitions with its anchors in place
-8. run `ai-factory adr finalize <adr-file>`
-9. run `ai-factory adr status --check` and resolve any failures
-10. report the status footer
+6. fill the frontmatter `code:` array with the primary entry-point anchors
+7. write each anchor as a repo-root path with POSIX `/` separators and an optional `#symbol` suffix, such as `src/status.js#validateDirStatus`
+8. verify each anchor exists before writing it, so the ADR transitions with its anchors in place
+9. run `ai-factory adr finalize <adr-file>`
+10. run `ai-factory adr status --check` and resolve any failures
+11. report the status footer
 
 command_behaviour:
 - `ai-factory adr finalize` sets `evidence: implemented` only when the frontmatter `evidence:` field is still empty, so an authored value with commit refs or verification notes is preserved
@@ -71,8 +70,8 @@ documentation_only_adrs:
 - `plan:` stays empty
 
 status_footer:
-format: "✔ aif-adr-finalize · ADR: <adr-id> [active] · Plan: <plan-id> (archived)"
-source: `ai-factory adr status <adr-file>`; use `Plan: none` for a documentation-only ADR
+  format: "✔ aif-adr-finalize · ADR: <adr-id> [active] · Plan: <plan-id> (archived)"
+  source: `ai-factory adr status <adr-file>`; use `Plan: none` for a documentation-only ADR
 
 invocation:
 - Claude Code: `/aif-adr-finalize @adr-file`

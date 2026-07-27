@@ -17,21 +17,43 @@ replaced_by:
 
 ## Context
 
-- **Problem:** What problem must be solved?
-- **Constraints:** What constraints cannot be violated?
-- **Decision drivers:** What criteria determine the choice?
+problem:
+- what breaks today, one observable statement per line
+
+constraints:
+- what cannot be violated
+
+decision_drivers:
+- the criteria that decide the choice
 
 ## Decision
 
-We will use **[decision]** for **[scope]** because **[main reason]**.
+decision: we will use **[decision]** for **[scope]** because **[main reason]**
+
+scope:
+- what this decision covers
+- excludes: what it deliberately does not
+
+rules:
+1. the obligation this decision creates
 
 ## Alternatives considered
 
-- **[Alternative]** — rejected because ...
-- **[Alternative]** — rejected because ...
+alternatives:
+- id: [Alternative]
+  description: what it was
+  rejected_because: the concrete reason
+- id: [Alternative]
+  description: what it was
+  rejected_because: the concrete reason
 
 ## Consequences
 
-- **Positive:** ...
-- **Negative:** ...
-- **Risks:** ...
+positive:
+- what improves
+
+negative:
+- what it costs
+
+risks:
+- risk -> mitigation, or "not eliminated"

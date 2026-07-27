@@ -29,11 +29,6 @@ forbidden_behaviors:
 - do not fill `evidence:`; `plan:` filled with `evidence:` empty is the pending state, and `aif-adr-finalize` sets `evidence: implemented` later
 - do not put the plan id into `affects`: that list is for genuinely affected artifacts only
 
-outputs:
-- an `in_progress` plan artifact
-- reciprocal ADR↔plan links
-- status footer
-
 plan_frontmatter:
 ```yaml
 id: plan-<adr-short-stable-name>
@@ -90,8 +85,8 @@ improving_the_plan:
 - after improving, re-verify: `ai-factory adr resolve-plan <adr-file>` still resolves to exactly one plan, and `ai-factory adr status --check` is clean
 
 status_footer:
-format: "✔ aif-adr-plan · ADR: <adr-id> [<status>] · Plan: <plan-id> (<plan-status>)"
-source: `ai-factory adr status <adr-file>`
+  format: "✔ aif-adr-plan · ADR: <adr-id> [<status>] · Plan: <plan-id> (<plan-status>)"
+  source: `ai-factory adr status <adr-file>`
 
 invocation:
 - Claude Code: `/aif-adr-plan @adr-file`

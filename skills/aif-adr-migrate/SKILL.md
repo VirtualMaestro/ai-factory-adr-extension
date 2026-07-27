@@ -38,7 +38,6 @@ outputs:
 - the mapping of old file to new id and resulting status, one row per legacy file
 - the migrated ADRs on the branch
 - repointed instruction files
-- status footer
 
 workflow:
 1. run `ai-factory adr init`: it is idempotent, scaffolds `proposals/`, `drafts/`, `accepted/`, `active/`, `superseded/` under the configured root, and writes the default `.ai-factory/adr-extension.yaml` when it is absent
@@ -68,8 +67,10 @@ status_mapping:
 - legacy status *accepted* or *approved*: map to `accepted`, or to `active` only when the decision is demonstrably implemented and concrete evidence can be recorded
 - legacy status *proposed*, *draft*, or *RFC*: map to `proposed` or `draft`
 - legacy status *deprecated* or *replaced*, replacement also being migrated: import at its prior live status, `accepted` or `active`, and let the supersede step move it
-- legacy status *deprecated* or *replaced*, replacement exists but is not itself being migrated: place it directly in `superseded/` and fill the frontmatter `replaced_by:` with the replacement's id by hand
-- legacy status *deprecated* or *replaced*, no successor exists at all: do not place it in `superseded/`, because `ai-factory adr validate` rejects a `superseded` ADR whose `replaced_by:` is empty (inv 11) and the validation step could never pass; stop and ask the operator which status the decision should carry
+- legacy status *deprecated* or *replaced*, replacement exists but is not itself being migrated: place it directly in `superseded/`
+- fill that ADR's frontmatter `replaced_by:` with the replacement's id by hand
+- legacy status *deprecated* or *replaced*, no successor exists at all: stop and ask the operator which status the decision should carry
+- that case has no `superseded/` option: `ai-factory adr validate` rejects a `superseded` ADR whose `replaced_by:` is empty (inv 11), so the validation step could never pass
 
 file_shape:
 - select exactly one of the two cases below, then apply any matching overlay on top of it
@@ -77,8 +78,8 @@ file_shape:
   - preserve history with a rename: `git mv <legacy-file> <root>/<status-dir>/<id>.md`
   - edit the moved file to match `templates/adr.md`
   - fill the frontmatter: `id`, `type: adr`, `status`, `owners`, `depends_on`, `affects`, `supersedes`, `code`, `issue`, `plan`, `evidence`, `replaced_by`
-  - fill the sections: Context with Problem, Constraints, and Decision drivers; Decision; Alternatives considered; Consequences with Positive, Negative, and Risks
-  - port the old content into those sections
+  - fill the four `##` headings with the CNL-P blocks the template ships: `problem`, `constraints`, `decision_drivers` under Context; `decision`, `scope`, `rules` under Decision; `alternatives` records; `positive`, `negative`, `risks` under Consequences
+  - port the old prose into those blocks, one idea per bullet, per `docs/cnlp-format.md`
   - set `status` equal to the directory the file now lives in
   - record a short `evidence:` for an `active` import
   - backfill `code:` for an `active` or `superseded` import with the primary entry-point anchors when the implementation location is known: repo-root paths, POSIX `/`, optional `#symbol`
@@ -115,9 +116,9 @@ instruction_pointer:
 ```
 
 status_footer:
-format: "✔ aif-adr-migrate · 4 ADRs → 2 active, 1 accepted, 1 superseded · branch: adr-migration"
-source: `ai-factory adr status --json`
-note: the footer carries counts only; the migrated ids are in the mapping output, one row per file
+  format: "✔ aif-adr-migrate · 4 ADRs → 2 active, 1 accepted, 1 superseded · branch: adr-migration"
+  source: `ai-factory adr status --json`
+  note: the footer carries counts only; the migrated ids are in the mapping output, one row per file
 
 invocation:
 - Claude Code: `/aif-adr-migrate`
