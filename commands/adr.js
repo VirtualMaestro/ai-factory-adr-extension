@@ -11,6 +11,7 @@ import { linkPlan } from '../src/artifacts/links.js';
 import { finalize } from '../src/lifecycle/finalize.js';
 import { supersede } from '../src/lifecycle/supersede.js';
 import { buildStatus, buildFileStatus } from '../src/status.js';
+import { buildDecisions, renderDecisions } from '../src/decisions.js';
 import { buildOrder } from '../src/order.js';
 import { runAudit } from '../src/audit.js';
 import { createProposal } from '../src/artifacts/create.js';
@@ -216,6 +217,22 @@ export function register(program) {
         }
       });
       if (res.cycles.length) process.exitCode = 1;
+    }));
+
+  adr
+    .command('decisions')
+    .description('What every accepted and active ADR obliges: decision, constraints, scope, rules')
+    .option('--json', 'Machine-readable output')
+    .action((opts) => guard(opts, async () => {
+      const { items, issues } = await buildDecisions({ projectDir: process.cwd() });
+      const lines = renderDecisions(items);
+      out(opts, { command: 'decisions', items, issues }, () => {
+        lines.forEach((l) => console.log(l));
+        console.log(`${items.length} ADR · ${lines.length} lines`);
+        issues.forEach((i) => console.error(`  ${i.code}  ${i.file}: ${i.message}`));
+      });
+      // `issues` never set the exit code: the skills read this on every propose and refine,
+      // and an incomplete corpus is a gap to name, not a reason to stop the run.
     }));
 
   adr

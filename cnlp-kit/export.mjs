@@ -16,9 +16,11 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 const KIT = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.resolve(KIT, '..');
 
-// `tools/cnlp/cnlp.js` sits 2 levels under the target root, the same depth as
-// `src/artifacts/cnlp.js` here, so `resolveDoc`'s `../../` resolves without a rewrite.
-const CHECKER_DIR = 'tools/cnlp';
+// The kit occupies 2 entries at the target root and nothing else: `cnlp/` holds everything it
+// brings, `cnlp-migrate/` holds the skill so it can be moved into whichever agent runs it.
+// Deleting `cnlp/` when the migration is over leaves the root as it was.
+const HOME = 'cnlp';
+const SKILL = 'cnlp-migrate';
 
 export const ZIP = 'cnlp-kit.zip'; // at the repository root, gitignored, rebuilt on `npm version`
 
@@ -36,7 +38,11 @@ export async function buildZip(out = path.join(REPO, ZIP)) {
   return { out, entries: written };
 }
 
-export async function exportKit(target, { skillsDir = '.claude/skills', test = true, force = false, bundleReadme = false } = {}) {
+// Where the *target's own* skills are, which is what the check reads. It has nothing to do
+// with where `cnlp-migrate` is put: that folder is moved into whichever agent runs it.
+const SKILLS = 'skills';
+
+export async function exportKit(target, { skillsDir = SKILLS, test = true, force = false, bundleReadme = false } = {}) {
   const written = [];
   const skipped = [];
 
@@ -49,41 +55,52 @@ export async function exportKit(target, { skillsDir = '.claude/skills', test = t
     written.push(to);
   };
 
-  // The rules and the checker: verbatim, straight from the live files.
-  await put('docs/cnlp-format.md', { from: path.join(REPO, 'docs/cnlp-format.md') });
-  await put('profiles/profile.md', { from: path.join(REPO, 'profiles/profile.md') });
-  await put(`${CHECKER_DIR}/cnlp.js`, { from: path.join(REPO, 'src/artifacts/cnlp.js') });
+  // The rules and the checker: content verbatim from the live files, paths retargeted.
+  await put(`${HOME}/cnlp-format.md`, { from: path.join(REPO, 'docs/cnlp-format.md') });
+  await put(`${HOME}/profiles/profile.md`, { from: path.join(REPO, 'profiles/profile.md') });
+  await put(`${HOME}/cnlp.js`, retargetChecker(await readFile(path.join(REPO, 'src/artifacts/cnlp.js'), 'utf8')));
 
   // The values: seeded, then authored in the target. An authored profile is never overwritten.
-  await put('profiles/skill.md', { from: path.join(KIT, 'seed/profiles/skill.md') }, { keep: true });
-  await put('docs/cnlp-quality-rules.md', { from: path.join(KIT, 'seed/quality_rules.md') }, { keep: true });
-  await put(`${skillsDir}/cnlp-migrate/SKILL.md`, { from: path.join(KIT, 'seed/skills/cnlp-migrate/SKILL.md') }, { keep: true });
+  await put(`${HOME}/profiles/skill.md`, { from: path.join(KIT, 'seed/profiles/skill.md') }, { keep: true });
+  await put(`${HOME}/quality-rules.md`, { from: path.join(KIT, 'seed/quality_rules.md') }, { keep: true });
+  await put(`${SKILL}/SKILL.md`, { from: path.join(KIT, `seed/skills/${SKILL}/SKILL.md`) }, { keep: true });
 
   if (test) {
     const src = await readFile(path.join(REPO, 'test/skill-format.test.js'), 'utf8');
-    await put('test/skill-format.test.js', retarget(src, skillsDir), { keep: true });
+    await put(`${HOME}/skill-format.test.js`, retargetTest(src, skillsDir), { keep: true });
   }
 
   // Only the archive carries it: someone unpacking a zip has no other place to start.
   if (bundleReadme) {
     const { version } = JSON.parse(await readFile(path.join(REPO, 'package.json'), 'utf8'));
     const readme = await readFile(path.join(KIT, 'seed/BUNDLE-README.md'), 'utf8');
-    await put('README.md', readme.replace(/__VERSION__/g, version));
+    await put(`${HOME}/README.md`, readme.replace(/__VERSION__/g, version));
   }
 
   return { written, skipped, skillsDir, test };
 }
 
 /**
- * The exported test differs from ours in where the checker and the skills live, and it drops
+ * In the kit the standard and the profiles sit beside the checker rather than 2 levels above
+ * it, so `resolveDoc` looks next to itself. Content is untouched; only the 2 path expressions
+ * change, and `test/kit.test.js` imports the result and resolves every document through it.
+ */
+function retargetChecker(src) {
+  return src
+    .replace("'docs/cnlp-format.md'", "'cnlp-format.md'")
+    .replace('`../../${rel}`', '`./${rel}`');
+}
+
+/**
+ * The exported check sits in `cnlp/`, 1 level under the target root, so `repoRoot` still lands
+ * on the project. It differs from ours in the checker's path and in `SKILLS_DIR`, and it drops
  * the blocks marked `cnlp-kit:strip` — guards about shipping skills inside an npm package,
  * which do not hold for a repository that keeps its skills next to its standard.
  */
-function retarget(src, skillsDir) {
+function retargetTest(src, skillsDir) {
   return src
     .replace(/\n\/\/ cnlp-kit:strip-start[\s\S]*?\/\/ cnlp-kit:strip-end\n/g, '\n')
-    // test/ sits 1 level under the target root, as it does here
-    .replace("'../src/artifacts/cnlp.js'", `'../${CHECKER_DIR}/cnlp.js'`)
+    .replace("'../src/artifacts/cnlp.js'", "'./cnlp.js'")
     .replace(/^const SKILLS_DIR = '[^']*';/m, `const SKILLS_DIR = '${skillsDir}';`);
 }
 

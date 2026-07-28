@@ -3,7 +3,7 @@ name: skill
 description: The CNL-P profile of an agent skill — the sections a SKILL.md body uses, in order.
 ---
 
-format: docs/cnlp-format.md
+format: cnlp/cnlp-format.md
 
 mood: imperative
 
@@ -61,6 +61,6 @@ custom_sections:
 - none: fill this from the inventory step of cnlp-migrate, before rewriting any skill
 
 enforcement:
-- `node --test test/skill-format.test.js`, over every skill in the configured skills directory
+- `node --test cnlp/skill-format.test.js`, over every skill in the directory its `SKILLS_DIR` names
 - any issue is an error: a skill ships as executable instructions, so there is no draft state to warn about
 - a repository without Node holds this profile by review against the standard instead

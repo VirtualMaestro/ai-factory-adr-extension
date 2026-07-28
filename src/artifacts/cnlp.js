@@ -45,7 +45,7 @@ export function parseBlocks(raw) {
 }
 
 /** Lines of a section: everything up to the next top-level key or `##` heading. */
-function itemsOf(lines, at) {
+export function itemsOf(lines, at) {
   const out = [];
   for (let i = at; i < lines.length; i += 1) {
     if (KEY.test(lines[i]) || /^##\s/.test(lines[i])) break;
