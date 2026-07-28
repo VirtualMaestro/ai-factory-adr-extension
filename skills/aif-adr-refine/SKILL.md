@@ -63,8 +63,8 @@ workflow:
 2. fix the validation errors it reports, and its CNL-P warnings: they become errors at `accepted`
 3. inspect project rules, architecture documents, relevant code, and active ADRs
 4. verify the ADR states exactly 1 primary decision
-5. improve the §7 blocks, keeping the rationale explicit rather than implied
-6. rewrite any prose limit as a comparison, `<= 2 connections per client`, per `docs/cnlp-format.md` §8
+5. improve the blocks `profiles/adr.md` declares, keeping the rationale explicit rather than implied
+6. rewrite any prose limit in canonical form, `open connections per client <= 2`, per `docs/cnlp-format.md` §5
 7. replace any unquantified comparative with the property and its bound, or drop the claim
 8. record every conflict found with an active ADR
 9. ask only questions that materially block the decision

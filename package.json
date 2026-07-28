@@ -1,6 +1,6 @@
 {
   "name": "ai-factory-adr-extension",
-  "version": "1.12.0",
+  "version": "1.14.0",
   "description": "Architecture Decision Record lifecycle for AI Factory",
   "type": "module",
   "license": "MIT",
@@ -33,7 +33,9 @@
     "commands",
     "src",
     "templates",
-    "schemas"
+    "schemas",
+    "profiles",
+    "docs/cnlp-format.md"
   ],
   "dependencies": {
     "yaml": "^2.5.1"

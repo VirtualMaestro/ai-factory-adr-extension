@@ -1,27 +1,24 @@
-// The mechanical half of docs/cnlp-format.md, shared by the skills conformance test
-// (test/skill-format.test.js, skills profile) and `ai-factory adr validate` (ADR profile, §7).
-// Grammar and lexicon only — neither caller can judge whether a bullet says something useful.
+// The mechanical half of docs/cnlp-format.md. One implementation for every document kind:
+// what differs between kinds is declared in a profile document (profiles/*.md), not branched
+// here. `test/skill-format.test.js` runs it over the skills, `ai-factory adr validate` over an
+// ADR body. Grammar and lexicon only — neither caller can judge whether a bullet says
+// something useful.
 
-export const DENY = /\b(surface[sd]?|sharpen[s]?|weigh[s]?|leverage[sd]?|robust|sanity-check|ensure[sd]?)\b/i; // §8
+import { readFile } from 'node:fs/promises';
+import { fileURLToPath } from 'node:url';
+
+export const DENY = /\b(surface[sd]?|sharpen[s]?|weigh[s]?|leverage[sd]?|robust|sanity-check|ensure[sd]?)\b/i;
 const NUM = '(?:\\d+|one|two|three|four|five|six|seven|eight|nine|ten)';
-/** §8 skills profile: a threshold is a digit. */
+/** §5: a threshold is a digit. */
 export const SPELLED_THRESHOLD = /\b(at least|exactly|more than|fewer than|no more than|only) (one|two|three|four|five|six|seven|eight|nine|ten)\b/i;
-/** §8 ADR profile: a limit is written as a comparison, digit or word form alike. */
-export const PROSE_LIMIT = new RegExp(`\\b(?:at least|at most|no more than|no fewer than|not more than|not less than|more than|fewer than|less than|greater than|up to|not exceed(?:ing)?)\\s+${NUM}\\b`, 'i');
-/** §8 ADR profile: an unquantified comparative is not a decision. */
+/** §5: a limit whose bound the phrase leaves open — the enforced half of the canonical form. */
+export const AMBIGUOUS_LIMIT = new RegExp(`\\b(?:no more than|at most|up to|not exceeding|not exceed|no fewer than|not less than)\\s+${NUM}\\b`, 'i');
+/** §5: an unquantified comparative claims a value the reader cannot check. */
 export const COMPARATIVE = /\b(better|faster|cleaner|significantly|substantially|flexible|scalable|extensible|where possible|if needed|as appropriate|should probably|may want to)\b/i;
 export const HARD_LIMIT = 250; // §4: 150 is the target, 250 is compound whatever it claims
 
-// §7 blocks, in the order they appear in an ADR body.
-const ADR_ORDER = ['problem', 'constraints', 'decision_drivers', 'decision', 'scope', 'rules',
-  'alternatives', 'positive', 'negative', 'risks', 'blast_radius'];
-const ADR_REQUIRED = ADR_ORDER.filter((k) => k !== 'blast_radius');
-const ADR_OPTIONAL = ['out_of_scope', 'unproven_hypothesis', 'increment_order'];
-const ADR_HEADINGS = ['## Context', '## Decision', '## Alternatives considered', '## Consequences'];
-// §7: these belong to the frontmatter; a body copy goes stale.
-const MACHINE_FIELDS = ['code', 'issue', 'plan', 'evidence', 'depends_on', 'affects', 'supersedes', 'replaced_by', 'id', 'type', 'status', 'owners'];
-const ALT_REQUIRED = ['id', 'description', 'rejected_because'];
-const ALT_KEYS = [...ALT_REQUIRED, 'kept_as'];
+const FORMS = new Set(['scalar', 'bullet-list', 'numbered-list', 'record-list', 'keyed-block']);
+const KEY = /^([a-z][a-z0-9_]*):(.*)$/;
 
 /**
  * Body split into lines, top-level `key:` sections and `##` headings, with fenced regions
@@ -31,133 +28,270 @@ const ALT_KEYS = [...ALT_REQUIRED, 'kept_as'];
 export function parseBlocks(raw) {
   const body = raw.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n/, '');
   let fenced = false;
-  const lines = body.split(/\r?\n/).map((l) => {
-    if (/^\s*```/.test(l)) { fenced = !fenced; return ''; }
-    return fenced ? '' : l;
+  const fences = []; // 1-based line numbers a fence covered: blanked, but not absent
+  const lines = body.split(/\r?\n/).map((l, i) => {
+    if (/^\s*```/.test(l)) { fenced = !fenced; fences.push(i + 1); return ''; }
+    if (fenced) { fences.push(i + 1); return ''; }
+    return l;
   });
   const sections = [];
   const headings = [];
   lines.forEach((l, i) => {
-    const key = l.match(/^([a-z_]+):(.*)$/);
+    const key = l.match(KEY);
     if (key) sections.push({ key: key[1], value: key[2].trim(), line: i + 1 });
     if (/^##\s/.test(l)) headings.push({ text: l.trim(), line: i + 1 });
   });
-  return { lines, sections, headings };
+  return { lines, sections, headings, fences: new Set(fences) };
 }
 
 /** Lines of a section: everything up to the next top-level key or `##` heading. */
 function itemsOf(lines, at) {
   const out = [];
   for (let i = at; i < lines.length; i += 1) {
-    if (/^([a-z_]+):/.test(lines[i]) || /^##\s/.test(lines[i])) break;
+    if (KEY.test(lines[i]) || /^##\s/.test(lines[i])) break;
     if (lines[i].trim() !== '') out.push({ text: lines[i], line: i + 1 });
   }
   return out;
 }
 
+/** §3 record-list: `- key: value` opens a record, two-space-indented keys continue it. */
+export function readRecords(items) {
+  const records = [];
+  const stray = [];
+  const repeated = [];
+  for (const { text, line } of items) {
+    const open = text.match(/^- ([a-z][a-z0-9_]*): ?(.*)$/);
+    const sub = text.match(/^ {2}([a-z][a-z0-9_]*): ?(.*)$/);
+    if (open) records.push({ line, keys: [open[1]], values: { [open[1]]: open[2].trim() } });
+    else if (sub && records.length) {
+      const rec = records[records.length - 1];
+      // A second copy of a key would silently win: two readers, two interpretations.
+      if (rec.keys.includes(sub[1])) repeated.push({ key: sub[1], line });
+      rec.keys.push(sub[1]);
+      rec.values[sub[1]] = sub[2].trim();
+    } else stray.push({ text, line });
+  }
+  return { records, stray, repeated };
+}
+
+const listValues = (items) => items
+  .map((i) => i.text.replace(/^[-\d.]+ ?/, '').trim())
+  .map((t) => (t.includes(':') ? t.slice(0, t.indexOf(':')).trim() : t))
+  .filter((t) => t !== '');
+
 /**
- * ADR body conformance with §7 and the ADR half of §8. Returns [{ line, message }]; the
- * caller decides the severity (`validate` warns before `accepted`, errors from it on).
+ * A value outside its domain is a typo that would otherwise pass silently — `required: ye`
+ * reading as `no` disables the check the profile meant to declare.
  */
-export function adrBodyIssues(raw) {
-  const { lines, sections, headings } = parseBlocks(raw);
+function domain(key, field, value, allowed) {
+  if (!allowed.includes(value)) {
+    throw new Error(`profile section "${key}": ${field} is ${JSON.stringify(value)}, expected one of ${allowed.join(', ')}`);
+  }
+  return value;
+}
+
+/** A profile document (profiles/*.md) read into the values the checker needs. */
+export function readProfile(raw) {
+  const { lines, sections } = parseBlocks(raw);
+  const block = (key) => {
+    const at = sections.find((s) => s.key === key);
+    return at ? { value: at.value, items: itemsOf(lines, at.line) } : null;
+  };
+  const names = (key) => {
+    const b = block(key);
+    if (!b) return [];
+    const out = listValues(b.items);
+    return out.length === 1 && out[0] === 'none' ? [] : out;
+  };
+  const declared = readRecords(block('sections')?.items ?? []).records.map((r) => ({
+    key: r.values.key,
+    form: domain(r.values.key, 'form', r.values.form, [...FORMS]),
+    required: domain(r.values.key, 'required', r.values.required, ['yes', 'no']) === 'yes',
+    heading: (r.values.heading ?? '').replace(/^"|"$/g, ''),
+    recordKeys: (r.values.record_keys ?? '').split(',').map((s) => s.trim()).filter(Boolean),
+    optionalRecordKeys: (r.values.optional_record_keys ?? '').split(',').map((s) => s.trim()).filter(Boolean),
+  }));
+  return {
+    format: block('format')?.value ?? '',
+    mood: block('mood')?.value ?? '',
+    headings: names('headings').map((h) => (h.startsWith('##') ? h : `## ${h}`)),
+    frontmatterFields: names('frontmatter_fields'),
+    custom: names('custom_sections'),
+    sections: declared,
+  };
+}
+
+const cache = new Map();
+
+/** Load a shipped profile by name. Resolved from this package, like `templates/adr.md`. */
+export async function loadProfile(name) {
+  if (!cache.has(name)) {
+    const file = fileURLToPath(new URL(`../../profiles/${name}.md`, import.meta.url));
+    cache.set(name, readProfile(await readFile(file, 'utf8')));
+  }
+  return cache.get(name);
+}
+
+/**
+ * Body conformance with the profile and with the shared lexicon. Returns [{ line, message }]
+ * sorted by line; the caller decides the severity. A line number of 0 means the issue is
+ * about the document as a whole.
+ */
+export function bodyIssues(raw, profile) {
+  const { lines, sections, headings, fences } = parseBlocks(raw);
   const issues = [];
   const at = (line, message) => issues.push({ line, message });
+  const byKey = new Map(profile.sections.map((s) => [s.key, s]));
+  const order = profile.sections.map((s) => s.key);
 
-  const seenHeadings = headings.map((h) => h.text);
-  for (const want of ADR_HEADINGS) {
-    if (!seenHeadings.includes(want)) at(0, `missing heading "${want}" (§7)`);
+  const seen = headings.map((h) => h.text);
+  for (const want of profile.headings) {
+    if (!seen.includes(want)) at(0, `missing heading "${want}"`);
+  }
+  for (const h of headings) {
+    if (!profile.headings.includes(h.text)) at(h.line, `unknown heading "${h.text}" — the profile declares ${profile.headings.join(', ') || 'none'}`);
+    else if (seen.indexOf(h.text) !== seen.lastIndexOf(h.text)) at(h.line, `heading "${h.text}" appears more than 1 time`);
+  }
+  const headingOrder = seen.filter((t) => profile.headings.includes(t));
+  if (headingOrder.join() !== [...new Set(headingOrder)].sort((a, b) => profile.headings.indexOf(a) - profile.headings.indexOf(b)).join()) {
+    at(0, `headings out of order — the profile declares ${profile.headings.join(', ')}`);
   }
 
-  const keys = sections.map((s) => s.key);
-  for (const block of ADR_REQUIRED) {
-    if (!keys.includes(block)) at(0, `missing required block "${block}:" (§7)`);
+  for (const s of profile.sections) {
+    if (s.required && !sections.some((f) => f.key === s.key)) at(0, `missing required block "${s.key}:"`);
   }
 
-  const known = new Set([...ADR_ORDER, ...ADR_OPTIONAL]);
+  const declared = new Set();
   for (const { key, line } of sections) {
-    if (known.has(key)) continue;
-    if (MACHINE_FIELDS.includes(key)) at(line, `"${key}:" is a frontmatter field, not a body block (§7)`);
-    else at(line, `unknown block "${key}:" — reuse a §7 block name`);
+    if (declared.has(key)) at(line, `block "${key}:" appears more than 1 time — a fact lives in exactly 1 place`);
+    declared.add(key);
+    if (byKey.has(key) || profile.custom.includes(key)) continue;
+    if (profile.frontmatterFields.includes(key)) at(line, `"${key}:" is a frontmatter field, not a body block`);
+    else at(line, `unknown block "${key}:" — reuse a name the profile declares`);
   }
 
-  const ordered = keys.filter((k) => ADR_ORDER.includes(k));
-  const sorted = [...ordered].sort((a, b) => ADR_ORDER.indexOf(a) - ADR_ORDER.indexOf(b));
-  if (ordered.join() !== sorted.join()) at(0, `blocks out of order — §7 order is ${ADR_ORDER.join(', ')}`);
+  const found = sections.map((s) => s.key).filter((k) => byKey.has(k));
+  const sorted = [...found].sort((a, b) => order.indexOf(a) - order.indexOf(b));
+  if (found.join() !== sorted.join()) at(0, `blocks out of order — the profile declares ${order.join(', ')}`);
 
   for (const { key, value, line } of sections) {
-    if (!known.has(key)) continue;
+    const spec = byKey.get(key);
+    if (!spec) continue; // a custom section declares no form
     const items = itemsOf(lines, line);
-    if (key === 'decision') {
-      if (!value) at(line, '"decision:" is a scalar — its value goes on the key line (§3)');
+    if (spec.heading) {
+      const under = [...headings].reverse().find((h) => h.line < line);
+      if (!under) at(line, `"${key}:" belongs under "${spec.heading}", found before any heading`);
+      else if (under.text !== spec.heading) at(line, `"${key}:" belongs under "${spec.heading}", found under "${under.text}"`);
+    }
+    if (spec.form === 'scalar') {
+      if (!value) at(line, `"${key}:" is a scalar — its value goes on the key line`);
       continue;
     }
-    if (value) at(line, `"${key}:" carries a value on the key line but is not a scalar block (§3)`);
-    else if (items.length === 0) at(line, `"${key}:" is empty — a required block states "- none" with the reason, an optional one is deleted (§7)`);
-    if (key === 'rules' || key === 'increment_order') {
-      const bad = items.find((i) => !/^\d+\. /.test(i.text));
-      if (bad) at(bad.line, `"${key}:" is a numbered-list — every item opens with "N. " (§3)`);
-    } else if (key === 'alternatives') {
-      issues.push(...alternativesIssues(items));
-    } else if (ADR_ORDER.includes(key)) {
-      const bad = items.find((i) => !/^- /.test(i.text));
-      if (bad) at(bad.line, `"${key}:" is a bullet-list — every item opens with "- " (§3)`);
+    if (value) at(line, `"${key}:" carries a value on the key line but its form is ${spec.form}`);
+    else if (items.length === 0) {
+      // A fence is opaque content, not absence: its lines are blanked, so ask the parser.
+      if (!coversFence(fences, line, lines)) {
+        at(line, `"${key}:" is empty — a required block states "- none" with the reason, an optional one is deleted`);
+      }
+      continue;
     }
+    // "- none: reason" is the declared way to say a required block has nothing, in any form.
+    if (items.length === 1 && /^- none\b/.test(items[0].text)) continue;
+    issues.push(...formIssues(key, spec, items));
   }
 
-  issues.push(...lexiconIssues(lines, 'adr'));
+  issues.push(...lexiconIssues(lines));
   return issues.sort((a, b) => a.line - b.line);
 }
 
-/** §3 record-list plus the §7 key set: `id`, `description`, `rejected_because`, optional `kept_as`. */
-function alternativesIssues(items) {
+/** Whether the region under a key held a fenced block — §3: a fence is opaque, not empty. */
+function coversFence(fences, at, lines) {
+  for (let i = at; i < lines.length; i += 1) {
+    if (KEY.test(lines[i]) || /^##\s/.test(lines[i])) return false;
+    if (fences.has(i + 1)) return true;
+  }
+  return false;
+}
+
+function formIssues(key, spec, items) {
   const issues = [];
-  let record = null;
-  const close = () => {
-    if (!record) return;
-    for (const want of ALT_REQUIRED) {
-      if (!record.keys.includes(want)) issues.push({ line: record.line, message: `alternative is missing "${want}:" (§7)` });
+  const at = (line, message) => issues.push({ line, message });
+  if (spec.form === 'numbered-list') {
+    const bad = items.find((i) => !/^\d+\. /.test(i.text));
+    if (bad) at(bad.line, `"${key}:" is a numbered-list — every item opens with "N. "`);
+    else {
+      // The numbers are the order: a gap or a repeat makes 2 readings of the same sequence.
+      items.forEach((i, n) => {
+        const got = Number(i.text.match(/^(\d+)\./)[1]);
+        if (got !== n + 1) at(i.line, `"${key}:" step ${got} is out of sequence — the steps run 1..${items.length}`);
+      });
     }
-    record = null;
-  };
-  for (const { text, line } of items) {
-    const open = text.match(/^- ([a-z_]+):/);
-    const sub = text.match(/^ {2}([a-z_]+):/);
-    if (open) {
-      close();
-      record = { line, keys: [open[1]] };
-      if (open[1] !== 'id') issues.push({ line, message: 'an alternative record opens with "- id: <slug>" (§7)' });
-    } else if (sub && record) {
-      record.keys.push(sub[1]);
-      if (!ALT_KEYS.includes(sub[1])) issues.push({ line, message: `"${sub[1]}" is not an alternative key — §7 allows ${ALT_KEYS.join(', ')}` });
-    } else {
-      issues.push({ line, message: 'an alternatives item is a record: "- id: …" then two-space-indented keys (§3)' });
+    return issues;
+  }
+  if (spec.form === 'bullet-list') {
+    const bad = items.find((i) => !/^- /.test(i.text));
+    if (bad) at(bad.line, `"${key}:" is a bullet-list — every item opens with "- "`);
+    return issues;
+  }
+  if (spec.form === 'keyed-block') {
+    const bad = items.find((i) => !/^ {2}[a-z][a-z0-9_]*:/.test(i.text));
+    if (bad) at(bad.line, `"${key}:" is a keyed-block — its sub-keys are two-space-indented`);
+    const allowed = [...spec.recordKeys, ...spec.optionalRecordKeys];
+    const present = [];
+    for (const i of items) {
+      const sub = i.text.trim().split(':')[0];
+      if (present.includes(sub)) at(i.line, `"${key}:" carries "${sub}:" more than 1 time`);
+      else if (!allowed.includes(sub)) at(i.line, `"${sub}" is not a "${key}:" sub-key — the profile declares ${allowed.join(', ')}`);
+      present.push(sub);
+    }
+    for (const want of spec.recordKeys) {
+      if (!present.includes(want)) at(items[0].line, `"${key}:" is missing "${want}:"`);
+    }
+    return issues;
+  }
+  // record-list
+  const { records, stray, repeated } = readRecords(items);
+  for (const r of repeated) at(r.line, `a "${key}:" record carries "${r.key}:" more than 1 time`);
+  for (const s of stray) at(s.line, `"${key}:" is a record-list — a record opens with "- ${spec.recordKeys[0] ?? 'key'}: …" then two-space-indented keys`);
+  const allowed = [...spec.recordKeys, ...spec.optionalRecordKeys];
+  for (const rec of records) {
+    if (spec.recordKeys.length && rec.keys[0] !== spec.recordKeys[0]) {
+      at(rec.line, `a "${key}:" record opens with "- ${spec.recordKeys[0]}: <value>"`);
+    }
+    for (const want of spec.recordKeys) {
+      if (!rec.keys.includes(want)) at(rec.line, `a "${key}:" record is missing "${want}:"`);
+    }
+    for (const k of rec.keys) {
+      if (!allowed.includes(k)) at(rec.line, `"${k}" is not a "${key}:" key — the profile declares ${allowed.join(', ')}`);
     }
   }
-  close();
   return issues;
 }
 
-/** §8 lexicon over body lines. `profile` picks the threshold rule that applies. */
-export function lexiconIssues(lines, profile) {
+/** §5: quoted or backticked text is data, not a claim, so the lexicon does not police it. */
+const unquoted = (l) => l.replace(/`[^`]*`|"[^"]*"|'[^']*'/g, ' ');
+
+/** §5 lexicon. One rule set for every profile. */
+export function lexiconIssues(lines) {
   const issues = [];
   lines.forEach((l, i) => {
     const line = i + 1;
-    if (/^(-|\d+\.) /.test(l) && l.length > HARD_LIMIT) {
-      issues.push({ line, message: `${l.length} chars exceeds the ${HARD_LIMIT} hard limit — it is holding more than one idea (§4)` });
+    const text = unquoted(l);
+    // Every line, not only a bullet: a scalar or a record sub-key holds one idea too.
+    if (l.length > HARD_LIMIT) {
+      issues.push({ line, message: `${l.length} chars exceeds the ${HARD_LIMIT} hard limit — it is holding more than one idea` });
     }
-    if (/^- never\b/.test(l)) issues.push({ line, message: 'a prohibition opens with "do not", not "never" (§8)' });
-    const deny = l.match(DENY);
-    if (deny) issues.push({ line, message: `deny-list word "${deny[0]}" (§8)` });
-    if (profile === 'adr') {
-      const limit = l.match(PROSE_LIMIT);
-      if (limit) issues.push({ line, message: `"${limit[0]}" — a limit is written as a comparison, e.g. "<= 2 connections per client" (§8)` });
-      const comp = l.match(COMPARATIVE);
-      if (comp) issues.push({ line, message: `unquantified comparative "${comp[0]}" — name the property and its bound (§8)` });
-    } else {
-      const spelled = l.match(SPELLED_THRESHOLD);
-      if (spelled) issues.push({ line, message: `"${spelled[0]}" — a threshold is a digit (§8)` });
-    }
+    if (/^- never\b/.test(l)) issues.push({ line, message: 'a prohibition opens with "do not", not "never"' });
+    const deny = text.match(DENY);
+    if (deny) issues.push({ line, message: `deny-list word "${deny[0]}"` });
+    const spelled = text.match(SPELLED_THRESHOLD);
+    if (spelled) issues.push({ line, message: `"${spelled[0]}" — a threshold is a digit` });
+    const limit = text.match(AMBIGUOUS_LIMIT);
+    if (limit) issues.push({ line, message: `"${limit[0]}" leaves its bound open — state the limit as "<subject> <= <value> <unit>"` });
+    const comp = text.match(COMPARATIVE);
+    if (comp) issues.push({ line, message: `unquantified comparative "${comp[0]}" — name the property and its bound` });
   });
   return issues;
 }
+
+export { FORMS };

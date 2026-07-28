@@ -4,6 +4,106 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and the project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.14.0] — 2026-07-28
+
+An external review of 1.13.x found that the profiles promised more than the checker
+delivered. Every finding is addressed below; nothing new was added to the format.
+
+### Fixed
+
+- **Structurally ambiguous documents used to pass.** A repeated top-level block, a repeated
+  or unknown `##` heading, a repeated key inside a record, and blocks sitting before any
+  heading were all silent. Each is now reported, and the headings are checked for sequence,
+  not only for presence.
+- **Forms allowed conflicting data.** A repeated record key silently overwrote the first
+  value, a keyed-block accepted sub-keys the profile never declared, and a numbered-list
+  checked `N. ` without checking that the numbers run `1..n`. All three are reported — a
+  second copy of a value is two readings of one document. This immediately found a real one:
+  `aif-adr-next` carries `empty_form:` in its `status_footer:`, which the profile now
+  declares.
+- **The standard contradicted the checker in 2 places.** `- none` with the reason is now
+  accepted as the whole content of a block in any form, where a record-list previously
+  produced 5 errors for the form the standard prescribes; and a block whose content is a
+  fenced region is no longer read as empty. A scalar is stated to have no empty form, which
+  is what the check already did.
+- **The 250-character hard limit now covers every line outside a fence**, not only bullets
+  and steps. §4 said "a line" and meant it; a long scalar or record sub-key passed.
+- **A profile typo no longer reads as a default.** `required: ye` became `no` — the check the
+  profile meant to declare, silently gone. `readProfile` rejects any `required` or `form`
+  value outside its domain at load.
+- `package-lock.json` said 1.7.0 while `package.json` said 1.13.1. Bumped through
+  `npm version`, so the two stay in step.
+
+### Changed
+
+- **The profile contract states what the checker reads.** `headings`,
+  `frontmatter_fields`, `sections` and `custom_sections` shape the check; `format`, `mood`,
+  `lexicon_exempt`, `enforcement` and every `note:` are for the reader — a mood is a
+  register, not a grammar, and `lexicon_exempt` names frontmatter fields, which no body check
+  sees. The promise is labelled instead of over-claimed.
+- **`custom_placement:` left `profiles/skill.md` for the standard.** It was a rules block in a
+  file the standard says declares values only, and its content — a vocabulary goes before
+  what refers to it, borrowed behaviour goes after — holds for every profile.
+- **`profiles/profile.md`: a profile is checked by the same machinery as everything else.**
+  It declares the 8 profile blocks, and `test/profile.test.js` runs `bodyIssues` over all 3
+  profile files, `profile.md` included — it conforms to itself. That closes the gap where a
+  profile could carry an unknown or missing block undetected, and it is the third profile
+  added with no new code, which is what §7 claims is possible.
+
+## [1.13.1] — 2026-07-28
+
+### Fixed
+
+- **A profile now names the format it obeys.** 1.13.0 pointed the format at its profiles but
+  not back, and the skills send the agent to `profiles/adr.md` — a file that lists blocks and
+  forms and never mentions the lexicon, the line rules or what `bullet-list` means. Every
+  profile carries `format: docs/cnlp-format.md` as its first block, `readProfile` returns it,
+  and `test/profile.test.js` asserts it is declared and resolves, so a third profile cannot
+  ship orphaned. The chain closes: skill → profile → format, one hop each.
+
+## [1.13.0] — 2026-07-28
+
+### Changed
+
+- **One format, no profile branching.** `docs/cnlp-format.md` carried 13 passages of the
+  form "for skills …, for ADRs …". Each one was a decision the agent had to re-make on every
+  read, and the branching cost most where it helped least: skills are migrated once, ADRs
+  are written continuously. The spec now states rules only; the words "skill" and "ADR"
+  appear nowhere in it outside fenced examples and the pointer to the profiles.
+- **A profile is a document, not a section of the spec.** `profiles/skill.md` and
+  `profiles/adr.md` are themselves CNL-P, and they declare values rather than rules: `mood`,
+  `headings`, `frontmatter_fields`, `lexicon_exempt`, `sections` (key, form, required,
+  heading, record keys), `custom_sections`, `enforcement`. A third kind of document is a
+  third file, with no change to the format and no new code.
+- **The profile table stopped living in 3 places.** It was in the spec, in
+  `src/artifacts/cnlp.js` and in `test/skill-format.test.js` — which is how `blast_radius`
+  came to be required by the standard and absent from the template. One
+  `bodyIssues(raw, profile)` now serves `ai-factory adr validate` and the skills test;
+  `adrBodyIssues` and the test's 8 hand-written checks are gone.
+- **The limit rule is universal, and stated more precisely.** It was ADR-only because the
+  operator form reads badly in an instruction (`states = 1 primary decision`). The real
+  split is grammatical, not by document kind: a limit that stands alone is written
+  `<subject> <operator> <value> <unit>` (`open connections per client <= 2`), while a number
+  that is a determiner inside a sentence keeps its digit form (`present at least 2 viable
+  approaches`). The check rejects only phrases whose bound is open — `no more than`,
+  `at most`, `up to`, `not exceeding`, `no fewer than`, `not less than`. No skill line uses
+  those, so no skill body changed.
+- **The comparative ban is universal**, with a new universal exemption: quoted or backticked
+  text is data, not a claim the document makes. That is what keeps
+  `do not accept "faster to write" as justification` legal.
+- **"The body holds no machine field" became "no block restates the frontmatter"**, and the
+  empty-block convention — `- none` with the reason, or delete the optional block — is
+  stated once instead of twice in different words.
+- New: a block declaring a `heading:` is now checked to sit under it, and a section key may
+  contain digits (`pre_1_6_overlay` was invisible to the old parser).
+- `test/profile.test.js` asserts both profiles parse, name only the 5 declared forms, and
+  keep their record-list keys — a typo in a profile would otherwise silently disable a check.
+
+### Fixed
+
+- **`package.json` `files` now ships `profiles/` and `docs/cnlp-format.md`.** Skills tell the
+  agent to follow the standard by path, and that path did not exist in an adopting project.
+
 ## [1.12.0] — 2026-07-28
 
 ### Added

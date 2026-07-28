@@ -15,7 +15,7 @@ inputs:
 preconditions:
 - the file is in the configured ADR root's `drafts/` directory and its status is `draft`
 - exactly 1 primary decision is stated
-- the body carries every required CNL-P block, per `docs/cnlp-format.md` §7
+- the body carries every required CNL-P block, per `profiles/adr.md`
 - `problem:` describes what breaks today and `constraints:` names what cannot be violated
 - `decision:` is concrete and names the choice alone
 - `alternatives:` records meaningful options, each with its `rejected_because`

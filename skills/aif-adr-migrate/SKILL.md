@@ -79,7 +79,7 @@ file_shape:
   - preserve history with a rename: `git mv <legacy-file> <root>/<status-dir>/<id>.md`
   - edit the moved file to match `templates/adr.md`
   - fill the frontmatter: `id`, `type: adr`, `status`, `owners`, `depends_on`, `affects`, `supersedes`, `code`, `issue`, `plan`, `evidence`, `replaced_by`
-  - fill the 4 `##` headings with the required CNL-P blocks, per `docs/cnlp-format.md` §7
+  - fill the 4 `##` headings with the required CNL-P blocks, per `profiles/adr.md`
   - add `blast_radius:` when the decision changes code
   - port the old prose into those blocks, one idea per bullet
   - state every numeric limit as a comparison, `<= 2 connections per client`, never as a phrase
@@ -108,7 +108,7 @@ pre_1_6_overlay:
 pre_cnlp_overlay:
 - applies when the ADR already uses this extension's frontmatter but its body is prose, written before the CNL-P profile
 - applies in addition to the file-shape case, never instead of it
-- rewrite each `##` section into the §7 blocks and keep the decision unchanged: this is a format change, not a new decision
+- rewrite each `##` section into the blocks `profiles/adr.md` declares, keeping the decision unchanged: this is a format change, not a new decision
 - run `ai-factory adr validate <file>` after the rewrite: it names every block and every line that is still prose
 - do not supersede an ADR to change its format: a rewrite that keeps the decision is a non-material edit
 

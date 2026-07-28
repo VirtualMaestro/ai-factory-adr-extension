@@ -4,18 +4,24 @@ Open items only. The MVP build log (verification spike, epics P0–P4, coverage 
 finished and archived at [`archive/BACKLOG-mvp.md`](./archive/BACKLOG-mvp.md); it describes
 the pre-1.6 body format in places and is history, not guidance.
 
-**Current state:** 1.12.0 · 15 skills · 109 tests green · skill and ADR bodies in CNL-P
-form, both checked in code (`src/artifacts/cnlp.js`).
+**Current state:** 1.13.0 · 15 skills · 107 tests green · one CNL-P format with no profile
+branching; the profiles are documents (`profiles/skill.md`, `profiles/adr.md`) read by both
+the agent and `src/artifacts/cnlp.js`.
 
 ---
 
-## Next — nothing open
+## Next — the plan profile
 
-The ADR profile landed in 1.12.0: `ai-factory adr validate` checks the body (inv 12), the
-standard states what a conformant ADR contains, and `aif-adr-migrate` carries the
-`pre_cnlp_overlay` for a prose corpus.
+Plan documents (`.ai-factory/plans/*.md`, written by `aif-adr-plan`) are the third kind of
+technical document this extension owns and the only one still in prose.
 
-Watch on first real use: whether the §8 comparative list nags on legitimate prose in
+- Adding it is one file, `profiles/plan.md`, plus whatever enforcement it earns. If it needs
+  a change to `docs/cnlp-format.md` or to `src/artifacts/cnlp.js`, the 1.13.0 generalization
+  did not go far enough — that is the real test of it.
+- The block vocabulary starts from `aif-adr-plan`'s `plan_frontmatter:` and the steps the
+  skill already dictates.
+
+Watch on first real use of 1.13.0: whether the comparative list nags on legitimate prose in
 `rejected_because`, and whether the warning-at-draft, error-at-accepted gate lands where
 authors expect it. Both are one list and one line in `src/artifacts/cnlp.js`.
 

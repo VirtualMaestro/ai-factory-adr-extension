@@ -179,7 +179,7 @@ test('status surfaces dependency warnings without failing file --check', opts, a
   assert.match(human.stderr, /warning: depends on "adr-dependency" which is not yet active/);
 });
 
-// A CNL-P body (docs/cnlp-format.md §7) — inv 12 rejects anything else on an accepted ADR.
+// A CNL-P body (profiles/adr.md) — inv 12 rejects anything else on an accepted ADR.
 function cnlpBody(title) {
   return [
     `# ${title}`, '',

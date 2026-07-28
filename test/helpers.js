@@ -14,7 +14,7 @@ export async function mkProject() {
   return dir;
 }
 
-// Conformant with docs/cnlp-format.md §7 — an accepted/active ADR is validated against it (inv 12).
+// Conformant with profiles/adr.md — an accepted/active ADR is validated against it (inv 12).
 const CLEAN_BODY = `
 # Title
 
@@ -24,7 +24,7 @@ problem:
 - the fixture states one observable problem
 
 constraints:
-- the fixture stays conformant with docs/cnlp-format.md §7
+- the fixture stays conformant with profiles/adr.md
 
 decision_drivers:
 - a body under test carries no violation of its own
@@ -38,7 +38,7 @@ scope:
 - excludes: production ADR content
 
 rules:
-1. keep this body clean of §7 and §8 violations
+1. keep this body clean of profile and lexicon violations
 
 ## Alternatives considered
 
