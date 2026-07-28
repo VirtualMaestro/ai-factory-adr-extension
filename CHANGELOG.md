@@ -4,6 +4,36 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and the project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.16.0] — 2026-07-28
+
+### Added
+
+- **`cnlp-kit/` — the format, portable to another skill repository.** The standard, the
+  checker and the profile-of-profiles were general already; what was missing was a way to put
+  them in a repository that has its own skills. `node cnlp-kit/export.mjs <target>` lands the
+  standard, `profiles/profile.md` and the checker verbatim, seeds `profiles/skill.md` with the
+  generic spine, seeds the rubric to prune, writes a retargeted conformance test, and installs
+  the `cnlp-migrate` skill. `--skills-dir` follows the target's layout, `--no-test` covers a
+  repository without Node, `--force` overwrites the seeds, which are otherwise kept once
+  authored.
+- **The export reads the live files, never a second copy of them.** One fact in 3 places is
+  how `blast_radius` and the profile table drifted here; a kit holding its own copy of the
+  standard would repeat it on a longer cycle.
+- **`cnlp-migrate` — the skill the agent is given in the target repository.** It is written in
+  CNL-P and `test/kit.test.js` asserts it conforms to the profile it exports, because a
+  migration skill that breaks the format it teaches is worthless. Its first phase is an
+  inventory of every top-level `key:` the existing skills use, which is what fills
+  `custom_sections:` — the profile is authored before a body is touched. Its
+  `forbidden_behaviors` carry what went wrong here: no invented rule, no silent drop, no block
+  the profile does not declare, no behaviour change smuggled into a format change.
+
+### Changed
+
+- `test/skill-format.test.js` marks its packaging guard with `cnlp-kit:strip` markers. That
+  guard exists because this extension ships its skills into *another* project; a repository
+  that keeps skills and standard side by side cites them by path on purpose, so the export
+  drops it.
+
 ## [1.15.1] — 2026-07-28
 
 ### Added
