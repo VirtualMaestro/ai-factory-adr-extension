@@ -71,6 +71,11 @@ test('packed extension bundles yaml and loads in a clean initialized project', o
   const packDir = await mkdtemp(path.join(os.tmpdir(), 'adr-pack-'));
   const packed = JSON.parse(npm(['pack', '--json', '--pack-destination', packDir], EXT_ROOT))[0];
   assert.ok(packed.files.some((f) => f.path === 'node_modules/yaml/package.json'), 'yaml is bundled');
+  // The skills send the agent to `adr format`, which reads these out of the installed package:
+  // dropping them from package.json `files` is invisible to every test that installs the checkout.
+  for (const shipped of ['docs/cnlp-format.md', 'profiles/adr.md', 'profiles/skill.md', 'profiles/profile.md']) {
+    assert.ok(packed.files.some((f) => f.path === shipped), `${shipped} is missing from the tarball`);
+  }
 
   const stage = await mkdtemp(path.join(os.tmpdir(), 'adr-packed-install-'));
   npm(['install', '--ignore-scripts', '--prefix', stage, path.join(packDir, packed.filename)], EXT_ROOT);
@@ -80,6 +85,7 @@ test('packed extension bundles yaml and loads in a clean initialized project', o
   assert.ok(!path.resolve(dir).startsWith(path.resolve(EXT_ROOT)), 'fixture is outside the repository tree');
   aif(['extension', 'add', unpacked], dir);
   assert.match(aif(['adr', '--help'], dir), /init/);
+  assert.match(aif(['adr', 'format', 'adr'], dir), /^sections:$/m, 'the packed install serves the profile');
   aif(['adr', 'init'], dir);
   assert.ok(existsSync(path.join(dir, 'docs/adr/active')));
 });
@@ -157,6 +163,27 @@ test('adr import scaffolds a conformant skeleton at a chosen status via the real
   const file = path.join(dir, 'docs/adr/active/adr-cache-layer.md');
   assert.ok(existsSync(file), 'skeleton written to active/');
   assert.match(await readFile(file, 'utf8'), /status: active/);
+});
+
+// The skills tell the agent to read the format; in an installed project neither `docs/` nor
+// `profiles/` is at the root, so this is where "can the agent reach it" is actually decided.
+test('adr format serves the standard and the profiles from an installed extension', opts, async () => {
+  const dir = await newProject('claude');
+  aif(['extension', 'add', EXT_ROOT], dir);
+
+  assert.match(aif(['adr', 'format'], dir), /# CNL-P format — the standard/);
+  assert.match(aif(['adr', 'format', 'adr'], dir), /^name: adr$/m);
+  assert.match(aif(['adr', 'format', 'skill'], dir), /^mood: imperative$/m);
+
+  const resolved = aif(['adr', 'format', 'adr', '--path'], dir).trim();
+  assert.ok(existsSync(resolved), `--path must resolve: ${resolved}`);
+  assert.match(resolved, /[\\/]\.ai-factory[\\/]extensions[\\/]/, 'served from the installed copy');
+
+  const json = JSON.parse(aif(['adr', 'format', 'adr', '--json'], dir));
+  assert.equal(json.name, 'adr');
+  assert.match(json.content, /^sections:$/m);
+
+  assert.notEqual(aifResult(['adr', 'format', 'nonexistent'], dir).status, 0, 'unknown name fails');
 });
 
 test('status surfaces dependency warnings without failing file --check', opts, async () => {

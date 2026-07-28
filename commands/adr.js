@@ -1,4 +1,7 @@
+import { readFile, readdir } from 'node:fs/promises';
+import path from 'node:path';
 import { detectAif, AifError } from '../src/aif/detect.js';
+import { resolveDoc } from '../src/artifacts/cnlp.js';
 import { init } from '../src/init.js';
 import { validateAdr } from '../src/lifecycle/validate.js';
 import { verifyAnchors } from '../src/lifecycle/verify.js';
@@ -213,6 +216,33 @@ export function register(program) {
         }
       });
       if (res.cycles.length) process.exitCode = 1;
+    }));
+
+  adr
+    .command('format [name]')
+    .description('Print the CNL-P standard, or a profile: `adr`, `skill`, `profile` (§7)')
+    .option('--path', 'Print the resolved file path instead of the content')
+    .option('--json', 'Machine-readable output')
+    .action((name, opts) => guard(opts, async () => {
+      const doc = name ?? 'format';
+      let file;
+      let content;
+      try {
+        file = resolveDoc(doc); // rejects anything that is a path rather than a name
+        content = await readFile(file, 'utf8');
+      } catch {
+        const known = (await readdir(path.dirname(resolveDoc('adr')))).filter((f) => f.endsWith('.md'));
+        throw new AifError(
+          'Unknown CNL-P document.\n' +
+            `  expected: format, or one of ${known.map((f) => f.replace(/\.md$/, '')).join(', ')}\n` +
+            `  detected: ${JSON.stringify(doc)}\n` +
+            '  files:    nothing was changed\n' +
+            '  next:     run `ai-factory adr format` for the standard itself',
+        );
+      }
+      out(opts, { command: 'format', name: doc, path: file, content }, () => {
+        console.log(opts.path ? file : content);
+      });
     }));
 
   return adr;

@@ -4,11 +4,12 @@ Open items only. The MVP build log (verification spike, epics P0–P4, coverage 
 finished and archived at [`archive/BACKLOG-mvp.md`](./archive/BACKLOG-mvp.md); it describes
 the pre-1.6 body format in places and is history, not guidance.
 
-**Current state:** 1.14.1 · 15 skills · 112 tests green · one CNL-P format with no profile
+**Current state:** 1.15.1 · 15 skills · 116 tests green · one CNL-P format with no profile
 branching. The profiles are documents — `profiles/skill.md`, `profiles/adr.md`, and
 `profiles/profile.md`, which describes the other two and conforms to itself — read by both
 the agent and `src/artifacts/cnlp.js`. All 15 skill bodies and `templates/adr.md` are clean
-against the current checks, with no skill exempt from its profile.
+against the current checks, with no skill exempt from its profile. An adopting project reaches
+the standard and the profiles through `ai-factory adr format`, never by path.
 
 ---
 

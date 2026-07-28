@@ -4,7 +4,7 @@ import { existsSync } from 'node:fs';
 import { readFile, readdir } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { bodyIssues, loadProfile, readProfile, FORMS } from '../src/artifacts/cnlp.js';
+import { bodyIssues, loadProfile, readProfile, resolveDoc, FORMS } from '../src/artifacts/cnlp.js';
 
 // A profile declares what the checker enforces, so a typo in one silently disables a check.
 // These assertions are what stops that.
@@ -49,6 +49,23 @@ test('a value outside its domain is rejected at load, not read as a default', as
   const raw = await readFile(path.join(repoRoot, 'profiles', 'adr.md'), 'utf8');
   assert.throws(() => readProfile(raw.replace('required: yes', 'required: ye')), /required is "ye"/);
   assert.throws(() => readProfile(raw.replace('form: bullet-list', 'form: bulet-list')), /form is "bulet-list"/);
+});
+
+// `ai-factory adr format` is the only way an adopting project reaches these files, and it
+// resolves them through this function.
+test('every shipped document resolves inside the package', () => {
+  for (const name of ['format', ...profiles]) {
+    assert.ok(existsSync(resolveDoc(name)), `${name} does not resolve to a file`);
+  }
+  assert.equal(path.basename(resolveDoc()), 'cnlp-format.md', 'the default is the standard');
+});
+
+// The name arrives from a command line. `profiles/${name}.md` with a `..` in it reads any
+// markdown file on the machine, so a name that is a path is rejected before it becomes one.
+test('a document name that is a path is rejected', () => {
+  for (const bad of ['../docs/cnlp-format', '../../../../etc/passwd', 'profiles/adr', 'adr.md', 'a b', '', 'ADR']) {
+    assert.throws(() => resolveDoc(bad), /not a CNL-P document name/, `accepted ${JSON.stringify(bad)}`);
+  }
 });
 
 test('the ADR profile has headings and the skill profile has none', async () => {

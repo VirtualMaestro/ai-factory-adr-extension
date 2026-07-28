@@ -20,3 +20,14 @@ test('every skill body conforms to profiles/skill.md', async () => {
     assert.deepEqual(issues, []);
   }
 });
+
+// A skill runs in the adopting project, where the extension lives under
+// .ai-factory/extensions/ and neither `profiles/` nor `docs/` is at the root. A path citation
+// resolves in this repository and nowhere else, so the skills name the command instead.
+test('no skill cites a shipped document by path', async () => {
+  for (const name of skills) {
+    const raw = await readFile(path.join(repoRoot, 'skills', name, 'SKILL.md'), 'utf8');
+    const hit = raw.match(/(docs\/cnlp-format\.md|profiles\/[a-z]+\.md)/);
+    assert.equal(hit, null, `${name}: cites ${hit?.[0]} by path — use \`ai-factory adr format\``);
+  }
+});

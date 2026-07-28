@@ -4,6 +4,47 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and the project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.15.1] — 2026-07-28
+
+### Added
+
+- **`ai-factory adr format [name]` — the format, reachable from the project that uses it.**
+  The skills told the agent to follow `profiles/adr.md` and `docs/cnlp-format.md §5`, paths
+  that resolve in this repository and nowhere else: `extension add` copies the package to
+  `<project>/.ai-factory/extensions/ai-factory-adr-extension/` while the skills are installed
+  to `.claude/skills/`, so an agent writing an ADR in a real project had no source for the
+  format — only `adr validate` rejecting its guesses afterwards. The command prints the
+  standard, `adr format adr` a profile, `--path` the resolved location to open directly, and
+  `--json` all of it. Paths are resolved inside the package by `resolveDoc`, the function
+  `loadProfile` already used.
+
+### Changed
+
+- **8 path citations across 5 skills are gone.** 7 of the replacements name the command, in
+  `aif-adr-propose`, `aif-adr-refine`, `aif-adr-accept` and `aif-adr-migrate`; the remaining
+  3 lines — 2 in `aif-adr-migrate`'s case tables, 1 in `aif-adr-finalize` — say "the ADR
+  profile" in prose, because they state a rule rather than send the reader anywhere.
+  `aif-adr-propose` and `aif-adr-migrate` read the standard *and* the profile as a workflow
+  step, since they are the 2 skills that author a body from nothing.
+- `docs/cnlp-format.md` §7 states that `format:` is a path inside the extension package, and
+  that a document naming one of these files by path is naming something its own reader cannot
+  find.
+- `test/skill-format.test.js` fails on any bare `profiles/…` or `docs/cnlp-format.md` in a
+  skill body, and the integration suite installs the extension into a temp project and asserts
+  `adr format adr --path` resolves under `.ai-factory/extensions/` — the assertion is where
+  the question is actually decided.
+
+### Fixed
+
+- **`resolveDoc` rejects a name that is a path.** `adr format ../docs/cnlp-format` walked out
+  of `profiles/` and printed any markdown file it could reach. The name arrives from a command
+  line and names a document, so it now matches `^[a-z][a-z0-9-]*$` or is refused, which covers
+  every caller rather than the command alone.
+- **The tarball is checked, not assumed.** The packed-install test asserts
+  `docs/cnlp-format.md` and all 3 profiles are in `npm pack --json` output and that the packed
+  install serves `adr format adr`. Every other integration test installs the checkout, where
+  dropping an entry from `package.json` `files` is invisible.
+
 ## [1.14.1] — 2026-07-28
 
 A second review pass. 4 findings, all accepted; 1 of its proposed fixes was solved in the

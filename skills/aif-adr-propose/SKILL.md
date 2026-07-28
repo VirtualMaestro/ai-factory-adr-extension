@@ -18,7 +18,7 @@ forbidden_behaviors:
 - do not create a near-duplicate of an ADR that is already accepted or active
 - do not resolve an unresolved assumption by guessing
 - do not present the decision as settled
-- do not write the body as prose: the ADR body is CNL-P blocks, per `profiles/adr.md`
+- do not write the body as prose: the ADR body is CNL-P blocks, which `ai-factory adr format adr` prints
 - do not change `status: proposed`
 - do not invoke `aif-explore` as a nested call: apply its read-only research posture inline
 
@@ -53,11 +53,12 @@ workflow:
 3. stop and recommend `aif-adr-refine` or `aif-adr-supersede` on the existing ADR when one already covers this decision
 4. inspect `.ai-factory/ARCHITECTURE.md`, `.ai-factory/RULES.md`, any research artifacts, and the relevant source
 5. run `ai-factory adr new "<topic>"`: it generates the stable id, creates `<adr-root>/proposals/adr-<slug>.md` with `status: proposed` from the template, and refuses if that id already exists
-6. fill `problem:`, `constraints:` and `decision_drivers:` under `## Context` in the created file
-7. state a numeric limit in canonical form, `open connections per client <= 2`, per `docs/cnlp-format.md` §5
-8. record unresolved assumptions as placeholders in the body
-9. leave `status: proposed`; acceptance happens later via `aif-adr-refine` then `aif-adr-accept`
-10. report the status footer
+6. run `ai-factory adr format --path` and `ai-factory adr format adr --path`, then read both: the rules and the block set are read together, neither is complete alone
+7. fill `problem:`, `constraints:` and `decision_drivers:` under `## Context` in the created file
+8. state a numeric limit in canonical form, `open connections per client <= 2`, per the lexicon in `ai-factory adr format`
+9. record unresolved assumptions as placeholders in the body
+10. leave `status: proposed`; acceptance happens later via `aif-adr-refine` then `aif-adr-accept`
+11. report the status footer
 
 status_footer:
   format: "✔ aif-adr-propose · ADR: <adr-id> [proposed] · Plan: none"

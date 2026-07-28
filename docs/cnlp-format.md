@@ -259,6 +259,12 @@ the two are read together and neither is complete alone. A reader arriving at a 
 sent there by a skill, or by the document kind it describes — follows `format:` to the rules
 first, then reads the profile for the blocks they apply to.
 
+**The path in `format:` is inside the extension package**, which is not the root of the
+project the documents live in. From a project, `ai-factory adr format` prints the standard,
+`ai-factory adr format <profile>` prints a profile, and `--path` gives the resolved location
+to open directly. A document that names one of these files by path is naming something its
+own reader cannot find.
+
 | Block | Form | Holds |
 |---|---|---|
 | `format` | scalar | the standard this profile's documents obey, by path |

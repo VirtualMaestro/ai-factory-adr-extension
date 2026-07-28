@@ -123,12 +123,24 @@ export function readProfile(raw) {
 
 const cache = new Map();
 
-/** Load a shipped profile by name. Resolved from this package, like `templates/adr.md`. */
-export async function loadProfile(name) {
-  if (!cache.has(name)) {
-    const file = fileURLToPath(new URL(`../../profiles/${name}.md`, import.meta.url));
-    cache.set(name, readProfile(await readFile(file, 'utf8')));
+/**
+ * Absolute path of a shipped document: the standard, or `profiles/<name>.md`. Resolved inside
+ * this package, like `templates/adr.md` — the installing project keeps neither at its root, so
+ * `ai-factory adr format` is how anything outside the package reaches them.
+ */
+export function resolveDoc(name = 'format') {
+  // The name reaches this from a command line, so it names a document and never a path:
+  // `profiles/${name}.md` with a `..` in it walks out of the package and reads anything.
+  if (!/^[a-z][a-z0-9-]*$/.test(name)) {
+    throw new Error(`not a CNL-P document name: ${JSON.stringify(name)}`);
   }
+  const rel = name === 'format' ? 'docs/cnlp-format.md' : `profiles/${name}.md`;
+  return fileURLToPath(new URL(`../../${rel}`, import.meta.url));
+}
+
+/** Load a shipped profile by name. */
+export async function loadProfile(name) {
+  if (!cache.has(name)) cache.set(name, readProfile(await readFile(resolveDoc(name), 'utf8')));
   return cache.get(name);
 }
 

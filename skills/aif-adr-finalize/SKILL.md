@@ -27,7 +27,7 @@ forbidden_behaviors:
 - do not finalize when the implementation contradicts the accepted Decision: recommend returning the ADR to draft via `aif-adr-refine`
 - do not invoke `aif-verify` as a nested skill: apply its strict semantics in this run
 - do not put detailed implementation notes in `evidence:`: it is a short string, and the detail belongs in the plan or in the tracker named by the frontmatter `issue:` field
-- do not add implementation prose to the ADR body: `profiles/adr.md` declares every block an ADR has, and none of them holds a build log
+- do not add implementation prose to the ADR body: the ADR profile declares every block an ADR has, and none of them holds a build log
 - do not list every touched file in `code:`; it holds the primary entry-point anchors an agent starts tracing from
 
 outputs:
