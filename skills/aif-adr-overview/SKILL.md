@@ -10,7 +10,7 @@ purpose:
 - be read first, before invoking the stage-specific skill
 
 inputs:
-- none
+- none: the skill is reference material and reads the lifecycle it describes
 
 lifecycle_flow:
 ```text
@@ -65,6 +65,9 @@ rules_that_always_hold:
 - active decisions are protected (PRD §18.3): edit an active ADR in place only for non-material changes such as code links, evidence, paths, and formatting
 - a material change to the Decision, constraints, scope, or consequences requires a new ADR that supersedes, which is what `aif-adr-supersede` is for
 - skills own judgment, the CLI owns file mechanics: `ai-factory adr …` performs deterministic moves, links, and audits, and the skills decide whether a transition is warranted
+
+workflow:
+- none: this skill is reference material, read before invoking a stage skill, and runs no steps of its own
 
 invocation:
 - Claude Code: `/aif-adr-overview`

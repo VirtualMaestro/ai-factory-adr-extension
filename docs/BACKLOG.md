@@ -4,9 +4,11 @@ Open items only. The MVP build log (verification spike, epics P0–P4, coverage 
 finished and archived at [`archive/BACKLOG-mvp.md`](./archive/BACKLOG-mvp.md); it describes
 the pre-1.6 body format in places and is history, not guidance.
 
-**Current state:** 1.13.0 · 15 skills · 107 tests green · one CNL-P format with no profile
-branching; the profiles are documents (`profiles/skill.md`, `profiles/adr.md`) read by both
-the agent and `src/artifacts/cnlp.js`.
+**Current state:** 1.14.1 · 15 skills · 112 tests green · one CNL-P format with no profile
+branching. The profiles are documents — `profiles/skill.md`, `profiles/adr.md`, and
+`profiles/profile.md`, which describes the other two and conforms to itself — read by both
+the agent and `src/artifacts/cnlp.js`. All 15 skill bodies and `templates/adr.md` are clean
+against the current checks, with no skill exempt from its profile.
 
 ---
 
@@ -16,14 +18,24 @@ Plan documents (`.ai-factory/plans/*.md`, written by `aif-adr-plan`) are the thi
 technical document this extension owns and the only one still in prose.
 
 - Adding it is one file, `profiles/plan.md`, plus whatever enforcement it earns. If it needs
-  a change to `docs/cnlp-format.md` or to `src/artifacts/cnlp.js`, the 1.13.0 generalization
-  did not go far enough — that is the real test of it.
+  a change to `docs/cnlp-format.md` or to `src/artifacts/cnlp.js`, the generalization did not
+  go far enough — that is the real test of it. `profiles/profile.md` was added in 1.14.0 with
+  no code change, which is the first evidence that it holds.
 - The block vocabulary starts from `aif-adr-plan`'s `plan_frontmatter:` and the steps the
   skill already dictates.
+- A plan has no lifecycle status of its own to gate severity on, unlike an ADR, so the
+  profile has to say what `enforcement:` means for it before any check is written.
 
-Watch on first real use of 1.13.0: whether the comparative list nags on legitimate prose in
-`rejected_because`, and whether the warning-at-draft, error-at-accepted gate lands where
-authors expect it. Both are one list and one line in `src/artifacts/cnlp.js`.
+---
+
+## Watch on first real use
+
+- whether the comparative list nags on legitimate prose in `rejected_because`
+- whether the warning-at-draft, error-at-accepted gate lands where authors expect it
+- whether the 250-character limit, now covering scalars and record sub-keys, hits a
+  legitimate verbatim line that is not inside a fence
+
+Each is one list or one line in `src/artifacts/cnlp.js`.
 
 ---
 

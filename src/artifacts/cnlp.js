@@ -196,7 +196,14 @@ export function bodyIssues(raw, profile) {
       continue;
     }
     // "- none: reason" is the declared way to say a required block has nothing, in any form.
-    if (items.length === 1 && /^- none\b/.test(items[0].text)) continue;
+    // It is the whole content of a required block: anything else makes it 2 statements.
+    const none = items.find((i) => /^- none\b/.test(i.text));
+    if (none) {
+      if (!spec.required) at(none.line, `"${key}:" is optional and has nothing to say — delete the block instead of stating "- none"`);
+      else if (items.length !== 1) at(none.line, `"${key}:" states "- none" alongside other items — the sentinel is the whole content or it is not used`);
+      else if (!/^- none: \S/.test(none.text)) at(none.line, `"${key}:" states "- none" without the reason, which is what the reader needs`);
+      continue;
+    }
     issues.push(...formIssues(key, spec, items));
   }
 

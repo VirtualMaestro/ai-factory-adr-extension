@@ -52,7 +52,7 @@ sections:
 - key: workflow
   form: numbered-list
   required: yes
-  note: aif-adr-overview is the one reference-material skill and has none
+  note: reference material states "- none" with the reason instead of carrying steps
 - key: transitions
   form: record-list
   required: no

@@ -11,7 +11,7 @@ purpose:
 - be the batch companion to `aif-adr-verify`: same per-ADR judgment, one aggregated report
 
 inputs:
-- none; the skill discovers the active ADRs itself
+- none: the skill discovers the active ADRs itself
 
 scope:
 - active ADRs only

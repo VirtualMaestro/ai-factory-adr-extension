@@ -74,8 +74,9 @@ workflow:
 6. split the reviewer's input into discrete suggestions
 7. give each suggestion one verdict with a one-line justification grounded in the lens and the project's rules
 8. apply the adopted changes to the artifact body using the matching lens
-9. re-verify: `ai-factory adr status --check` is clean, and for a plan target `ai-factory adr resolve-plan <adr-file>` still resolves to exactly 1 plan
-10. emit the adjudication table, then the status footer
+9. re-run `ai-factory adr validate <file>` on an edited ADR: `status --check` reports errors only, so a warning on a `proposed` or `draft` file appears nowhere else
+10. re-verify: `ai-factory adr status --check` is clean, and for a plan target `ai-factory adr resolve-plan <adr-file>` still resolves to exactly 1 plan
+11. emit the adjudication table, then the status footer
 
 report_format:
 ```text

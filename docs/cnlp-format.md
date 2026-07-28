@@ -122,8 +122,10 @@ section keys.
 **An empty block.** A required block with nothing in it carries `- none` and the reason:
 `- none: no alternative was viable at this scale`. That single line is the whole content and
 replaces the form the block would otherwise take, so a record-list or a keyed-block says it
-the same way a bullet-list does. An optional block with nothing in it is deleted. A key with
-no items at all is neither, and the check rejects it.
+the same way a bullet-list does. It is the *whole* content: `- none` next to a real item says
+the block is both empty and not, and the check rejects it. An optional block with nothing in
+it is deleted rather than marked, so `- none` in one is also rejected. A key with no items at
+all is neither, and the check rejects that too.
 
 A **scalar** has no empty form: it holds the one value the block exists for, so a scalar with
 nothing to say means the document is unfinished, and the check says so.
@@ -279,11 +281,20 @@ A `custom_sections:` name is a block the checker accepts but does not shape: ref
 material, a vocabulary the document refers to, or behaviour owned by something else. Reuse a
 name already on the list before inventing one — a new name is a new place for prose to hide.
 
-**Where a custom block sits** is decided by what it is, in every profile: a vocabulary the
-document refers to by name goes *before* the block that refers to it, so it is read first;
-behaviour owned by something else, or anything describing what happens after the run, goes
-*after* it. A custom block is allowed only when its content is neither a rule, a step, nor
-an output — those have declared blocks already.
+**Where a custom block sits** is decided by what it is, in every profile, and the test is
+whether the reader needs it in hand or is sent to it:
+
+- a **term** the steps use without introducing it goes *before* the block that uses it, so it
+  is read first: `verdicts`, `lenses`, `order_fields`, `plan_frontmatter`.
+- a **case table** a step names at the point of use goes *after*: `status_mapping`,
+  `file_shape`, the `*_overlay` blocks. The step that says "apply the one matching case in
+  `file_shape`" resolves the reference itself, and moving the table above the steps buries
+  them.
+- **behaviour owned by something else**, or anything describing what happens after the run,
+  goes *after*: `command_behaviour`, `follow_up`, `report_format`, `expected_warnings`.
+
+A custom block is allowed only when its content is neither a rule, a step, nor an output —
+those have declared blocks already. Placement is judgment: no check enforces it.
 
 **What the checker reads.** `headings`, `frontmatter_fields`, `sections` and
 `custom_sections` shape the check. `format`, `mood`, `lexicon_exempt`, `enforcement` and

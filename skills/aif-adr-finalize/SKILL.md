@@ -26,7 +26,8 @@ forbidden_behaviors:
 - do not rewrite the Decision to match the code
 - do not finalize when the implementation contradicts the accepted Decision: recommend returning the ADR to draft via `aif-adr-refine`
 - do not invoke `aif-verify` as a nested skill: apply its strict semantics in this run
-- do not put detailed implementation notes in `evidence:`; prose belongs in the ADR body and a tracker link in the frontmatter `issue:` field
+- do not put detailed implementation notes in `evidence:`: it is a short string, and the detail belongs in the plan or in the tracker named by the frontmatter `issue:` field
+- do not add implementation prose to the ADR body: `profiles/adr.md` declares every block an ADR has, and none of them holds a build log
 - do not list every touched file in `code:`; it holds the primary entry-point anchors an agent starts tracing from
 
 outputs:
@@ -55,9 +56,10 @@ workflow:
 6. fill the frontmatter `code:` array with the primary entry-point anchors
 7. write each anchor as a repo-root path with POSIX `/` separators and an optional `#symbol` suffix, such as `src/status.js#validateDirStatus`
 8. verify each anchor exists before writing it, so the ADR transitions with its anchors in place
-9. run `ai-factory adr finalize <adr-file>`
-10. run `ai-factory adr status --check` and resolve any failures
-11. report the status footer
+9. run `ai-factory adr validate <adr-file>` and fix what it reports: `finalize` moves the ADR to `active`, where a body issue becomes an error, so the file is checked while it is still cheap to fix
+10. run `ai-factory adr finalize <adr-file>`
+11. run `ai-factory adr status --check` and resolve any failures
+12. report the status footer
 
 command_behaviour:
 - `ai-factory adr finalize` sets `evidence: implemented` only when the frontmatter `evidence:` field is still empty, so an authored value with commit refs or verification notes is preserved

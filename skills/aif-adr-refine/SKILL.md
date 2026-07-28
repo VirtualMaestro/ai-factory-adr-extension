@@ -69,8 +69,9 @@ workflow:
 8. record every conflict found with an active ADR
 9. ask only questions that materially block the decision
 10. update the ADR
-11. apply the matching transition when its condition holds
-12. report the status footer
+11. run `ai-factory adr validate <file>` again on the edited file and fix what it reports: the run at step 1 judged the file you replaced
+12. apply the matching transition when its condition holds
+13. report the status footer
 
 transitions:
 - from: proposed

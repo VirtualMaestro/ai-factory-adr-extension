@@ -9,7 +9,7 @@ purpose:
 - answer which ADR to implement next, and in what order, when a project has many ADRs with `depends_on` links and the sequence is not obvious
 
 inputs:
-- none; the skill reads the dependency graph itself
+- none: the skill reads the dependency graph itself
 
 scope:
 - read the computed order and recommend one ADR to start with

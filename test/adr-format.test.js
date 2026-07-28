@@ -143,6 +143,18 @@ test('a required block says it has nothing the same way in every form', () => {
   const none = bodyWith('').replace(/alternatives:\n[\s\S]*?rejected_because: it needs a second service/,
     'alternatives:\n- none: no other approach was viable at this size');
   assert.deepEqual(adrBodyIssues(none), []);
+
+  const bare = none.replace('- none: no other approach was viable at this size', '- none');
+  assert.match(messages(bare), /states "- none" without the reason/);
+
+  // The sentinel says the block is empty, so anything beside it says it is not.
+  const alongside = bodyWith('').replace('- the decision is recorded',
+    '- none: nothing improves\n- the decision is recorded');
+  assert.match(messages(alongside), /states "- none" alongside other items/);
+
+  // An optional block with nothing to say is deleted, not marked.
+  const optional = bodyWith('\nblast_radius:\n- none: no code changes\n');
+  assert.match(messages(optional), /is optional and has nothing to say — delete the block/);
 });
 
 test('the hard length limit covers a scalar, not only a bullet', () => {

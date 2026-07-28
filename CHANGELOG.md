@@ -4,6 +4,39 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and the project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.14.1] — 2026-07-28
+
+A second review pass. 4 findings, all accepted; 1 of its proposed fixes was solved in the
+skill rather than in the CLI, with the reason stated below.
+
+### Fixed
+
+- **No skill is exempt from its profile any more.** `aif-adr-overview` lacked the required
+  `workflow:` and `test/skill-format.test.js` deleted that one error — a specialization
+  living in the test instead of in the profile. It now declares
+  `workflow: - none: …reference material…`, using the universal empty form, and the test has
+  no exception left.
+- **The `- none` sentinel no longer contradicts itself.** It passed in an optional block,
+  which the standard says to delete rather than mark, and it passed beside real items, which
+  says the block is both empty and not. Both are rejected: the sentinel belongs to a required
+  block and is its whole content.
+- **3 lifecycle skills checked the ADR at the wrong moment.** `aif-adr-refine` validated at
+  step 1 and edited at step 10, so it judged the file it then replaced; `aif-adr-reconcile`
+  validated before applying its adopted changes; `aif-adr-finalize` never validated before
+  `adr finalize` moved the ADR to `active`, where body issues become errors. Each now
+  re-validates the file it wrote.
+- **`aif-adr-finalize` no longer sends implementation prose to the ADR body.** The ADR
+  profile declares every block an ADR has and none of them holds a build log, so the detail
+  goes to the plan or to the tracker named by `issue:`.
+
+### Not done, and why
+
+- **`adr status --check` still reports errors only** (`src/status.js`), which is why a
+  warning on a `draft` ADR is invisible in the aggregate. Surfacing warnings there would put
+  every unmigrated legacy ADR into the output of a cross-artifact audit that exists to gate
+  exit codes. The skills that edit an ADR now run `adr validate <file>` on it instead, which
+  is the command that owns per-file findings.
+
 ## [1.14.0] — 2026-07-28
 
 An external review of 1.13.x found that the profiles promised more than the checker
@@ -33,6 +66,9 @@ delivered. Every finding is addressed below; nothing new was added to the format
   value outside its domain at load.
 - `package-lock.json` said 1.7.0 while `package.json` said 1.13.1. Bumped through
   `npm version`, so the two stay in step.
+- **3 skills stated `- none` without its reason** — `aif-adr-next` and `aif-adr-verify-all`
+  separated it with a semicolon, `aif-adr-overview` gave none at all. Fixed, and the reason
+  is now required by the check: a bare `- none` states an absence and explains nothing.
 
 ### Changed
 
@@ -42,8 +78,12 @@ delivered. Every finding is addressed below; nothing new was added to the format
   register, not a grammar, and `lexicon_exempt` names frontmatter fields, which no body check
   sees. The promise is labelled instead of over-claimed.
 - **`custom_placement:` left `profiles/skill.md` for the standard.** It was a rules block in a
-  file the standard says declares values only, and its content — a vocabulary goes before
-  what refers to it, borrowed behaviour goes after — holds for every profile.
+  file the standard says declares values only, and its content holds for every profile. The
+  rule also gained the distinction the corpus already made and the old wording denied: a
+  **term** the steps use without introducing it goes before them, while a **case table** a
+  step names at the point of use goes after — which is why `aif-adr-migrate` keeps
+  `status_mapping` and `file_shape` below its workflow instead of burying the steps under
+  55 lines of tables.
 - **`profiles/profile.md`: a profile is checked by the same machinery as everything else.**
   It declares the 8 profile blocks, and `test/profile.test.js` runs `bodyIssues` over all 3
   profile files, `profile.md` included — it conforms to itself. That closes the gap where a
