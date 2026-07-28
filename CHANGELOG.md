@@ -4,6 +4,36 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and the project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.11.4] — 2026-07-28
+
+### Changed
+
+- **`docs/cnlp-format.md` reframed as a document format with profiles.** It was written
+  straight after the skill migration and read as a skills document with an ADR section
+  appended, which let skill assumptions be stated as universal rules. The format is general;
+  skills (§5) and ADRs (§7) are the two profiles defined today, and a third is added by
+  writing its section vocabulary rather than by changing §2–§4 or §8–§10.
+- **Fixed a rule that contradicted what shipped.** §2 stated "No H1" without qualification,
+  while `templates/adr.md` and the worked example both carry one. H1 and `##` headings are
+  now per-profile: a skill has neither, an ADR has an H1 decision title and 4 `##` headings.
+- §2 also states the boundary the ADR profile already relied on: a section ends at the next
+  unindented `key:` **or** at the next `##` heading.
+- §1's rationale covered only executed documents; it now covers consulted ones on the same
+  grounds — neither reader should have to reconstruct the structure before using the
+  content.
+- Scoped the remaining leaks: the 72-character median is attributed to the migrated skills,
+  the frontmatter `description` exemption is marked skills-profile, and §10's final step
+  runs the profile's check — `npm test` for a skill, `ai-factory adr validate` for an ADR.
+- §9 gains ADR examples, so the no-restatement rule has teeth in both profiles:
+  `constraints` versus `decision_drivers`, `negative` versus `risks`, and
+  `rejected_because` versus `negative`.
+- §7 now warns that the worked example predates the profile — it names its first heading
+  `## Problem` rather than `## Context` and promotes two optional blocks to headings. Copy
+  its register, not its heading set.
+- Stated what is enforced: the conformance test covers the skills profile only. This
+  repository ships the ADR lifecycle for other projects and holds no ADRs of its own, so
+  the ADR profile is held by review and by `ai-factory adr validate`.
+
 ## [1.11.3] — 2026-07-27
 
 ### Changed

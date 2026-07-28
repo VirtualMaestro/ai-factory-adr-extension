@@ -1,20 +1,30 @@
 # CNL-P format — the standard
 
-The format all `skills/aif-adr-*/SKILL.md` files use, and the target format for ADR
-documents. This file is the source of truth for it. Extend it when the format grows; do not
-re-derive the rules from an existing file.
+A way to write any document an agent has to read precisely. This file is the source of
+truth for it. Extend it when the format grows; do not re-derive the rules from an existing
+file.
 
-`test/skill-format.test.js` checks the mechanical parts of §2–§6 on every `npm test`.
+**Two profiles are defined today**: skills (§5) and ADRs (§7). A profile names the sections
+its document kind uses and their order — nothing else. §2–§4 and §8–§10 hold for every
+profile, so a third one is added by writing its section vocabulary, not by changing the
+format.
+
+**What is enforced:** `test/skill-format.test.js` checks the mechanical rules on every
+`npm test`, for the skills profile only. The ADR profile is held by review and by
+`ai-factory adr validate`, because this repository ships the ADR lifecycle for other
+projects and holds no ADRs of its own to check against.
 
 ## 1. What it is
 
 A document written as structured `key:` blocks instead of prose. One idea per line, one
 term per concept, no narrative connective tissue.
 
-The reader that matters executes the document. Prose forces that reader to separate
-intent, policy, sequence, and output shape by inference on every run; a `key:` block
-states which is which. A human reviewer gets the same benefit — the file is auditable in
-one pass.
+Prose leaves the reader to work out which sentence is intent, which is policy, which is
+sequence and which is the shape of the answer — by inference, every time the document is
+read. A `key:` block states which is which. That helps a document that is executed, like a
+skill, and a document that is consulted, like an ADR, for the same reason: neither reader
+should have to reconstruct the structure before using the content. A human reviewer gets
+the same benefit — the file is auditable in one pass.
 
 ## 2. Shape
 
@@ -33,13 +43,21 @@ second_key:
 2. second step
 ```
 
+Universal:
+
 - **Frontmatter is never rewritten.** For skills the runtime parses `name` and
   `description` for discovery and routing; for ADRs the frontmatter is the machine
   contract (`id`, `type`, `status`, `plan`, `evidence`, `code`, `replaced_by`, …).
-- **No H1.** `name:` in the frontmatter already carries it.
 - Sections are top-level `key:` lines in `lower_snake_case`.
-- A section ends where the next **unindented** `key:` begins. Anything indented belongs to
-  the section above it.
+- A section ends where the next **unindented** `key:` begins, or where the next `##`
+  heading begins. Anything indented belongs to the section above it.
+
+Per profile:
+
+- **skills** — no H1 and no `##` headings; the body is one flat run of sections, and
+  `name:` in the frontmatter carries the title.
+- **ADRs** — an H1 holds the decision title, and 4 `##` headings partition the body. The
+  `key:` blocks live inside them, so a heading is also a section boundary.
 
 ## 3. Section types
 
@@ -107,8 +125,8 @@ section keys.
 ## 4. Line rules
 
 - One idea per bullet. A bullet carrying two obligations is two bullets.
-- **Length: 150 characters is the target, 250 is the hard limit.** The corpus median is
-  72. Past 150, check whether the line holds a condition, a reason and an action at once;
+- **Length: 150 characters is the target, 250 is the hard limit.** The median across the
+  migrated skills is 72. Past 150, check whether the line holds a condition, a reason and an action at once;
   if so, split it. A line that is long only because one idea enumerates its parts is fine
   and is not split — that is the `give per approach: a, b, c` case below. Past 250 the
   line is compound whatever it claims, and the conformance test rejects it.
@@ -121,7 +139,7 @@ section keys.
   commands, frontmatter examples, text inserted into another file, diagrams, report
   templates. A format that cannot hold a shell command is useless here.
 
-## 5. Sections — skills
+## 5. Profile — skills
 
 Order as listed. `required` means the file is not conformant without it.
 
@@ -151,7 +169,11 @@ The two `quality_rules:` variants — long and short — are copied verbatim int
 that carry them. There is no include mechanism in the runtime, so the duplication is
 deliberate; `test/skill-rubric.test.js` asserts byte-identity within each group.
 
-## 6. Custom sections
+## 6. Custom sections — skills profile
+
+The placement rule below names `forbidden_behaviors:`, `workflow:` and `status_footer:`, so
+it applies to the skills profile only. §7's "optional blocks" paragraph is the ADR
+equivalent.
 
 A custom section is allowed when the content is **neither a rule, a step, nor an output**:
 a reference table, a vocabulary the workflow refers to, or behaviour owned by a command
@@ -174,11 +196,11 @@ In use today: `command_behaviour`, `documentation_only_adrs`, `documentation_onl
 `rules_that_always_hold`, `status_directories`, `status_mapping`, `targeting_rationale`,
 `verdicts`, `when_to_supersede_instead_of_editing`.
 
-## 7. Sections — ADRs
+## 7. Profile — ADRs
 
-An ADR keeps the four template `##` headings and puts CNL-P blocks inside them. The
-headings are the shared contract with `templates/adr.md`, `aif-adr-accept`'s preconditions
-and `aif-adr-migrate`; the blocks replace the prose.
+An ADR keeps its H1 decision title and the 4 template `##` headings, and puts CNL-P blocks
+inside them. The headings are the shared contract with `templates/adr.md`,
+`aif-adr-accept`'s preconditions and `aif-adr-migrate`; the blocks replace the prose.
 
 | Heading | Blocks | Form |
 |---|---|---|
@@ -237,8 +259,15 @@ blast_radius:
 
 Optional blocks that earn their place on a real ADR: `out_of_scope` (record-list with a
 `trigger` per deferred item), `unproven_hypothesis` (keyed-block with `acceptance_test` and
-`metric`), `increment_order` (numbered-list) when the decision ships in stages. A worked
-example lives at `docs/proposals/adr_lens_judgment_cnlp_rewrite_example.md`.
+`metric`), `increment_order` (numbered-list) when the decision ships in stages. They are blocks inside
+the 4 headings, not headings of their own.
+
+A worked example lives at `docs/proposals/adr_lens_judgment_cnlp_rewrite_example.md`. **Copy
+its register and its block style, not its heading set** — it was written before this profile
+existed, so it names its first heading `## Problem` instead of `## Context` and promotes
+`out_of_scope` and a sibling-ADR note to `##` headings. The 4 headings above are the
+contract, because `templates/adr.md`, `aif-adr-accept` and `aif-adr-migrate` all key off
+them.
 
 **Hard constraint from the tooling.** `ai-factory adr validate`
 (`src/lifecycle/validate.js`) does not check body headings, but on an `accepted` or
@@ -255,8 +284,8 @@ filled. A finished ADR contains none.
 - No word with several unrelated senses unless this file fixes the sense.
 - A short concrete verb over an abstract one.
 - Define a specialized term once, then reuse it verbatim.
-- The frontmatter `description` is **exempt**: it feeds skill routing and needs the
-  phrasing an operator would actually use.
+- The frontmatter `description` is **exempt** in the skills profile: it feeds skill routing
+  and needs the phrasing an operator would actually use.
 
 **Prohibition is always `do not`.** `never` is not used as a bullet opener — one concept,
 one term. `never` inside a sentence, qualifying a clause, is fine
@@ -300,11 +329,23 @@ speech: `blast radius` is precise here and stays.
 
 Each fact appears once, in the section that owns it.
 
+In the skills profile:
+
 - A rule already in `preconditions` is not repeated in `forbidden_behaviors`, and the
   workflow step that checks it names the check, not the rule again.
 - `outputs:` is dropped when `workflow:`, `purpose:` or `command_behaviour:` already states
   what the run produces.
 - `scope:` is dropped when it only paraphrases `workflow:`.
+
+In the ADR profile:
+
+- `constraints` holds what the decision cannot violate; `decision_drivers` holds what
+  chooses between the options. A line that appears in both means one of them is doing the
+  other's job.
+- `negative` holds a cost the decision is known to incur; `risks` holds something that may
+  or may not happen, with its mitigation. A certainty in `risks` belongs in `negative`.
+- `rejected_because` on an alternative is not restated in `negative`: the cost of the road
+  not taken is not a consequence of the decision.
 
 **The footer is the one deliberate exception, and it is not a repetition.** The workflow's
 last step states *when* it is emitted; `status_footer:` states *what shape* it has. Those
@@ -326,7 +367,8 @@ look here first.
    defect: splitting one prose sentence into the three obligations it was hiding
    legitimately adds lines, and so does fixing a defect found during the rewrite. Growth
    with no such cause means §9 was broken or prose survived.
-6. Run `npm test`.
+6. Run the profile's checks: `npm test` for a skill, `ai-factory adr validate <file>` for an
+   ADR.
 
 Formalizing prose finds defects in the prose — contradictory rules, branches that turn out
 not to be mutually exclusive, instructions the tooling rejects. Report them; do not resolve
