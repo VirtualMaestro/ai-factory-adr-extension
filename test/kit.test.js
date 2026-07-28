@@ -5,13 +5,16 @@ import { mkdtemp, readFile, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { exportKit } from '../cnlp-kit/export.mjs';
+import { execFileSync } from 'node:child_process';
+import AdmZip from 'adm-zip';
+import { buildZip, exportKit } from '../cnlp-kit/export.mjs';
 import { bodyIssues, readProfile } from '../src/artifacts/cnlp.js';
 
 // The kit exports the live files, so this asserts the export lands a working set — not that
 // the kit's own copy of anything is correct, because it holds no copy.
 
 const target = async () => mkdtemp(path.join(os.tmpdir(), 'cnlp-kit-'));
+const repoRoot = () => path.resolve(path.dirname(new URL(import.meta.url).pathname.slice(1)), '..');
 
 test('the export lands every file of the documented set', async () => {
   const dir = await target();
@@ -51,9 +54,37 @@ test('the exported test points at the exported checker and skills, without our p
   await exportKit(dir, { skillsDir: '.claude/skills' });
   const src = await readFile(path.join(dir, 'test/skill-format.test.js'), 'utf8');
   assert.match(src, /'\.\.\/tools\/cnlp\/cnlp\.js'/);
-  assert.match(src, /path\.join\(repoRoot, '\.claude\/skills'\)/);
+  // One line to edit when the target keeps skills somewhere else, which the README names.
+  assert.match(src, /^const SKILLS_DIR = '\.claude\/skills';/m);
   assert.doesNotMatch(src, /cites a shipped document by path/, 'the package-only guard travelled');
   assert.doesNotMatch(src, /cnlp-kit:strip/, 'the strip markers travelled');
+});
+
+// The archive is the delivery: someone copies it into another repository and unpacks it at
+// the root. These assertions are that scenario, without a path back to this repository.
+test('the archive unpacks into a working kit', async () => {
+  const dir = await target();
+  const out = path.join(dir, 'cnlp-kit.zip');
+  const { entries } = await buildZip(out);
+  assert.ok(existsSync(out), 'no archive written');
+
+  const packed = new AdmZip(out).getEntries().filter((e) => !e.isDirectory).map((e) => e.entryName).sort();
+  assert.deepEqual(packed, [...entries].sort(), 'the archive and the exported set differ');
+  assert.ok(packed.includes('README.md'), 'no README to start from');
+
+  const unpacked = await target();
+  new AdmZip(out).extractAllTo(unpacked, true);
+
+  const readme = await readFile(path.join(unpacked, 'README.md'), 'utf8');
+  const { version } = JSON.parse(await readFile(path.join(repoRoot(), 'package.json'), 'utf8'));
+  assert.match(readme, new RegExp(version.replace(/\./g, '\\.')), 'the README does not name the version it came from');
+
+  const test = await readFile(path.join(unpacked, 'test/skill-format.test.js'), 'utf8');
+  assert.match(test, /^const SKILLS_DIR = '\.claude\/skills';/m);
+  assert.match(test, /'\.\.\/tools\/cnlp\/cnlp\.js'/);
+
+  // The unpacked kit checks its own migration skill, with nothing pointing back here.
+  execFileSync(process.execPath, ['--test', 'test/skill-format.test.js'], { cwd: unpacked, stdio: 'pipe' });
 });
 
 test('--no-test omits the test, and an authored profile survives re-export', async () => {

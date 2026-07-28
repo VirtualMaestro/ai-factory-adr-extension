@@ -7,8 +7,9 @@
 // cannot drift from the standard it exports. Everything project-specific — the vocabulary in
 // `custom_sections`, the rubric content — is seeded and then authored in the target.
 
-import { copyFile, mkdir, readFile, writeFile } from 'node:fs/promises';
+import { copyFile, mkdir, mkdtemp, readFile, writeFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
@@ -19,7 +20,23 @@ const REPO = path.resolve(KIT, '..');
 // `src/artifacts/cnlp.js` here, so `resolveDoc`'s `../../` resolves without a rewrite.
 const CHECKER_DIR = 'tools/cnlp';
 
-export async function exportKit(target, { skillsDir = '.claude/skills', test = true, force = false } = {}) {
+export const ZIP = 'cnlp-kit.zip'; // at the repository root, gitignored, rebuilt on `npm version`
+
+/**
+ * Build the kit into a temp directory and pack it. The archive is the target project's tree,
+ * so unpacking it at a project root puts every file where the README says it is.
+ */
+export async function buildZip(out = path.join(REPO, ZIP)) {
+  const { default: AdmZip } = await import('adm-zip');
+  const staging = await mkdtemp(path.join(os.tmpdir(), 'cnlp-kit-build-'));
+  const { written } = await exportKit(staging, { bundleReadme: true });
+  const zip = new AdmZip();
+  zip.addLocalFolder(staging);
+  zip.writeZip(out);
+  return { out, entries: written };
+}
+
+export async function exportKit(target, { skillsDir = '.claude/skills', test = true, force = false, bundleReadme = false } = {}) {
   const written = [];
   const skipped = [];
 
@@ -47,6 +64,13 @@ export async function exportKit(target, { skillsDir = '.claude/skills', test = t
     await put('test/skill-format.test.js', retarget(src, skillsDir), { keep: true });
   }
 
+  // Only the archive carries it: someone unpacking a zip has no other place to start.
+  if (bundleReadme) {
+    const { version } = JSON.parse(await readFile(path.join(REPO, 'package.json'), 'utf8'));
+    const readme = await readFile(path.join(KIT, 'seed/BUNDLE-README.md'), 'utf8');
+    await put('README.md', readme.replace(/__VERSION__/g, version));
+  }
+
   return { written, skipped, skillsDir, test };
 }
 
@@ -60,15 +84,21 @@ function retarget(src, skillsDir) {
     .replace(/\n\/\/ cnlp-kit:strip-start[\s\S]*?\/\/ cnlp-kit:strip-end\n/g, '\n')
     // test/ sits 1 level under the target root, as it does here
     .replace("'../src/artifacts/cnlp.js'", `'../${CHECKER_DIR}/cnlp.js'`)
-    .replace(/path\.join\(repoRoot, 'skills'\)/g, `path.join(repoRoot, '${skillsDir}')`)
-    .replace(/path\.join\(repoRoot, 'skills', name, 'SKILL\.md'\)/g, `path.join(repoRoot, '${skillsDir}', name, 'SKILL.md')`);
+    .replace(/^const SKILLS_DIR = '[^']*';/m, `const SKILLS_DIR = '${skillsDir}';`);
 }
 
 const argv = process.argv.slice(2);
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  if (argv.includes('--zip')) {
+    const { out, entries } = await buildZip();
+    for (const f of entries) console.log(`  packed   ${f}`);
+    console.log(`\n${path.relative(REPO, out)} — copy it to another project and unpack at its root.`);
+    process.exit(0);
+  }
   const target = argv.find((a) => !a.startsWith('--'));
   if (!target) {
-    console.error('usage: node cnlp-kit/export.mjs <target> [--skills-dir <dir>] [--no-test] [--force]');
+    console.error('usage: node cnlp-kit/export.mjs --zip');
+    console.error('       node cnlp-kit/export.mjs <target> [--skills-dir <dir>] [--no-test] [--force]');
     process.exit(1);
   }
   const at = argv.indexOf('--skills-dir');

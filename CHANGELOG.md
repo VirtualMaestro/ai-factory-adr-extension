@@ -4,6 +4,36 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and the project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.17.0] — 2026-07-28
+
+### Changed
+
+- **The kit is delivered as an archive, not as a script pointed at another repository.**
+  1.16.0 required running `node cnlp-kit/export.mjs ../other-project` from here, which is the
+  wrong shape for "give me something I can copy". `npm run kit` now writes `cnlp-kit.zip`: the
+  target project's tree, so unpacking it at a project root puts every file in place, with a
+  version-stamped `README.md` as the entry point. The archive is gitignored and rebuilt by the
+  `version` lifecycle script, so every version bump — which is what happens each time the
+  format changes — refreshes it.
+- **The generator stays, because the copies must not drift.** This repository still holds no
+  second copy of `docs/cnlp-format.md`; the archive is built from the live files each time.
+  The direct mode (`export.mjs <target>`) remains for a target whose skills are not in
+  `.claude/skills`.
+- `test/skill-format.test.js` reads a `SKILLS_DIR` constant instead of inlining the path, so a
+  repository with another layout edits 1 line — which is what the packed README tells it to
+  do. The export rewrites that constant rather than pattern-matching `path.join` calls.
+- `adm-zip` added as a devDependency: write-only use, no transitive dependencies, and
+  devDependencies never reach the published package. `npm audit` reports 0 vulnerabilities;
+  a pre-existing high-severity advisory in `fast-uri`, transitive through `ajv`, was resolved
+  in the same pass.
+
+### Verified
+
+- `test/kit.test.js` unpacks the built archive into a temp directory and runs
+  `node --test test/skill-format.test.js` inside it. The unpacked kit checks its own migration
+  skill with nothing pointing back to this repository — that is the delivery, asserted rather
+  than described.
+
 ## [1.16.0] — 2026-07-28
 
 ### Added
