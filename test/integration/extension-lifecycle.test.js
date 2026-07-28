@@ -149,6 +149,15 @@ test('wave-1 lifecycle: propose → refine (draft) → accept, driven by the rea
   assert.deepEqual(overview.acceptedNoPlan, ['adr-test-decision']);
   assert.equal(overview.issues.length, 0, 'no status-directory mismatches (Acc 26)');
   assert.doesNotThrow(() => aif(['adr', 'status', '--check'], dir), 'clean tree → exit 0');
+
+  // The digest the authoring skills read: registered as a subcommand and serving real blocks.
+  const digest = JSON.parse(aif(['adr', 'decisions', '--json'], dir));
+  assert.equal(digest.command, 'decisions');
+  assert.deepEqual(digest.issues, [], 'a clean corpus reports nothing');
+  assert.equal(digest.items.length, 1);
+  assert.equal(digest.items[0].id, 'adr-test-decision');
+  assert.ok(digest.items[0].decision.length > 0, 'the decision block came through');
+  assert.ok(digest.items[0].rules.length > 0, 'the rules block came through');
 });
 
 test('adr import scaffolds a conformant skeleton at a chosen status via the real CLI', opts, async () => {

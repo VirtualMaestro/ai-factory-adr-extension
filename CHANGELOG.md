@@ -4,6 +4,70 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and the project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.19.0] — 2026-07-28
+
+### Added
+
+- **`ai-factory adr decisions` — what every accepted and active ADR obliges, in ~8 lines each.**
+  A new ADR was written against whichever earlier decisions the agent guessed were related,
+  because learning what an ADR says meant opening it: `adr status` prints ids and statuses and
+  nothing else. The contradiction then surfaced during implementation. The digest prints
+  `decision:`, `constraints:`, `scope:`/`excludes:` and `rules:` for the whole corpus, so 50
+  ADRs cost about one ADR file to read. It is derivable without an LLM only because those
+  blocks are required by `profiles/adr.md` — the first return on the CNL-P migration.
+- **`issues` instead of silence.** A digest that claims to be the complete body of obligations
+  and quietly drops a file is worse than no digest, so `unreadable`, `invalid-id`,
+  `duplicate-id`, `status-mismatch`, `empty-block` and `invalid-block` are reported per file.
+  `invalid-block` catches the case nothing else does: 2 `rules:` blocks in one body, where the
+  digest would take the first and say nothing. The exit code stays 0 — the authoring skills
+  read this on every run, and an incomplete corpus is a gap to name, not a reason to stop.
+
+### Changed
+
+- **`aif-adr-propose`, `aif-adr-refine`, `aif-adr-plan` and `aif-adr-accept` read the digest.**
+  Each already carried the duty and none had the means: propose was told to "read the
+  candidates that look related", refine to "record every conflict found with an active ADR",
+  accept to check a precondition that conflicts are resolved. `aif-adr-accept` is where a
+  draft becomes a rule, so it is also where 2 drafts in flight stop contradicting each other —
+  the first one accepted is in the digest by the time the second is.
+- **`aif-adr-refine` states where an obligation belongs.** A rule left in the prose of
+  `## Context` is invisible to the digest and to every later reader; it goes in `rules:` or
+  `constraints:`.
+- `itemsOf` is exported from `src/artifacts/cnlp.js`: the digest reads block contents with the
+  same parser the checker uses, rather than a second copy of it.
+
+## [1.18.0] — 2026-07-28
+
+### Changed
+
+- **The archive occupies 2 entries at the target root, not 7.** It unpacked `docs/`,
+  `profiles/`, `tools/`, `test/` and a skill folder straight into the project — scattered
+  leftovers from something needed once. Now `cnlp/` holds everything the kit brings and
+  `cnlp-migrate/` sits beside it, so unpacking is 2 moves: copy `cnlp/` to the root, move
+  `cnlp-migrate/` into whichever agent runs it. Deleting `cnlp/` afterwards leaves the root
+  exactly as it was.
+- **The checker is retargeted instead of relying on depth.** The old layout put `cnlp.js` 2
+  levels under the root so `resolveDoc`'s `../../` resolved by luck of matching depth; the
+  standard and the profiles now sit beside it, and the export rewrites those 2 path
+  expressions. Content is still verbatim from the live file, and `test/kit.test.js` imports
+  the exported checker and resolves every document through it rather than trusting the rewrite.
+- `SKILLS_DIR` now means only "where this repository keeps its skills", with no relation to
+  where `cnlp-migrate` was moved, and the check refuses to run with a clear message when that
+  directory does not exist — instead of an `ENOENT` from `readdir`.
+
+## [1.17.1] — 2026-07-28
+
+### Fixed
+
+- **The archive no longer names a runtime.** It put `cnlp-migrate` in `.claude/skills/`, which
+  picks 1 agent for a kit that is about a document format. The skill is stored at
+  `agents/skills/cnlp-migrate/SKILL.md`, which belongs to no runtime; the packed README says
+  how to make it invocable in Claude Code, in Codex, or in an agent with no skill mechanism at
+  all — where the body is read by path, the slash command being only a shortcut to it. Storing
+  it neutrally means a second agent costs a copy rather than a fork.
+- `SKILLS_DIR` in the exported test defaults to `agents/skills` accordingly, and the kit test
+  asserts the archive contains no `.claude/` entry.
+
 ## [1.17.0] — 2026-07-28
 
 ### Changed

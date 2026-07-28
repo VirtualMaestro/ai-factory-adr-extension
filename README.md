@@ -106,6 +106,7 @@ status directory (`git mv` preserves history), validates the set with
 | `supersede <old> <new>` | Replace an ADR, preserving history |
 | `status [file]` | Overview / diagnostics; JSON detail includes `replacedBy`; `--check` exits non-zero on blocking errors (CI) |
 | `order` | Dependency-ordered plan: what is ready to implement next, the topological order, blocked ADRs, and cycles (non-zero exit on a cycle) |
+| `decisions` | What every accepted and active ADR obliges — `decision:`, `constraints:`, `scope:`, `rules:` — so a new decision can be written against the whole corpus; reports per-file `issues` and always exits 0 |
 
 The lifecycle skills wrap these commands — prefer the skills for authoring work
 and reserve raw commands for scripting and CI.

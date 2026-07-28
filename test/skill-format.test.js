@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { existsSync } from 'node:fs';
 import { readFile, readdir } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -12,6 +13,9 @@ import { bodyIssues, loadProfile } from '../src/artifacts/cnlp.js';
 const SKILLS_DIR = 'skills'; // where this repository keeps skills, relative to its root
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+if (!existsSync(path.join(repoRoot, SKILLS_DIR))) {
+  throw new Error(`SKILLS_DIR "${SKILLS_DIR}" does not exist under ${repoRoot} — set it at the top of this file`);
+}
 const skills = (await readdir(path.join(repoRoot, SKILLS_DIR))).sort();
 
 test('every skill body conforms to profiles/skill.md', async () => {

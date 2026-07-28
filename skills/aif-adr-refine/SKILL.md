@@ -61,17 +61,21 @@ quality_rules:
 workflow:
 1. run `ai-factory adr validate <file>`
 2. fix the validation errors it reports, and its CNL-P warnings: they become errors at `accepted`
-3. inspect project rules, architecture documents, relevant code, and active ADRs
-4. verify the ADR states exactly 1 primary decision
-5. improve the blocks the ADR profile declares, which `ai-factory adr format adr` prints, keeping the rationale explicit rather than implied
-6. rewrite any prose limit in canonical form, `open connections per client <= 2`, per the lexicon in `ai-factory adr format`
-7. replace any unquantified comparative with the property and its bound, or drop the claim
-8. record every conflict found with an active ADR
-9. ask only questions that materially block the decision
-10. update the ADR
-11. run `ai-factory adr validate <file>` again on the edited file and fix what it reports: the run at step 1 judged the file you replaced
-12. apply the matching transition when its condition holds
-13. report the status footer
+3. run `ai-factory adr decisions` and read every line: it states what each accepted and active ADR obliges
+4. name any `issues:` that command reports to the operator, then continue: the digest covers the corpus minus those files
+5. inspect project rules, architecture documents, and the relevant code
+6. open in full the ADRs whose `decision:`, `scope:` or `rules:` touch this decision
+7. verify the ADR states exactly 1 primary decision
+8. improve the blocks the ADR profile declares, which `ai-factory adr format adr` prints, keeping the rationale explicit rather than implied
+9. state an obligation that another ADR could break in `rules:` or `constraints:`, never in the prose of `## Context`: a rule left in prose is invisible to every later reader
+10. rewrite any prose limit in canonical form, `open connections per client <= 2`, per the lexicon in `ai-factory adr format`
+11. replace any unquantified comparative with the property and its bound, or drop the claim
+12. record every conflict with an accepted or active ADR, naming the block of the other ADR it contradicts
+13. ask only questions that materially block the decision
+14. update the ADR
+15. run `ai-factory adr validate <file>` again on the edited file and fix what it reports: the run at step 1 judged the file you replaced
+16. apply the matching transition when its condition holds
+17. report the status footer
 
 transitions:
 - from: proposed
