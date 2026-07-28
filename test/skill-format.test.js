@@ -4,9 +4,10 @@ import { readFile } from 'node:fs/promises';
 import { readdir } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { parseBlocks, DENY, SPELLED_THRESHOLD, HARD_LIMIT } from '../src/artifacts/cnlp.js';
 
-// Mechanical conformance with docs/cnlp-format.md §2-§6. Grammar only — it cannot judge
-// whether a bullet says something useful, only whether the file is shaped as declared.
+// Mechanical conformance with docs/cnlp-format.md §2-§6, skills profile. The grammar itself
+// lives in src/artifacts/cnlp.js, shared with `adr validate`; this file only asserts on it.
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const skills = (await readdir(path.join(repoRoot, 'skills'))).sort();
@@ -20,31 +21,16 @@ const KNOWN = new Set([
   'command_behaviour', 'documentation_only_adrs', 'documentation_only_overlay',
   'expected_warnings', 'file_shape', 'follow_up', 'improving_the_plan', 'instruction_pointer',
   'lenses', 'lifecycle_flow', 'linear_flow_skills', 'off_flow_skills', 'order_fields',
-  'plan_disposition', 'plan_frontmatter', 'report_format', 'retrieval_order_afterwards',
+  'plan_disposition', 'plan_frontmatter', 'pre_cnlp_overlay', 'report_format', 'retrieval_order_afterwards',
   'rules_that_always_hold', 'status_directories', 'status_mapping', 'targeting_rationale',
   'verdicts', 'when_to_supersede_instead_of_editing'
 ]);
 const ORDER = ['mode', 'purpose', 'inputs', 'preconditions', 'scope', 'forbidden_behaviors',
   'outputs', 'quality_rules', 'workflow', 'transitions', 'status_footer', 'invocation'];
-const DENY = /\b(surface[sd]?|sharpen[s]?|weigh[s]?|leverage[sd]?|robust|sanity-check|ensure[sd]?)\b/i;
-const SPELLED_THRESHOLD = /\b(at least|exactly|more than|fewer than|no more than|only) (one|two|three|four|five|six|seven|eight|nine|ten)\b/i;
-const HARD_LIMIT = 250; // §4: 150 is the target, 250 is compound whatever it claims
 const REFERENCE_ONLY = new Set(['aif-adr-overview']); // §5: the one skill with no workflow
 
-/** Body after the frontmatter, with fenced regions blanked — §3: a fence is opaque. */
 async function parse(name) {
-  const raw = await readFile(path.join(repoRoot, 'skills', name, 'SKILL.md'), 'utf8');
-  const body = raw.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n/, '');
-  let fenced = false;
-  const lines = body.split(/\r?\n/).map((l) => {
-    if (/^\s*```/.test(l)) { fenced = !fenced; return ''; }
-    return fenced ? '' : l;
-  });
-  const sections = lines.flatMap((l, i) => {
-    const m = l.match(/^([a-z_]+):/);
-    return m ? [{ key: m[1], line: i + 1 }] : [];
-  });
-  return { lines, sections };
+  return parseBlocks(await readFile(path.join(repoRoot, 'skills', name, 'SKILL.md'), 'utf8'));
 }
 
 test('every skill declares the required sections', async () => {

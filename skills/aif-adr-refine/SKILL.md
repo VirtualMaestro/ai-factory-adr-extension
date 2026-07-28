@@ -16,7 +16,7 @@ inputs:
 
 scope:
 - refine the ADR document only
-- update Context, Decision, Alternatives, and Consequences
+- update the CNL-P blocks under Context, Decision, Alternatives considered, and Consequences
 - detect conflicts with active ADRs
 - ask blocking questions only
 - stop when refinement is done
@@ -60,15 +60,17 @@ quality_rules:
 
 workflow:
 1. run `ai-factory adr validate <file>`
-2. fix the validation errors it reports
+2. fix the validation errors it reports, and its CNL-P warnings: they become errors at `accepted`
 3. inspect project rules, architecture documents, relevant code, and active ADRs
 4. verify the ADR states exactly 1 primary decision
-5. improve Context, Decision, Alternatives, and Consequences, keeping the rationale explicit rather than implied
-6. record every conflict found with an active ADR
-7. ask only questions that materially block the decision
-8. update the ADR
-9. apply the matching transition when its condition holds
-10. report the status footer
+5. improve the §7 blocks, keeping the rationale explicit rather than implied
+6. rewrite any prose limit as a comparison, `<= 2 connections per client`, per `docs/cnlp-format.md` §8
+7. replace any unquantified comparative with the property and its bound, or drop the claim
+8. record every conflict found with an active ADR
+9. ask only questions that materially block the decision
+10. update the ADR
+11. apply the matching transition when its condition holds
+12. report the status footer
 
 transitions:
 - from: proposed

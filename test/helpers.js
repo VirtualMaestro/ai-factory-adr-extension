@@ -14,7 +14,50 @@ export async function mkProject() {
   return dir;
 }
 
-const CLEAN_BODY = `\n# Title\n\n## Decision\n\nWe will use X for Y because Z.\n`;
+// Conformant with docs/cnlp-format.md §7 — an accepted/active ADR is validated against it (inv 12).
+const CLEAN_BODY = `
+# Title
+
+## Context
+
+problem:
+- the fixture states one observable problem
+
+constraints:
+- the fixture stays conformant with docs/cnlp-format.md §7
+
+decision_drivers:
+- a body under test carries no violation of its own
+
+## Decision
+
+decision: use a conformant body in every fixture that writes an ADR
+
+scope:
+- covers the test fixtures
+- excludes: production ADR content
+
+rules:
+1. keep this body clean of §7 and §8 violations
+
+## Alternatives considered
+
+alternatives:
+- id: prose-body
+  description: the pre-CNL-P fixture body
+  rejected_because: it fails inv 12 on an accepted ADR
+
+## Consequences
+
+positive:
+- fixtures exercise the grammar the tooling enforces
+
+negative:
+- the fixture is longer than the prose it replaces
+
+risks:
+- none: the fixture carries no decision of its own
+`;
 
 /** Write an ADR into its status directory. Returns the absolute file path. */
 export async function writeAdr(dir, { id, status, type = 'adr', body = CLEAN_BODY, ...fm }) {

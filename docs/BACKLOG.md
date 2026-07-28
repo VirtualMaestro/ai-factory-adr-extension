@@ -4,25 +4,20 @@ Open items only. The MVP build log (verification spike, epics P0–P4, coverage 
 finished and archived at [`archive/BACKLOG-mvp.md`](./archive/BACKLOG-mvp.md); it describes
 the pre-1.6 body format in places and is history, not guidance.
 
-**Current state:** 1.11.3 · 15 skills · 102 tests green · skill bodies in CNL-P form.
+**Current state:** 1.12.0 · 15 skills · 109 tests green · skill and ADR bodies in CNL-P
+form, both checked in code (`src/artifacts/cnlp.js`).
 
 ---
 
-## Next — migrate ADR documents to CNL-P
+## Next — nothing open
 
-The 15 skill bodies were migrated in 1.11.0–1.11.3. The ADR documents themselves have not
-been.
+The ADR profile landed in 1.12.0: `ai-factory adr validate` checks the body (inv 12), the
+standard states what a conformant ADR contains, and `aif-adr-migrate` carries the
+`pre_cnlp_overlay` for a prose corpus.
 
-- The standard is [`cnlp-format.md`](./cnlp-format.md); §7 gives the ADR block layout and §10
-  the migration procedure. Read it first rather than copying the shape out of an existing
-  file.
-- `templates/adr.md` already ships in CNL-P, so any ADR scaffolded by `ai-factory adr new`
-  is born in the format. Only ADRs written before that need converting.
-- `aif-adr-migrate` names the CNL-P blocks in its file-shape case, so the skill is ready to
-  do the work on a legacy corpus.
-- Watch the placeholder sentinels: `ai-factory adr validate` rejects `[decision]`,
-  `[scope]`, `[main reason]`, `[Alternative]`, `not created` and `not implemented` on an
-  `accepted` or `active` ADR (`src/lifecycle/validate.js`, inv 6).
+Watch on first real use: whether the §8 comparative list nags on legitimate prose in
+`rejected_because`, and whether the warning-at-draft, error-at-accepted gate lands where
+authors expect it. Both are one list and one line in `src/artifacts/cnlp.js`.
 
 ---
 

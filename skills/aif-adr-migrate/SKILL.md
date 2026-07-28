@@ -52,15 +52,16 @@ workflow:
 10. state the full mapping, old file to id and status, before moving anything
 11. process one file at a time, applying the one matching case in `file_shape`
 12. additionally apply `pre_1_6_overlay` to that file when it was written for a pre-1.6 version of this extension
-13. additionally apply `documentation_only_overlay` to that file when the decision is documentation-only
-14. migrate both sides of a replace pair at their live status before superseding: `ai-factory adr supersede` requires the old ADR to be `accepted` or `active`
-15. run `ai-factory adr supersede <old-file> <new-file> [--archive-plan | --delete-plan]` for each pair, in preference to hand-linking
-16. place any legacy plan doc under the configured `paths.plans` and link it: `ai-factory adr link-plan <adr-file> <plan-file>`
-17. run `ai-factory adr validate <file>` on each migrated ADR and fix until it is clean
-18. run `ai-factory adr status --check` and fix until it exits 0
-19. replace each stale ADR-process block in `AGENTS.md`, `CLAUDE.md`, `CONTRIBUTING.md`, and `README.md` with the `instruction_pointer` below
-20. substitute the configured `adr.root` for "the configured ADR root" in that pointer
-21. emit the mapping, then the status footer
+13. additionally apply `pre_cnlp_overlay` to that file when its body is prose in this extension's own format
+14. additionally apply `documentation_only_overlay` to that file when the decision is documentation-only
+15. migrate both sides of a replace pair at their live status before superseding: `ai-factory adr supersede` requires the old ADR to be `accepted` or `active`
+16. run `ai-factory adr supersede <old-file> <new-file> [--archive-plan | --delete-plan]` for each pair, in preference to hand-linking
+17. place any legacy plan doc under the configured `paths.plans` and link it: `ai-factory adr link-plan <adr-file> <plan-file>`
+18. run `ai-factory adr validate <file>` on each migrated ADR and fix until it is clean
+19. run `ai-factory adr status --check` and fix until it exits 0
+20. replace each stale ADR-process block in `AGENTS.md`, `CLAUDE.md`, `CONTRIBUTING.md`, and `README.md` with the `instruction_pointer` below
+21. substitute the configured `adr.root` for "the configured ADR root" in that pointer
+22. emit the mapping, then the status footer
 
 status_mapping:
 - the overlays below are independent of this list: a file gets exactly 1 status here
@@ -78,8 +79,11 @@ file_shape:
   - preserve history with a rename: `git mv <legacy-file> <root>/<status-dir>/<id>.md`
   - edit the moved file to match `templates/adr.md`
   - fill the frontmatter: `id`, `type: adr`, `status`, `owners`, `depends_on`, `affects`, `supersedes`, `code`, `issue`, `plan`, `evidence`, `replaced_by`
-  - fill the four `##` headings with the CNL-P blocks the template ships: `problem`, `constraints`, `decision_drivers` under Context; `decision`, `scope`, `rules` under Decision; `alternatives` records; `positive`, `negative`, `risks` under Consequences
-  - port the old prose into those blocks, one idea per bullet, per `docs/cnlp-format.md`
+  - fill the 4 `##` headings with the required CNL-P blocks, per `docs/cnlp-format.md` §7
+  - add `blast_radius:` when the decision changes code
+  - port the old prose into those blocks, one idea per bullet
+  - state every numeric limit as a comparison, `<= 2 connections per client`, never as a phrase
+  - replace an unquantified comparative with the property and its bound, or drop the claim
   - set `status` equal to the directory the file now lives in
   - record a short `evidence:` for an `active` import
   - backfill `code:` for an `active` or `superseded` import with the primary entry-point anchors when the implementation location is known: repo-root paths, POSIX `/`, optional `#symbol`
@@ -100,6 +104,13 @@ pre_1_6_overlay:
 - remove the plan id from `affects`
 - delete the emptied `## Implementation` and `## References` sections
 - drop the `- **Code:**` line: it was always a duplicate of the `code:` frontmatter
+
+pre_cnlp_overlay:
+- applies when the ADR already uses this extension's frontmatter but its body is prose, written before the CNL-P profile
+- applies in addition to the file-shape case, never instead of it
+- rewrite each `##` section into the §7 blocks and keep the decision unchanged: this is a format change, not a new decision
+- run `ai-factory adr validate <file>` after the rewrite: it names every block and every line that is still prose
+- do not supersede an ADR to change its format: a rewrite that keeps the decision is a non-material edit
 
 documentation_only_overlay:
 - applies when the decision is documentation-only

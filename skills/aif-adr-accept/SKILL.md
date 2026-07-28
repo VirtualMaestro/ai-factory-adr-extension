@@ -15,11 +15,11 @@ inputs:
 preconditions:
 - the file is in the configured ADR root's `drafts/` directory and its status is `draft`
 - exactly 1 primary decision is stated
-- Context describes the problem
-- relevant constraints are present
-- the Decision is concrete
-- meaningful alternatives are recorded
-- Consequences include disadvantages or risks
+- the body carries every required CNL-P block, per `docs/cnlp-format.md` §7
+- `problem:` describes what breaks today and `constraints:` names what cannot be violated
+- `decision:` is concrete and names the choice alone
+- `alternatives:` records meaningful options, each with its `rejected_because`
+- `negative:` and `risks:` are filled: a decision with no cost was not examined
 - no blocking questions remain
 - conflicts with active ADRs are resolved or explicitly addressed
 - artifact metadata is valid

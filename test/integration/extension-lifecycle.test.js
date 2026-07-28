@@ -124,12 +124,7 @@ test('wave-1 lifecycle: propose → refine (draft) → accept, driven by the rea
   await writeFile(proposed, [
     '---', 'id: adr-test-decision', 'type: adr', 'status: proposed', 'owners: [maintainer]',
     'depends_on: []', 'affects: []', 'supersedes: []', '---', '',
-    '# Test decision', '',
-    '## Context', '', '- **Problem:** We need a documented test decision.',
-    '- **Constraints:** None material.', '- **Decision drivers:** Simplicity.', '',
-    '## Decision', '', 'We will use option A for the test scope because it is simplest.', '',
-    '## Alternatives considered', '', '- **Option B** — rejected because it is more complex.', '',
-    '## Consequences', '', '- **Positive:** Simple.', '- **Negative:** Limited.', '- **Risks:** None.', '',
+    ...cnlpBody('Test decision'),
   ].join('\n'), 'utf8');
 
   // refine (first): proposed → draft.
@@ -184,6 +179,28 @@ test('status surfaces dependency warnings without failing file --check', opts, a
   assert.match(human.stderr, /warning: depends on "adr-dependency" which is not yet active/);
 });
 
+// A CNL-P body (docs/cnlp-format.md §7) — inv 12 rejects anything else on an accepted ADR.
+function cnlpBody(title) {
+  return [
+    `# ${title}`, '',
+    '## Context', '',
+    'problem:', '- the project has no recorded decision on this topic', '',
+    'constraints:', '- the decision stays inside this test project', '',
+    'decision_drivers:', '- the smallest content that validates clean', '',
+    '## Decision', '',
+    'decision: use option A for this test project', '',
+    'scope:', '- covers this test project', '- excludes: any real repository', '',
+    'rules:', '1. record the decision before a plan is written', '',
+    '## Alternatives considered', '',
+    'alternatives:',
+    '- id: option-b', '  description: the second option', '  rejected_because: it needs a second service', '',
+    '## Consequences', '',
+    'positive:', '- the decision is recorded', '',
+    'negative:', '- option B stays unavailable', '',
+    'risks:', '- none: the test project ships nothing', '',
+  ];
+}
+
 // Author an accepted ADR at docs/adr/accepted/<id>.md with inv-6-clean content (authored evidence).
 async function seedAccepted(dir, id, title) {
   const file = path.join(dir, 'docs/adr/accepted', `${id}.md`);
@@ -191,10 +208,7 @@ async function seedAccepted(dir, id, title) {
   await writeFile(file, [
     '---', `id: ${id}`, 'type: adr', 'status: accepted', 'owners: [maintainer]',
     'depends_on: []', 'affects: []', 'supersedes: []', 'evidence: pending', '---', '',
-    `# ${title}`, '',
-    '## Context', '', '- **Problem:** We need a documented decision.', '',
-    '## Decision', '', 'We will use option A because it is simplest.', '',
-    '## Consequences', '', '- **Negative:** Limited.', '',
+    ...cnlpBody(title),
   ].join('\n'), 'utf8');
   return file;
 }

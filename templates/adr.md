@@ -28,7 +28,7 @@ decision_drivers:
 
 ## Decision
 
-decision: we will use **[decision]** for **[scope]** because **[main reason]**
+decision: [decision], stated as the choice alone — scope and reason have their own blocks
 
 scope:
 - what this decision covers
@@ -57,3 +57,6 @@ negative:
 
 risks:
 - risk -> mitigation, or "not eliminated"
+
+blast_radius:
+- what the change touches; delete this block when the decision changes no code

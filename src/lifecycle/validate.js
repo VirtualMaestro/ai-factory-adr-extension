@@ -4,6 +4,7 @@ import { isValidId, stemMatchesId } from '../artifacts/id.js';
 import { isValidStatus, validateDirStatus } from './status.js';
 import { isDocumentationOnly } from './finalize.js';
 import { findPlaceholders } from '../artifacts/placeholders.js';
+import { adrBodyIssues } from '../artifacts/cnlp.js';
 import { resolveActivePlan, resolvePlans } from '../artifacts/plan.js';
 import { resolveInside } from '../util/safe-path.js';
 
@@ -37,7 +38,16 @@ export async function validateAdr(file, { projectDir = process.cwd() } = {}) {
   const dir = validateDirStatus(abs, data.status); // inv 4
   if (!dir.ok) errors.push(`status "${data.status}" expects directory "${dir.expectedDir}/", found "${dir.actualDir}/"`);
 
-  if (data.status === 'accepted' || data.status === 'active') {
+  // inv 12: the body is CNL-P (docs/cnlp-format.md §7). An ADR becomes a rule at `accepted`,
+  // so that is where non-conformance stops being advice; before it, the document is still
+  // being written and `aif-adr-refine` is the loop that clears the warnings.
+  const live = data.status === 'accepted' || data.status === 'active';
+  for (const { line, message } of adrBodyIssues(body)) {
+    const text = line ? `body line ${line}: ${message}` : message;
+    (live ? errors : warnings).push(text);
+  }
+
+  if (live) {
     const found = findPlaceholders(body); // inv 6
     if (found.length) errors.push(`unresolved placeholders: ${found.join(', ')}`);
     try {

@@ -9,10 +9,11 @@ its document kind uses and their order — nothing else. §2–§4 and §8–§1
 profile, so a third one is added by writing its section vocabulary, not by changing the
 format.
 
-**What is enforced:** `test/skill-format.test.js` checks the mechanical rules on every
-`npm test`, for the skills profile only. The ADR profile is held by review and by
-`ai-factory adr validate`, because this repository ships the ADR lifecycle for other
-projects and holds no ADRs of its own to check against.
+**What is enforced:** the mechanical rules of both profiles are checked in code, from one
+grammar module (`src/artifacts/cnlp.js`). `test/skill-format.test.js` runs it over the 15
+skills on every `npm test`; `ai-factory adr validate` runs it over an ADR body, in the
+adopting project as well as here. Neither can judge whether a bullet says something useful —
+only whether the file is shaped and worded as declared.
 
 ## 1. What it is
 
@@ -88,7 +89,10 @@ workflow:
 ```
 
 **record-list** — repeated records. Each record opens with `- key: value` and continues
-with **two-space-indented** keys. Every record in one section has the same keys.
+with **two-space-indented** keys. Every record in one section has the same keys, except for
+keys the profile declares optional — `kept_as` on an ADR `alternatives` record is the only
+one today. A key no profile declares is not added to a record: it is prose looking for a
+home.
 
 ```
 transitions:
@@ -192,7 +196,7 @@ rather than by the skill.
 In use today: `command_behaviour`, `documentation_only_adrs`, `documentation_only_overlay`,
 `expected_warnings`, `file_shape`, `follow_up`, `improving_the_plan`, `instruction_pointer`,
 `lenses`, `lifecycle_flow`, `linear_flow_skills`, `off_flow_skills`, `order_fields`,
-`plan_disposition`, `plan_frontmatter`, `report_format`, `retrieval_order_afterwards`,
+`plan_disposition`, `plan_frontmatter`, `pre_cnlp_overlay`, `report_format`, `retrieval_order_afterwards`,
 `rules_that_always_hold`, `status_directories`, `status_mapping`, `targeting_rationale`,
 `verdicts`, `when_to_supersede_instead_of_editing`.
 
@@ -202,14 +206,27 @@ An ADR keeps its H1 decision title and the 4 template `##` headings, and puts CN
 inside them. The headings are the shared contract with `templates/adr.md`,
 `aif-adr-accept`'s preconditions and `aif-adr-migrate`; the blocks replace the prose.
 
-| Heading | Blocks | Form |
-|---|---|---|
-| `## Context` | `problem`, `constraints`, `decision_drivers` | bullet-list |
-| `## Decision` | `decision` | scalar |
-| | `scope` | bullet-list |
-| | `rules` | numbered-list |
-| `## Alternatives considered` | `alternatives` | record-list: `id`, `description`, `rejected_because`, optional `kept_as` |
-| `## Consequences` | `positive`, `negative`, `risks`, `blast_radius` | bullet-list |
+**An ADR block states what is true; a skill block states what to do.** Both profiles carry a
+`rules:` block and they read differently: a skill rule is an instruction to the agent
+running it, an ADR rule is an obligation the decision puts on the codebase. Write an ADR
+block as a statement in the present tense.
+
+Blocks appear in the order below, inside their heading. `required` means the ADR is not
+conformant without the block.
+
+| Heading | Block | Form | Required |
+|---|---|---|---|
+| `## Context` | `problem` | bullet-list | yes |
+| | `constraints` | bullet-list | yes |
+| | `decision_drivers` | bullet-list | yes |
+| `## Decision` | `decision` | scalar | yes |
+| | `scope` | bullet-list | yes |
+| | `rules` | numbered-list | yes |
+| `## Alternatives considered` | `alternatives` | record-list: `id`, `description`, `rejected_because`, optional `kept_as` | yes |
+| `## Consequences` | `positive` | bullet-list | yes |
+| | `negative` | bullet-list | yes |
+| | `risks` | bullet-list | yes |
+| | `blast_radius` | bullet-list | when the decision changes code |
 
 ```markdown
 ## Context
@@ -262,16 +279,22 @@ Optional blocks that earn their place on a real ADR: `out_of_scope` (record-list
 `metric`), `increment_order` (numbered-list) when the decision ships in stages. They are blocks inside
 the 4 headings, not headings of their own.
 
-A worked example lives at `docs/proposals/adr_lens_judgment_cnlp_rewrite_example.md`. **Copy
-its register and its block style, not its heading set** — it was written before this profile
-existed, so it names its first heading `## Problem` instead of `## Context` and promotes
-`out_of_scope` and a sibling-ADR note to `##` headings. The 4 headings above are the
-contract, because `templates/adr.md`, `aif-adr-accept` and `aif-adr-migrate` all key off
-them.
+**The body holds no machine field.** Code paths, issue ids, plan ids, implementation
+evidence and links to other ADRs live in the frontmatter (`code`, `issue`, `plan`,
+`evidence`, `depends_on`, `affects`, `supersedes`, `replaced_by`). A body line repeating one
+of them is a second copy that goes stale. Naming another decision inside a sentence is fine;
+carrying the relation there is not.
+
+**An empty block.** A required block with nothing in it carries `- none` and the reason:
+`- none: no alternative was viable at this scale`. An optional block with nothing in it is
+deleted. An empty key with no items is neither, and the tooling rejects it.
 
 **Hard constraint from the tooling.** `ai-factory adr validate`
-(`src/lifecycle/validate.js`) does not check body headings, but on an `accepted` or
-`active` ADR it rejects the template sentinels: `[decision]`, `[scope]`, `[main reason]`,
+(`src/lifecycle/validate.js`) checks this profile: the 4 headings, the required blocks,
+their forms, and the §8 lexicon. The severity depends on the status — a warning while the
+ADR is `proposed`, `draft` or `superseded`, an error once it is `accepted` or `active`,
+because that is where the document becomes a rule other work is measured against. The
+template sentinels are rejected on the same gate: `[decision]`, `[scope]`, `[main reason]`,
 `[Alternative]`, `not created`, `not implemented`. A scaffolded ADR carries them on
 purpose — `templates/adr.md` ships them and `validate` is expected to fail until they are
 filled. A finished ADR contains none.
@@ -304,6 +327,31 @@ The conformance test enforces the quantified form — a number after `at least`,
 `more than`, `fewer than`, `no more than` or `only`. A limit stated without one of those
 words is a judgment call, the same split §4 makes between the 150-character target and the
 250-character hard limit.
+
+**A limit is written as a comparison.** ADR profile only. A numeric limit in the body carries
+an operator, not a phrase: `<= 2 open connections per client`, not `no more than two
+connections`. The phrase leaves the reader to work out whether the bound is inclusive; the
+operator makes the author decide once, at the time the decision is made.
+
+- operators are `<`, `<=`, `>`, `>=`, `=`, `!=`, and a closed range written `2..5`.
+- the unit stays attached: `<= 2 connections per client`, not a bare `<= 2`.
+- do not invent a threshold the decision did not make: an unagreed "fast startup" stays prose
+  and marks the ADR unfinished; the rule formalizes a limit, it does not fabricate one.
+- a number that is not a limit keeps the word form, by the 2 rules above.
+
+The skills profile is exempt and keeps the phrase form: a skill line is read as an
+instruction, so `present at least 2 viable approaches` is the register there.
+
+**An unquantified comparative is not a decision.** ADR profile only. A comparative claims a
+value the reader cannot check, so it is replaced by the property and its bound, or dropped.
+
+| Instead of | Write |
+|---|---|
+| better, faster, cleaner | the property and its bound: `p95 latency <= 200 ms` |
+| significantly, substantially | the measured delta |
+| flexible, scalable, extensible | the axis it varies on, with its bound |
+| where possible, if needed, as appropriate | the condition that triggers it |
+| should probably, we may want to | the decision, or move the line to `risks` |
 
 Canonical verbs: `run`, `read`, `inspect`, `identify`, `name`, `cite`, `compare`,
 `present`, `ask`, `update`, `transition`, `report`, `record`, `state`, `stop`, `verify`,
@@ -339,6 +387,9 @@ In the skills profile:
 
 In the ADR profile:
 
+- `decision` names the choice and nothing else. Restating the boundary (`scope` owns it) or
+  the reason (`decision_drivers` owns it) in that one line is the violation a first draft
+  makes most often, because the older template invited it.
 - `constraints` holds what the decision cannot violate; `decision_drivers` holds what
   chooses between the options. A line that appears in both means one of them is doing the
   other's job.

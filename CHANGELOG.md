@@ -4,6 +4,52 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and the project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.12.0] — 2026-07-28
+
+### Added
+
+- **The ADR body is now checked by `ai-factory adr validate` (inv 12).** The CNL-P profile
+  was held by review only, so an ADR could be born in prose and stay there. Validate now
+  reports the 4 `##` headings, every required §7 block, its form, the record keys on
+  `alternatives`, machine fields that belong in the frontmatter, and the §8 lexicon.
+- **The severity follows the lifecycle.** Non-conformance is a warning while the ADR is
+  `proposed`, `draft` or `superseded`, and an error once it is `accepted` or `active` —
+  the same gate inv 6 already uses, because that is where the document becomes a rule.
+  **Existing ADRs in an adopting project must run `aif-adr-migrate`**, which gains a
+  `pre_cnlp_overlay` for a prose body already in this extension's frontmatter format.
+- **`src/artifacts/cnlp.js` — one grammar module for both profiles.** The parser and the
+  lexicon regexes lived in `test/skill-format.test.js`; they now serve the test and
+  `validate` from one place, so a rule cannot drift between them.
+- **§8: a limit is written as a comparison — ADR profile.** `<= 2 open connections per
+  client`, not `no more than two connections`. The phrase leaves the reader to work out
+  whether the bound is inclusive; the operator makes the author decide once, when the
+  decision is made. The unit stays attached, and the rule never fabricates a threshold the
+  decision did not make. The skills profile keeps the phrase form: a skill line is read as
+  an instruction.
+- **§8: an unquantified comparative is not a decision — ADR profile.** `better`, `faster`,
+  `significantly`, `flexible`, `where possible`, `should probably` and their neighbours are
+  replaced by the property and its bound, or dropped.
+
+### Changed
+
+- **§7 states what a conformant ADR contains.** The block table gains a required column and
+  a declared order; `blast_radius` is optional and now ships in `templates/adr.md`, which
+  disagreed with the standard.
+- §7 states 3 rules that existed only inside a skill or not at all: the body holds no
+  machine field, an empty required block carries `- none` with its reason, and an ADR block
+  is a statement in the present tense while a skill block is an instruction.
+- §3 resolves its own contradiction with §7: records in one section share their keys, except
+  for a key the profile declares optional — `kept_as` is the only one today.
+- **`templates/adr.md` no longer invites a §9 violation.** `decision:` shipped as
+  `we will use [decision] for [scope] because [main reason]`, restating two blocks that own
+  those facts in the one line that should carry only the choice. `[scope]` and
+  `[main reason]` stay in the sentinel list for ADRs scaffolded from the older template.
+- `aif-adr-propose`, `aif-adr-refine` and `aif-adr-accept` name the CNL-P blocks instead of
+  the prose headings, and `aif-adr-supersede` states that a rewrite into CNL-P is a
+  non-material edit — the same decision in a different shape is not a supersession.
+- The worked example at `docs/proposals/` is deleted. It predated the profile and broke it
+  in 3 ways while §7 told authors to copy its style; the §7 code block is the example.
+
 ## [1.11.4] — 2026-07-28
 
 ### Changed
