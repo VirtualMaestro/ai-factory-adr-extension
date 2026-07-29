@@ -4,6 +4,20 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and the project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [2.0.1] — 2026-07-29
+
+### Fixed
+
+- **`aif-adr-migrate` looks before it asks.** The skill opened with "where are the legacy ADR
+  files?" and scanned the common locations only if the operator stayed silent, so Codex asked
+  first while Claude usually scanned first — 1 instruction, 2 behaviours, and the operator got
+  the expensive one: they answer "somewhere under docs" while the files sit in
+  `architecture/decisions/`. The scan runs first now and reports each path with its count; the
+  question survives for the case it was written for, a scan that finds nothing.
+- The scan skips the 5 status directories under `adr.root`. A second migration run would
+  otherwise pull already-migrated ADRs back through migration, since `docs/adr/` is commonly
+  the configured root itself.
+
 ## [2.0.0] — 2026-07-29
 
 The audit half of cross-ADR consistency, and the end of the documents the build was steered
@@ -29,15 +43,6 @@ against itself.
   vocabulary), 1 redundant pair, and 2 same-area pairs that must not be called contradictions.
   `npm run corpus` builds a throwaway project pointed at it; 3 cold runs scored 3/3 on the
   contradictions with no false positive and no extra pair.
-
-### Changed
-
-- **`aif-adr-migrate` looks before it asks.** The skill opened with "where are the legacy ADR
-  files?" and scanned the common locations only if the operator stayed silent, so Codex asked
-  first while Claude usually scanned first — 1 instruction, 2 behaviours. The scan now runs
-  first and reports each path with its count; the question is left for a scan that finds
-  nothing. The scan skips the 5 status directories under `adr.root`, which hold migrated ADRs
-  and would otherwise be dragged back through migration on a second run.
 
 ### Fixed
 
