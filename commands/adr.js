@@ -62,14 +62,18 @@ export function register(program) {
     .command('validate <file>')
     .description('Check an ADR against the lifecycle invariants (§21)')
     .option('--json', 'Machine-readable output')
+    .option('--strict', 'Warnings fail too: the body must conform whatever the status')
     .action((file, opts) => guard(opts, async () => {
       const res = await validateAdr(file, { projectDir: process.cwd() });
-      out(opts, { command: 'validate', file, ...res }, () => {
+      out(opts, { command: 'validate', file, strict: Boolean(opts.strict), ...res }, () => {
         res.errors.forEach((e) => console.error(`  error:   ${e}`));
         res.warnings.forEach((w) => console.warn(`  warning: ${w}`));
         console.log(res.errors.length ? `Invalid: ${res.errors.length} error(s).` : 'Valid.');
       });
-      if (res.errors.length) process.exitCode = 1;
+      // A body issue is a warning before `accepted` because the document is still being
+      // written. `aif-adr-migrate` claims the opposite — that it is done — so it asks for
+      // `--strict` and a warning there is work left undone, not advice.
+      if (res.errors.length || (opts.strict && res.warnings.length)) process.exitCode = 1;
     }));
 
   adr

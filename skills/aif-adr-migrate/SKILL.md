@@ -24,6 +24,9 @@ scope:
 - leave file mechanics to the CLI: `init`, `import`, `validate`, `status`, `link-plan`, `supersede`, `git mv`, `git rm`
 
 forbidden_behaviors:
+- do not write or run a converter over the corpus: 1 file at a time, read by a reader and carried over by hand
+- do not split prose into items by punctuation: a sentence boundary is not an idea boundary, and an ordinal is not a sentence
+- do not cut a line to fit the 250-character limit: rewrite the idea shorter, or state it as 2 rules
 - do not hand-edit a `status` field to fake a transition
 - do not move ADR files outside `git mv` or the `adr` commands
 - do not move anything before the full mapping is stated
@@ -37,6 +40,7 @@ forbidden_behaviors:
 
 outputs:
 - the mapping of old file to new id and resulting status, one row per legacy file
+- the reconciliation for each file: every subsection and every rule of the original, and the block it now lives in
 - the migrated ADRs on the branch
 - repointed instruction files
 
@@ -54,18 +58,20 @@ workflow:
 11. assign each file a stable id `adr-<lowercase-hyphenated>` derived from its title
 12. assign each file a lifecycle status by the one matching case in `status_mapping`
 13. state the full mapping, old file to id and status, before moving anything
-14. process one file at a time, applying the one matching case in `file_shape`
-15. additionally apply `pre_1_6_overlay` to that file when it was written for a pre-1.6 version of this extension
-16. additionally apply `pre_cnlp_overlay` to that file when its body is prose in this extension's own format
-17. additionally apply `documentation_only_overlay` to that file when the decision is documentation-only
-18. migrate both sides of a replace pair at their live status before superseding: `ai-factory adr supersede` requires the old ADR to be `accepted` or `active`
-19. run `ai-factory adr supersede <old-file> <new-file> [--archive-plan | --delete-plan]` for each pair, in preference to hand-linking
-20. place any legacy plan doc under the configured `paths.plans` and link it: `ai-factory adr link-plan <adr-file> <plan-file>`
-21. run `ai-factory adr validate <file>` on each migrated ADR and fix until it is clean
-22. run `ai-factory adr status --check` and fix until it exits 0
-23. replace each stale ADR-process block in `AGENTS.md`, `CLAUDE.md`, `CONTRIBUTING.md`, and `README.md` with the `instruction_pointer` below
-24. substitute the configured `adr.root` for "the configured ADR root" in that pointer
-25. emit the mapping, then the status footer
+14. list that file's `##` and `###` subsections and every rule it states, before changing a byte of it
+15. process one file at a time, applying the one matching case in `file_shape`
+16. additionally apply `pre_1_6_overlay` to that file when it was written for a pre-1.6 version of this extension
+17. additionally apply `pre_cnlp_overlay` to that file when its body is prose in this extension's own format
+18. additionally apply `documentation_only_overlay` to that file when the decision is documentation-only
+19. state, for each item of the list from step 14, the block it now lives in, and that it was neither dropped, split, nor merged with another
+20. migrate both sides of a replace pair at their live status before superseding: `ai-factory adr supersede` requires the old ADR to be `accepted` or `active`
+21. run `ai-factory adr supersede <old-file> <new-file> [--archive-plan | --delete-plan]` for each pair, in preference to hand-linking
+22. place any legacy plan doc under the configured `paths.plans` and link it: `ai-factory adr link-plan <adr-file> <plan-file>`
+23. run `ai-factory adr validate <file> --strict` on each migrated ADR and fix until it exits 0: a warning is work left undone here, whatever the status says
+24. run `ai-factory adr status --check` and fix until it exits 0
+25. replace each stale ADR-process block in `AGENTS.md`, `CLAUDE.md`, `CONTRIBUTING.md`, and `README.md` with the `instruction_pointer` below
+26. substitute the configured `adr.root` for "the configured ADR root" in that pointer
+27. emit the mapping, the reconciliation, then the status footer
 
 status_mapping:
 - the overlays below are independent of this list: a file gets exactly 1 status here
@@ -117,7 +123,9 @@ pre_cnlp_overlay:
 - applies when the ADR already uses this extension's frontmatter but its body is prose, written before the CNL-P profile
 - applies in addition to the file-shape case, never instead of it
 - rewrite each `##` section into the blocks the ADR profile declares, keeping the decision unchanged: this is a format change, not a new decision
-- run `ai-factory adr validate <file>` after the rewrite: it names every block and every line that is still prose
+- an `###` subsection becomes 1 item, never 1 item per sentence: `<subsection title>: <the claim it makes, whole>`
+- drop the ordinal from that title and keep the words: `### 1. Rolling summary` opens its item with `rolling summary:`
+- run `ai-factory adr validate <file> --strict` after the rewrite: it names every block and every line that is still prose
 - do not supersede an ADR to change its format: a rewrite that keeps the decision is a non-material edit
 
 documentation_only_overlay:

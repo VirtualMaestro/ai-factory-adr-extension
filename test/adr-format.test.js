@@ -162,6 +162,22 @@ test('the hard length limit covers a scalar, not only a bullet', () => {
   assert.match(messages(long), /exceeds the 250 hard limit/);
 });
 
+// What a mechanical conversion of a legacy ADR leaves behind: an ordinal read as a sentence,
+// and a line cut to fit the hard limit. Neither is catchable as prose, both are catchable here.
+test('an item with no word, and a line cut mid-span, are reported', () => {
+  const ordinal = bodyWith('').replace('1. record the decision before a plan is written', '1. 4');
+  assert.match(messages(ordinal), /carries no word — it states no claim/);
+
+  const backtick = bodyWith('').replace('- the decision is recorded', '- the decision is recorded in `docs');
+  assert.match(messages(backtick), /unclosed backtick/);
+
+  const paren = bodyWith('').replace('- the decision is recorded', '- the decision is recorded (with evidence');
+  assert.match(messages(paren), /unclosed parenthesis/);
+
+  // A whole item and a balanced span stay silent: these checks fire on damage, not on style.
+  assert.deepEqual(adrBodyIssues(bodyWith('')), []);
+});
+
 test('block form and emptiness are checked (§3, §7)', () => {
   const unnumbered = bodyWith('').replace('1. record the decision', '- record the decision');
   assert.match(messages(unnumbered), /"rules:" is a numbered-list/);

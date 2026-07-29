@@ -171,6 +171,25 @@ test('wave-1 lifecycle: propose → refine (draft) → accept, driven by the rea
   assert.match(withIssues.stderr, /empty-block/, 'and they are reported on stderr');
 });
 
+// Before `accepted` a body issue is advice, which is right while the document is being written
+// and wrong for `aif-adr-migrate`: it claims the file is finished. `--strict` is that claim.
+test('validate --strict fails a draft whose body is still prose', opts, async () => {
+  const dir = await newProject('claude');
+  aif(['extension', 'add', EXT_ROOT], dir);
+  aif(['adr', 'init'], dir);
+
+  const rel = 'docs/adr/drafts/adr-prose.md';
+  await mkdir(path.dirname(path.join(dir, rel)), { recursive: true });
+  await writeFile(path.join(dir, rel),
+    '---\nid: adr-prose\ntype: adr\nstatus: draft\n---\n\n# adr-prose\n\nWe decided on option A because it was the pragmatic choice at the time.\n', 'utf8');
+
+  assert.equal(aifResult(['adr', 'validate', rel], dir).status, 0, 'a draft body is advice, not a failure');
+
+  const strict = aifResult(['adr', 'validate', rel, '--strict'], dir);
+  assert.notEqual(strict.status, 0, 'a migration that leaves warnings has not finished the file');
+  assert.match(`${strict.stdout}${strict.stderr}`, /missing required block/);
+});
+
 test('adr import scaffolds a conformant skeleton at a chosen status via the real CLI', opts, async () => {
   const dir = await newProject('claude');
   aif(['extension', 'add', EXT_ROOT], dir);

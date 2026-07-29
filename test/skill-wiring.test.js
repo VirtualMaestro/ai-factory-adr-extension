@@ -68,6 +68,14 @@ test('aif-adr-migrate rewrites an in-place ADR without moving or renaming it', a
   assert.match(body, /keep the id/, 'an in-place rename breaks depends_on, supersedes and replaced_by');
 });
 
+test('aif-adr-migrate carries over by hand and proves it', async () => {
+  const body = await skillBody('aif-adr-migrate');
+  assert.match(body, /do not write or run a converter over the corpus/, 'the ban lived in `purpose:` as a remark, not as a rule');
+  assert.match(body, /do not split prose into items by punctuation/, 'a sentence boundary is not an idea boundary');
+  assert.match(body, /adr validate <file> --strict/, 'a warning at draft would otherwise pass for a migrated file');
+  assert.match(body, /^19\. state, for each item of the list from step 14/m, 'nothing forces the rewrite to account for what the original said');
+});
+
 test('aif-adr-accept checks the conflict precondition against the corpus', async () => {
   const body = await skillBody('aif-adr-accept');
   assert.match(body, /conflicts with active ADRs are resolved/, 'the precondition still stands');

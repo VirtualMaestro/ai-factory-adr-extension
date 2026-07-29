@@ -290,6 +290,13 @@ function formIssues(key, spec, items) {
 /** §5: quoted or backticked text is data, not a claim, so the lexicon does not police it. */
 const unquoted = (l) => l.replace(/`[^`]*`|"[^"]*"|'[^']*'/g, ' ');
 
+/** Delimiters that open and close on the same line. A backtick is its own closer. */
+const UNCLOSED = [
+  ['backtick', /`/g, null],
+  ['parenthesis', /\(/g, /\)/g],
+  ['bracket', /\[/g, /\]/g],
+];
+
 /** §5 lexicon. One rule set for every profile. */
 export function lexiconIssues(lines) {
   const issues = [];
@@ -301,6 +308,16 @@ export function lexiconIssues(lines) {
       issues.push({ line, message: `${l.length} chars exceeds the ${HARD_LIMIT} hard limit — it is holding more than one idea` });
     }
     if (/^- never\b/.test(l)) issues.push({ line, message: 'a prohibition opens with "do not", not "never"' });
+    // A converted document is where these 2 turn up: a mechanical split reads an ordinal as a
+    // sentence and leaves `- 4` behind, and cutting a line to the hard limit lands mid-span.
+    const item = l.match(/^\s*(?:[-*]|\d+\.)\s+(.*)$/);
+    if (item && !/[a-z]/i.test(item[1])) issues.push({ line, message: 'the item carries no word — it states no claim' });
+    for (const [name, open, close] of UNCLOSED) {
+      const n = (l.match(open) || []).length;
+      if (close ? n !== (l.match(close) || []).length : n % 2) {
+        issues.push({ line, message: `unclosed ${name} — 1 idea per line and no wrapping, so this line was cut` });
+      }
+    }
     const deny = text.match(DENY);
     if (deny) issues.push({ line, message: `deny-list word "${deny[0]}"` });
     const spelled = text.match(SPELLED_THRESHOLD);

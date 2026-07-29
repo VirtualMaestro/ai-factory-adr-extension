@@ -4,6 +4,40 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and the project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [2.1.0] — 2026-07-29
+
+A migration run converted a corpus with a script: it split `## Decision` prose on sentence
+boundaries, flattened `### 1. Rolling summary` into a flat `rules:` list, read `1.` and `1a.`
+as sentences of their own, and cut long lines to fit the limit. The result validated clean.
+Everything below exists because of that run.
+
+### Added
+
+- **`ai-factory adr validate <file> --strict` — warnings fail too.** A body issue is a warning
+  before `accepted` because the document is still being written, and `aif-adr-migrate` claims
+  the opposite: that the file is finished. Without the flag a migrated draft full of prose
+  exited 0 from both `validate` and `status --check`, and the migration called itself done.
+  The severity model in `src/lifecycle/validate.js` is unchanged — `propose` and `refine` still
+  get advice where advice is right.
+- **2 checks for what a mechanical conversion leaves behind.** A list item carrying no word at
+  all — `- 4`, `1. 1a.` — states no claim, and a line with an unclosed backtick, parenthesis or
+  bracket was cut, because CNL-P is 1 idea per line with no wrapping. Neither judges whether a
+  bullet says something useful, which no check can; both catch the damage that run produced.
+  They apply to every CNL-P document, ADR and skill alike.
+
+### Changed
+
+- **`aif-adr-migrate` bans the converter in `forbidden_behaviors:`, where a ban is read.** The
+  skill already said there is no deterministic migration, but it said it in `purpose:`, as a
+  remark about the world. Now it also says: do not run a converter over the corpus, do not
+  split prose on punctuation, do not cut a line to fit the limit — rewrite the idea shorter.
+- **The rewrite has to account for the original.** Before touching a file the skill lists its
+  `##` and `###` subsections and every rule it states; after the rewrite it says which block
+  each ended up in and that nothing was dropped, split or merged. That reconciliation is an
+  output, not a note: a semantic loss is invisible to every check and visible in that list.
+- `pre_cnlp_overlay` states the mapping the converting run had to invent: an `###` subsection
+  becomes 1 item, never 1 per sentence, and the ordinal goes while the title stays.
+
 ## [2.0.2] — 2026-07-29
 
 ### Fixed
