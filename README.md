@@ -169,7 +169,6 @@ because of it.
 
 ## Documentation
 
-- [Product requirements](./docs/ai-factory-adr-extension-PRD.md)
 - [Implementation backlog](./docs/BACKLOG.md)
 - [Changelog](./CHANGELOG.md)
 

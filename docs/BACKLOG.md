@@ -1,13 +1,13 @@
 # Backlog — `ai-factory-adr-extension`
 
 Open items only. The MVP build log (verification spike, epics P0–P4, coverage check) is
-finished and archived at [`archive/BACKLOG-mvp.md`](./archive/BACKLOG-mvp.md); it describes
-the pre-1.6 body format in places and is history, not guidance.
+finished; it described the pre-1.6 body format in places and was history, not guidance, so it
+lives in Git history now and nowhere else.
 
-**Current state:** 1.19.0 · 16 skills · 139 tests green · one CNL-P format with no profile
+**Current state:** 1.19.0 · 16 skills · 143 tests green · one CNL-P format with no profile
 branching. The profiles are documents — `profiles/skill.md`, `profiles/adr.md`, and
 `profiles/profile.md`, which describes the other two and conforms to itself — read by both
-the agent and `src/artifacts/cnlp.js`. All 15 skill bodies and `templates/adr.md` are clean
+the agent and `src/artifacts/cnlp.js`. All 16 skill bodies and `templates/adr.md` are clean
 against the current checks, with no skill exempt from its profile. An adopting project reaches
 the standard and the profiles through `ai-factory adr format`, never by path. `npm run kit`
 packs the format for another skill repository as `cnlp-kit.zip`, gitignored and rebuilt on
@@ -17,8 +17,9 @@ every version bump; `cnlp-kit/` is authoring material and never ships in the pac
 
 ## Open — one smoke run, and the ceilings
 
-Everything in [`plans/adr-cross-consistency.md`](./plans/adr-cross-consistency.md) is built and
-measured. Three cold runs against the labelled corpus, by agents kept away from the labels,
+Cross-ADR consistency is built and measured: `ai-factory adr decisions` prints what every
+accepted and active ADR obliges, the four authoring skills read it before they write, and
+`aif-adr-check-consistency` sweeps the corpus for contradictions. Three cold runs against the labelled corpus, by agents kept away from the labels,
 scored 3/3 on the contradictions with no false positive on either same-area pair and no extra
 pair; the tables and footers matched each other exactly, and only the evidence wording varied.
 All 3 ran on 1 runtime, so that number measures how steady the skill's wording is, not how it
@@ -80,5 +81,4 @@ ingestion plus an embedding model — a service, its cost, and egress — while 
 baseline of frontmatter, `adr status` and grep covers decision recall at this corpus size
 for free. A companion spike found `codebase-memory-mcp` indexes code symbols only and does
 not serve decision recall either. The `adr.memory.provider` config axis stays reserved at
-`none`; revisit at hundreds of ADRs or a multi-repo setup. Full reasoning:
-[`archive/ADR_Proposal_Cognee_CodebaseMemory.md`](./archive/ADR_Proposal_Cognee_CodebaseMemory.md).
+`none`; revisit at hundreds of ADRs or a multi-repo setup.
