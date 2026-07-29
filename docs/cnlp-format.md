@@ -70,8 +70,7 @@ decision: use a shared external session store for all authenticated sessions
 
 ```
 purpose:
-- refine a proposal or draft ADR (PRD §19.2)
-- keep the task limited to ADR refinement
+
 ```
 
 **numbered-list** — unindented `N. ` items, ordered, for a sequence.

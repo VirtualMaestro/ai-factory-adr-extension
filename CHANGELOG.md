@@ -718,8 +718,7 @@ For each pre-1.6 ADR: hoist `- **Plan:** <id>` → `plan: <id>`, `- **Evidence:*
   promotes the free-text `- **Code:**` line into it at activation;
   `aif-adr-migrate` backfills it on `active`/`superseded` imports;
   `adr validate` warns (never errors) when an `active` non-documentation-only
-  ADR has no anchors. Decision of record:
-  `docs/ADR_Proposal_Cognee_CodebaseMemory.md`.
+  ADR has no anchors. 
 
 ### Removed
 
