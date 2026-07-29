@@ -25,6 +25,7 @@
   "scripts": {
     "test": "node --test",
     "kit": "node cnlp-kit/export.mjs --zip",
+    "corpus": "node --no-deprecation test/fixtures/consistency-corpus/setup.mjs",
     "version": "npm run kit",
     "prepack": "node -e \"const p=require('./package.json'),e=require('./extension.json');if(p.version!==e.version)throw new Error('version mismatch: package.json '+p.version+' vs extension.json '+e.version)\""
   },

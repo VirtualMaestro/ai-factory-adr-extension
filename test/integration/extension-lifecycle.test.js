@@ -54,12 +54,12 @@ const adrSkills = async (dir, runtime) =>
     ? (await readdir(skillsDir(dir, runtime))).filter((n) => n.startsWith('aif-adr-'))
     : [];
 
-test('add installs all 15 skills for each configured runtime and registers `adr` (Acc 2,3,4,6)', opts, async () => {
+test('add installs all 16 skills for each configured runtime and registers `adr` (Acc 2,3,4,6)', opts, async () => {
   const dir = await newProject('claude,codex');
   aif(['extension', 'add', EXT_ROOT], dir);
 
-  assert.equal((await adrSkills(dir, 'claude')).length, 15, 'claude skills');
-  assert.equal((await adrSkills(dir, 'codex')).length, 15, 'codex skills');
+  assert.equal((await adrSkills(dir, 'claude')).length, 16, 'claude skills');
+  assert.equal((await adrSkills(dir, 'codex')).length, 16, 'codex skills');
   assert.ok((await adrSkills(dir, 'claude')).includes('aif-adr-migrate'), 'migration skill installed');
   assert.match(aif(['adr', '--help'], dir), /init/);
 
@@ -108,8 +108,8 @@ test('wave-1 lifecycle: propose → refine (draft) → accept, driven by the rea
   aif(['adr', 'init'], dir);
 
   // Skills authored (no longer placeholders) and installed for both runtimes.
-  assert.equal((await adrSkills(dir, 'claude')).length, 15, 'claude skills');
-  assert.equal((await adrSkills(dir, 'codex')).length, 15, 'codex skills');
+  assert.equal((await adrSkills(dir, 'claude')).length, 16, 'claude skills');
+  assert.equal((await adrSkills(dir, 'codex')).length, 16, 'codex skills');
   const acceptSkill = await readFile(
     path.join(skillsDir(dir, 'claude'), 'aif-adr-accept', 'SKILL.md'),
     'utf8',
@@ -158,6 +158,17 @@ test('wave-1 lifecycle: propose → refine (draft) → accept, driven by the rea
   assert.equal(digest.items[0].id, 'adr-test-decision');
   assert.ok(digest.items[0].decision.length > 0, 'the decision block came through');
   assert.ok(digest.items[0].rules.length > 0, 'the rules block came through');
+
+  const human = aif(['adr', 'decisions'], dir).trimEnd().split(/\r?\n/);
+  assert.match(human.at(-1), /^1 ADR · \d+ lines$/, 'the count footer closes the digest');
+
+  // An incomplete corpus is a gap the skills name and work around, so it must not fail the
+  // command: propose and refine run this on every invocation.
+  await writeFile(path.join(dir, 'docs/adr/accepted/adr-hollow.md'),
+    '---\nid: adr-hollow\ntype: adr\nstatus: accepted\n---\n\ndecision: something\n', 'utf8');
+  const withIssues = aifResult(['adr', 'decisions'], dir);
+  assert.equal(withIssues.status, 0, 'issues never set the exit code');
+  assert.match(withIssues.stderr, /empty-block/, 'and they are reported on stderr');
 });
 
 test('adr import scaffolds a conformant skeleton at a chosen status via the real CLI', opts, async () => {
@@ -372,7 +383,7 @@ test('re-adding does not duplicate skills or extension entries (Acc 7)', opts, a
   aif(['extension', 'add', EXT_ROOT], dir);
   aif(['extension', 'add', EXT_ROOT], dir); // second add
 
-  assert.equal((await adrSkills(dir, 'claude')).length, 15);
+  assert.equal((await adrSkills(dir, 'claude')).length, 16);
   const cfg = JSON.parse(await readFile(path.join(dir, '.ai-factory.json'), 'utf8'));
   const entries = (cfg.extensions ?? []).filter((e) => e.name === 'ai-factory-adr-extension');
   assert.equal(entries.length, 1, 'exactly one extension entry');

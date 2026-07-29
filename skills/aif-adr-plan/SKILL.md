@@ -65,13 +65,14 @@ workflow:
 2. run `ai-factory adr decisions` and read every line: the plan implements 1 decision and breaks none of the others
 3. stop when that command reports an `issues:` entry for this ADR, and recommend `aif-adr-refine`: a plan built on a decision that failed to parse rests on nothing
 4. name any `issues:` entry for another ADR to the operator, then continue
-5. state every dependency warning it reports to the operator and confirm they want to continue before creating the plan
-6. create the plan by applying `aif-plan full` planning semantics in this run, with the frontmatter above
-7. run `ai-factory adr link-plan <adr-file> <plan-file>`: it sets the ADR's `plan:` field to the plan id and adds `implements` and `depends_on` to the plan, leaving the ADR body untouched
-8. leave `evidence:` empty
-9. run `ai-factory adr status --check` and resolve any failures; it honors the configured ADR root
-10. leave the ADR `accepted`
-11. report the status footer
+5. open in full the ADRs whose `decision:`, `constraints:`, `scope:` or `rules:` touch the work this plan will do
+6. state every dependency warning it reports to the operator and confirm they want to continue before creating the plan
+7. create the plan by applying `aif-plan full` planning semantics in this run, with the frontmatter above
+8. run `ai-factory adr link-plan <adr-file> <plan-file>`: it sets the ADR's `plan:` field to the plan id and adds `implements` and `depends_on` to the plan, leaving the ADR body untouched
+9. leave `evidence:` empty
+10. run `ai-factory adr status --check` and resolve any failures; it honors the configured ADR root
+11. leave the ADR `accepted`
+12. report the status footer
 
 expected_warnings:
 - the built-in `audit-artifacts` warning "Accepted ADR without `affects` links" is expected while `affects` is honestly empty, and is safe to accept

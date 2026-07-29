@@ -4,7 +4,7 @@ Open items only. The MVP build log (verification spike, epics P0–P4, coverage 
 finished and archived at [`archive/BACKLOG-mvp.md`](./archive/BACKLOG-mvp.md); it describes
 the pre-1.6 body format in places and is history, not guidance.
 
-**Current state:** 1.19.0 · 15 skills · 138 tests green · one CNL-P format with no profile
+**Current state:** 1.19.0 · 16 skills · 139 tests green · one CNL-P format with no profile
 branching. The profiles are documents — `profiles/skill.md`, `profiles/adr.md`, and
 `profiles/profile.md`, which describes the other two and conforms to itself — read by both
 the agent and `src/artifacts/cnlp.js`. All 15 skill bodies and `templates/adr.md` are clean
@@ -15,12 +15,25 @@ every version bump; `cnlp-kit/` is authoring material and never ships in the pac
 
 ---
 
-## In flight — cross-ADR consistency
+## Open — one smoke run, and the ceilings
 
-`ai-factory adr decisions` shipped in 1.19.0 and the 4 authoring skills read it. What remains
-is the audit half: `aif-adr-check-consistency`, a read-only sweep that names contradicting,
-redundant and area-sharing pairs. Plan, decisions and open ceilings:
-[`plans/adr-cross-consistency.md`](./plans/adr-cross-consistency.md), steps 3–5 of §9.
+Everything in [`plans/adr-cross-consistency.md`](./plans/adr-cross-consistency.md) is built and
+measured. Three cold runs against the labelled corpus, by agents kept away from the labels,
+scored 3/3 on the contradictions with no false positive on either same-area pair and no extra
+pair; the tables and footers matched each other exactly, and only the evidence wording varied.
+All 3 ran on 1 runtime, so that number measures how steady the skill's wording is, not how it
+travels between executors.
+
+`npm run corpus` builds a throwaway project pointed at the corpus and prints what to do next;
+`npm run corpus -- --key` prints the answer sheet. Protocol:
+[`test/fixtures/consistency-corpus/README.md`](../test/fixtures/consistency-corpus/README.md).
+
+- 1 smoke run on Codex, the other supported runtime.
+- The plan's §7 ceilings stay open until a real corpus exists: an obligation left in prose is
+  invisible to the digest, and the 800-line threshold has never been approached.
+- The corpus is 14 hand-written ADRs by one author. A second, held-out corpus would test
+  whether the skill generalizes past this one's habits; worth building when the first real
+  project corpus exists to draw from.
 
 ---
 

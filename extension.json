@@ -18,6 +18,7 @@
     "skills/aif-adr-status",
     "skills/aif-adr-verify",
     "skills/aif-adr-verify-all",
+    "skills/aif-adr-check-consistency",
     "skills/aif-adr-next"
   ],
   "commands": [

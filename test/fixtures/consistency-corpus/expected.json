@@ -1,0 +1,50 @@
+{
+  "purpose": "Labelled corpus for a manual aif-adr-check-consistency run. Not read by npm test: the skill is judged by a person against these labels. buildDecisions must report zero issues here.",
+  "contradiction": [
+    {
+      "pair": ["adr-order-ids-sequence", "adr-order-ids-uuid"],
+      "statuses": ["accepted", "active"],
+      "why": "one assigns the order id in application code as a 128-bit UUIDv7, the other assigns it in the database as a 64-bit sequence value; both claim the same scope",
+      "expected_follow_up": "aif-adr-refine on adr-order-ids-sequence, the accepted one",
+      "lexical": "shared vocabulary — order id, database, region"
+    },
+    {
+      "pair": ["adr-schema-migrations-forward", "adr-schema-migrations-reversible"],
+      "statuses": ["accepted", "accepted"],
+      "why": "one requires a migration file to carry no down step, the other requires a down step and has the deploy tool refuse migrations without one",
+      "expected_follow_up": "name the conflict and stop; which one yields is the operator's call",
+      "lexical": "shared vocabulary — migration, down step"
+    },
+    {
+      "pair": ["adr-cart-continuity", "adr-session-stateless"],
+      "statuses": ["active", "active"],
+      "why": "one rules that a process holds no caller data between 2 requests, the other rules that the checkout module keeps every basket in process memory keyed by visitor; the second is caller data held between requests",
+      "expected_follow_up": "name the conflict and stop; both are active and protected, so the direction of replacement is the operator's call",
+      "lexical": "no shared vocabulary — session/token/caller against basket/shopper/visitor. This is the pair a lexical prefilter would miss, and the reason the skill reads the whole digest instead."
+    }
+  ],
+  "redundant": [
+    {
+      "pair": ["adr-logs-json", "adr-structured-logging"],
+      "statuses": ["active", "accepted"],
+      "why": "adr-structured-logging obliges nothing that adr-logs-json does not already oblige: same scope, same excludes, one JSON object per line, fixed key names",
+      "expected_follow_up": "name the overlap and stop; the pairing for supersede is the operator's call"
+    }
+  ],
+  "shared_area": [
+    {
+      "pair": ["adr-http-retry-budget", "adr-http-timeouts"],
+      "statuses": ["active", "active"],
+      "why": "both rule the shared HTTP client and both state numeric limits, but a deadline and a retry budget are satisfiable together",
+      "trap": "a verdict of contradiction here is a false positive"
+    },
+    {
+      "pair": ["adr-order-events-schema", "adr-order-events-topic"],
+      "statuses": ["active", "accepted"],
+      "why": "both rule order events and share affects: [orders, events]; one governs the transport and topic, the other the payload, and each excludes the other's subject",
+      "trap": "a verdict of contradiction here is a false positive"
+    }
+  ],
+  "orthogonal": ["adr-ci-required-checks", "adr-config-env-vars"],
+  "counts": { "adrs": 14, "accepted": 6, "active": 8 }
+}

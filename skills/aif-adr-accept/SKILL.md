@@ -51,7 +51,7 @@ workflow:
 2. run `ai-factory adr status --check`, which resolves `adr.root` and passes it to the artifact audit
 3. resolve any audit failures before continuing
 4. run `ai-factory adr decisions` and read every line: this is the step where precondition "conflicts with active ADRs are resolved" is checked against the corpus, not assumed
-5. open in full every ADR whose `decision:`, `scope:` or `rules:` overlap this draft, and stop when one of them contradicts it
+5. open in full every ADR whose `decision:`, `constraints:`, `scope:` or `rules:` overlap this draft, and stop when one of them contradicts it
 6. run `ai-factory adr transition <file> accepted`: a single atomic move of the status edit plus `drafts/` to `accepted/`
 7. report any warnings
 8. report the status footer

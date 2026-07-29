@@ -36,6 +36,29 @@ All notable changes to this project are documented here. The format follows
 - `itemsOf` is exported from `src/artifacts/cnlp.js`: the digest reads block contents with the
   same parser the checker uses, rather than a second copy of it.
 
+### Added — the audit half
+
+- **`aif-adr-check-consistency`, the 16th skill.** `aif-adr-verify-all` checks decisions
+  against code; nothing checked decisions against each other. This one reads the digest in 1
+  pass, names the pairs whose obligations touch the same subject, then opens both ADRs in full
+  before any verdict — `contradiction`, `redundant`, or `shared-area`, which is a report line
+  and not a defect. There is no pair-matching prefilter: a lexical one misses a session
+  colliding with a shopping basket, and the whole digest costs 1 read anyway.
+- It recommends `aif-adr-refine` only when 1 ADR of a contradicting pair is still `accepted`.
+  Two `active` ADRs, or two `accepted` ones, are named and left to the operator: `supersede`
+  takes an explicit old and new ADR, and the conflict does not say which is which. It never
+  recommends `depends_on` for an overlap — that edge orders implementation and a spurious one
+  blocks `ai-factory adr order` with a cycle.
+- **A block written in the wrong form is reported, not silently halved.** `constraints: first`
+  with `- second` under it kept only `first` and raised nothing, so the digest claimed to be
+  the complete body of obligations while dropping one. The form each required block takes is
+  read from `profiles/adr.md`, a mismatch becomes `invalid-block`, and the content is taken
+  whole either way.
+- **`test/fixtures/consistency-corpus/`** — 14 labelled ADRs, the first checked-in fixture
+  directory here. A skill cannot be scored by a unit test, so the corpus carries
+  `expected.json`: 3 contradicting pairs (1 per follow-up branch, 1 of them sharing no
+  vocabulary), 1 redundant pair, and 2 same-area pairs that must not be called contradictions.
+
 ## [1.18.0] — 2026-07-28
 
 ### Changed

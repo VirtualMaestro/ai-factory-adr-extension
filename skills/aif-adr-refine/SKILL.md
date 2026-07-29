@@ -64,7 +64,7 @@ workflow:
 3. run `ai-factory adr decisions` and read every line: it states what each accepted and active ADR obliges
 4. name any `issues:` that command reports to the operator, then continue: the digest covers the corpus minus those files
 5. inspect project rules, architecture documents, and the relevant code
-6. open in full the ADRs whose `decision:`, `scope:` or `rules:` touch this decision
+6. open in full the ADRs whose `decision:`, `constraints:`, `scope:` or `rules:` touch this decision
 7. verify the ADR states exactly 1 primary decision
 8. improve the blocks the ADR profile declares, which `ai-factory adr format adr` prints, keeping the rationale explicit rather than implied
 9. state an obligation that another ADR could break in `rules:` or `constraints:`, never in the prose of `## Context`: a rule left in prose is invisible to every later reader

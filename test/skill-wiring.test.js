@@ -25,6 +25,23 @@ test('aif-adr-plan stops on an issue against its own ADR', async () => {
   assert.match(step, /^\d+\. stop when/, 'the step must stop, not warn: a plan on an unparsed decision rests on nothing');
 });
 
+test('aif-adr-check-consistency stops on a corpus that reports issues', async () => {
+  const body = await skillBody('aif-adr-check-consistency');
+  const step = body.split(/\r?\n/).find((l) => /^\d+\. stop/.test(l) && /issues:/.test(l));
+  assert.ok(step, 'no workflow step stops on `issues:` — a sweep over a holed corpus reports what it cannot see');
+});
+
+test('every skill that reads the digest judges by all 4 required blocks', async () => {
+  for (const name of READERS) {
+    const body = await skillBody(name);
+    const line = body.split(/\r?\n/).find((l) => /open in full/.test(l));
+    assert.ok(line, `${name}: no step opens the overlapping ADRs in full`);
+    for (const block of ['decision:', 'constraints:', 'scope:', 'rules:']) {
+      assert.ok(line.includes(`\`${block}\``), `${name}: the full-read step ignores \`${block}\``);
+    }
+  }
+});
+
 test('aif-adr-accept checks the conflict precondition against the corpus', async () => {
   const body = await skillBody('aif-adr-accept');
   assert.match(body, /conflicts with active ADRs are resolved/, 'the precondition still stands');

@@ -2,7 +2,7 @@ import path from 'node:path';
 import { adrRoot } from './config/paths.js';
 import { read } from './artifacts/frontmatter.js';
 import { isValidId } from './artifacts/id.js';
-import { parseBlocks, itemsOf } from './artifacts/cnlp.js';
+import { parseBlocks, itemsOf, loadProfile } from './artifacts/cnlp.js';
 import { listAdrs } from './status.js';
 import { STATUS_BY_DIR } from './lifecycle/status.js';
 
@@ -23,23 +23,31 @@ const MARKER = /^\s*(?:[-*]|\d+\.)\s+/;
 
 const asArray = (v) => (Array.isArray(v) ? v.map(String) : v == null || v === '' ? [] : [String(v)]);
 
-/** Section content as plain strings: list markers stripped, blank lines already dropped. */
-function contentOf(lines, section) {
-  if (section.value) return [section.value];
-  return itemsOf(lines, section.line)
-    .map((i) => i.text.replace(MARKER, '').trim())
-    .filter((t) => t !== '');
-}
-
-function readBody(body) {
+function readBody(body, forms) {
   const { lines, sections } = parseBlocks(body);
-  const out = { repeated: [] };
+  const out = { malformed: [] };
   for (const key of REQUIRED) {
     const found = sections.filter((s) => s.key === key);
     // Two blocks of one name would be silently truncated to the first: the digest would
     // claim completeness while dropping half the obligations.
-    if (found.length > 1) out.repeated.push(key);
-    out[key] = found.length ? contentOf(lines, found[0]) : [];
+    if (found.length > 1) out.malformed.push(`block "${key}:" appears more than 1 time`);
+    if (!found.length) {
+      out[key] = [];
+      continue;
+    }
+    const section = found[0];
+    const items = itemsOf(lines, section.line)
+      .map((i) => i.text.replace(MARKER, '').trim())
+      .filter((t) => t !== '');
+    // A block written in the wrong form loses content silently: `constraints: first` with
+    // `- second` under it keeps only `first`. The profile says which form each block takes,
+    // so ask it rather than assume — and when the form is wrong, take everything anyway, so
+    // a malformed block is reported rather than quietly halved.
+    const scalar = forms.get(key) === 'scalar';
+    if (scalar ? !section.value || items.length : Boolean(section.value)) {
+      out.malformed.push(`block "${key}:" is not the ${forms.get(key)} its profile declares`);
+    }
+    out[key] = section.value ? [section.value, ...items] : items;
   }
   out.excludes = out.scope.filter((s) => /^excludes:/.test(s)).map((s) => s.slice('excludes:'.length).trim());
   out.scope = out.scope.filter((s) => !/^excludes:/.test(s));
@@ -53,6 +61,8 @@ function readBody(body) {
  */
 export async function buildDecisions({ projectDir = process.cwd() } = {}) {
   const root = await adrRoot(projectDir);
+  const profile = await loadProfile('adr');
+  const forms = new Map(profile.sections.map((s) => [s.key, s.form]));
   // Forward slashes on every platform, as `runAudit` does: the digest is read as a document,
   // and its paths sit beside `code:` anchors that are authored with `/`.
   const rel = (f) => path.relative(projectDir, f).split(path.sep).join('/');
@@ -72,7 +82,7 @@ export async function buildDecisions({ projectDir = process.cwd() } = {}) {
       continue;
     }
 
-    const parsed = readBody(body);
+    const parsed = readBody(body, forms);
     items.push({
       id: String(data.id ?? ''),
       status,
@@ -88,7 +98,7 @@ export async function buildDecisions({ projectDir = process.cwd() } = {}) {
       depends_on: asArray(data.depends_on),
       code: asArray(data.code),
       _yamlStatus: data.status,
-      _repeated: parsed.repeated,
+      _malformed: parsed.malformed,
     });
   }
 
@@ -103,13 +113,13 @@ export async function buildDecisions({ projectDir = process.cwd() } = {}) {
     const dupes = byId.get(it.id) ?? [];
     if (isValidId(it.id) && dupes.length > 1) add('duplicate-id', it.file, `id "${it.id}" is also used by ${dupes.filter((f) => f !== it.file).join(', ')}`);
     if (it._yamlStatus !== it.status) add('status-mismatch', it.file, `frontmatter status ${JSON.stringify(it._yamlStatus)} against directory "${it.status}"`);
-    for (const key of it._repeated) add('invalid-block', it.file, `block "${key}:" appears more than 1 time`);
+    for (const message of it._malformed) add('invalid-block', it.file, message);
     for (const key of REQUIRED) {
       const empty = key === 'decision' ? !it.decision : it[key].length === 0;
-      if (empty && !it._repeated.includes(key)) add('empty-block', it.file, `block "${key}:" is empty or absent`);
+      if (empty && !it._malformed.some((m) => m.includes(`"${key}:"`))) add('empty-block', it.file, `block "${key}:" is empty or absent`);
     }
     delete it._yamlStatus;
-    delete it._repeated;
+    delete it._malformed;
   }
 
   issues.sort((a, b) => a.file.localeCompare(b.file) || a.code.localeCompare(b.code));

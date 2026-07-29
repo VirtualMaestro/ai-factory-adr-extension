@@ -51,7 +51,7 @@ workflow:
 1. run `ai-factory adr status --json` to inventory accepted, active, and superseded ADRs
 2. run `ai-factory adr decisions` and read every line: it states what each accepted and active ADR obliges, which is the corpus this proposal cannot contradict
 3. name any `issues:` that command reports to the operator, then continue: the digest covers the corpus minus those files
-4. open in full the ADRs whose `decision:`, `scope:` or `rules:` touch this topic
+4. open in full the ADRs whose `decision:`, `constraints:`, `scope:` or `rules:` touch this topic
 5. stop and recommend `aif-adr-refine` or `aif-adr-supersede` on the existing ADR when one already covers this decision
 6. inspect `.ai-factory/ARCHITECTURE.md`, `.ai-factory/RULES.md`, any research artifacts, and the relevant source
 7. run `ai-factory adr new "<topic>"`: it generates the stable id, creates `<adr-root>/proposals/adr-<slug>.md` with `status: proposed` from the template, and refuses if that id already exists

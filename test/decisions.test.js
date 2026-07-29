@@ -175,6 +175,34 @@ test('an empty required block is an issue', async () => {
   assert.match(issues[0].message, /"rules:"/);
 });
 
+test('a list block written with an inline value keeps both parts and is an issue', async () => {
+  const dir = await mkProject();
+  await writeRaw(dir, {
+    statusDir: 'accepted',
+    id: 'adr-mixed',
+    text: serialize({ id: 'adr-mixed', type: 'adr', status: 'accepted' }, body({ constraints: [] }).replace('constraints:\n', 'constraints: first\n- second\n')),
+  });
+
+  const { items, issues } = await buildDecisions({ projectDir: dir });
+  assert.deepEqual(issues.map((i) => i.code), ['invalid-block']);
+  assert.match(issues[0].message, /not the bullet-list/);
+  assert.deepEqual(items[0].constraints, ['first', 'second'], 'the malformed block is reported, never halved');
+});
+
+test('a scalar block written as a list is an issue', async () => {
+  const dir = await mkProject();
+  await writeRaw(dir, {
+    statusDir: 'accepted',
+    id: 'adr-listy',
+    text: serialize({ id: 'adr-listy', type: 'adr', status: 'accepted' }, body().replace('decision: pick one thing', 'decision:\n- pick one thing')),
+  });
+
+  const { items, issues } = await buildDecisions({ projectDir: dir });
+  assert.deepEqual(issues.map((i) => i.code), ['invalid-block']);
+  assert.match(issues[0].message, /not the scalar/);
+  assert.equal(items[0].decision, 'pick one thing', 'the content still reaches the digest');
+});
+
 test('a required block stated twice is an issue, not a silent truncation', async () => {
   const dir = await mkProject();
   await writeRaw(dir, {

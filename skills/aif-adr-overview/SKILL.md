@@ -48,6 +48,7 @@ off_flow_skills:
 | `aif-adr-status` | read-only overview and diagnostics, at any point | never mutates |
 | `aif-adr-verify <adr>` | checks one accepted or active ADR against the implemented code | read-only, re-runnable; do the `code:` anchors resolve, does the code honor the Decision |
 | `aif-adr-verify-all` | the same check swept across every active ADR, as one table | read-only |
+| `aif-adr-check-consistency` | checks the accepted and active ADRs against each other, reporting contradiction, redundancy and shared areas | read-only; reads `ai-factory adr decisions`, then both ADRs of every named pair in full |
 | `aif-adr-reconcile <target>` | adjudicates a second reviewer's proposed improvements, adopting and rejecting each with a reason | never advances status, never implements |
 | `aif-adr-next` | reads the `depends_on` graph and recommends what to implement next | ready means `accepted` with all dependencies `active`; also reports order, blocked ADRs, cycles |
 | `aif-adr-migrate` | brings a project's pre-existing legacy ADRs into this lifecycle | one-time; run it before authoring new ADRs there |
