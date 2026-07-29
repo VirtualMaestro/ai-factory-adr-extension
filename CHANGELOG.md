@@ -30,6 +30,15 @@ against itself.
   `npm run corpus` builds a throwaway project pointed at it; 3 cold runs scored 3/3 on the
   contradictions with no false positive and no extra pair.
 
+### Changed
+
+- **`aif-adr-migrate` looks before it asks.** The skill opened with "where are the legacy ADR
+  files?" and scanned the common locations only if the operator stayed silent, so Codex asked
+  first while Claude usually scanned first — 1 instruction, 2 behaviours. The scan now runs
+  first and reports each path with its count; the question is left for a scan that finds
+  nothing. The scan skips the 5 status directories under `adr.root`, which hold migrated ADRs
+  and would otherwise be dragged back through migration on a second run.
+
 ### Fixed
 
 - **A block written in the wrong form is reported, not silently halved.** `constraints: first`

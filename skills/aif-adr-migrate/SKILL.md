@@ -11,7 +11,7 @@ purpose:
 - there is no deterministic migrate command: legacy formats vary too much to parse mechanically
 
 inputs:
-- legacy ADR location, from the operator
+- legacy ADR location, from the scan, or from the operator when the scan comes up empty
 
 preconditions:
 - the project is initialized: `.ai-factory.json` exists, which the `adr` commands gate on
@@ -44,25 +44,26 @@ workflow:
 2. create the migration branch, which is what makes the whole migration reviewable and revertible: `git checkout -b adr-migration`
 3. read `adr.root` from `.ai-factory/adr-extension.yaml`, default `docs/adr`, and use that root everywhere below
 4. run `ai-factory adr format --path` and `ai-factory adr format adr --path`, then read both: they are the rules and the block set every migrated file is rewritten into
-5. ask the operator where the legacy ADRs live: there is no reliable way to locate them across projects, and the operator knows their own layout
-6. scan `adr/`, `docs/adr/`, `docs/decisions/`, and `architecture/decisions/` only when the operator does not answer
-7. read every legacy file found, noting its format and any existing status, date, and title
-8. note which files form a replace or deprecate pair
-9. assign each file a stable id `adr-<lowercase-hyphenated>` derived from its title
-10. assign each file a lifecycle status by the one matching case in `status_mapping`
-11. state the full mapping, old file to id and status, before moving anything
-12. process one file at a time, applying the one matching case in `file_shape`
-13. additionally apply `pre_1_6_overlay` to that file when it was written for a pre-1.6 version of this extension
-14. additionally apply `pre_cnlp_overlay` to that file when its body is prose in this extension's own format
-15. additionally apply `documentation_only_overlay` to that file when the decision is documentation-only
-16. migrate both sides of a replace pair at their live status before superseding: `ai-factory adr supersede` requires the old ADR to be `accepted` or `active`
-17. run `ai-factory adr supersede <old-file> <new-file> [--archive-plan | --delete-plan]` for each pair, in preference to hand-linking
-18. place any legacy plan doc under the configured `paths.plans` and link it: `ai-factory adr link-plan <adr-file> <plan-file>`
-19. run `ai-factory adr validate <file>` on each migrated ADR and fix until it is clean
-20. run `ai-factory adr status --check` and fix until it exits 0
-21. replace each stale ADR-process block in `AGENTS.md`, `CLAUDE.md`, `CONTRIBUTING.md`, and `README.md` with the `instruction_pointer` below
-22. substitute the configured `adr.root` for "the configured ADR root" in that pointer
-23. emit the mapping, then the status footer
+5. scan `adr/`, `docs/adr/`, `docs/decisions/`, and `architecture/decisions/` for legacy ADR files, skipping the 5 status directories under `adr.root`, which hold migrated ADRs and not legacy ones
+6. report what the scan found, each path with its file count, before reading any of them
+7. ask the operator where the legacy ADRs live when the scan finds nothing, or when what it found is not the corpus they meant: no scan covers every project layout
+8. read every legacy file found, noting its format and any existing status, date, and title
+9. note which files form a replace or deprecate pair
+10. assign each file a stable id `adr-<lowercase-hyphenated>` derived from its title
+11. assign each file a lifecycle status by the one matching case in `status_mapping`
+12. state the full mapping, old file to id and status, before moving anything
+13. process one file at a time, applying the one matching case in `file_shape`
+14. additionally apply `pre_1_6_overlay` to that file when it was written for a pre-1.6 version of this extension
+15. additionally apply `pre_cnlp_overlay` to that file when its body is prose in this extension's own format
+16. additionally apply `documentation_only_overlay` to that file when the decision is documentation-only
+17. migrate both sides of a replace pair at their live status before superseding: `ai-factory adr supersede` requires the old ADR to be `accepted` or `active`
+18. run `ai-factory adr supersede <old-file> <new-file> [--archive-plan | --delete-plan]` for each pair, in preference to hand-linking
+19. place any legacy plan doc under the configured `paths.plans` and link it: `ai-factory adr link-plan <adr-file> <plan-file>`
+20. run `ai-factory adr validate <file>` on each migrated ADR and fix until it is clean
+21. run `ai-factory adr status --check` and fix until it exits 0
+22. replace each stale ADR-process block in `AGENTS.md`, `CLAUDE.md`, `CONTRIBUTING.md`, and `README.md` with the `instruction_pointer` below
+23. substitute the configured `adr.root` for "the configured ADR root" in that pointer
+24. emit the mapping, then the status footer
 
 status_mapping:
 - the overlays below are independent of this list: a file gets exactly 1 status here

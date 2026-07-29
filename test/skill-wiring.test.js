@@ -42,6 +42,15 @@ test('every skill that reads the digest judges by all 4 required blocks', async 
   }
 });
 
+test('aif-adr-migrate scans before it asks the operator', async () => {
+  const body = await skillBody('aif-adr-migrate');
+  const steps = body.split(/\r?\n/).filter((l) => /^\d+\. /.test(l));
+  const scan = steps.findIndex((l) => /^\d+\. scan /.test(l));
+  const ask = steps.findIndex((l) => /ask the operator where/.test(l));
+  assert.ok(scan >= 0 && ask >= 0, 'both the scan step and the ask step must exist');
+  assert.ok(scan < ask, 'asking before looking costs a round trip and splits Claude from Codex');
+});
+
 test('aif-adr-accept checks the conflict precondition against the corpus', async () => {
   const body = await skillBody('aif-adr-accept');
   assert.match(body, /conflicts with active ADRs are resolved/, 'the precondition still stands');
