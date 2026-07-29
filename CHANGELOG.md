@@ -4,6 +4,27 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and the project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [2.0.2] — 2026-07-29
+
+### Fixed
+
+- **An ADR already filed under `adr.root` can be legacy too, and 2.0.1 hid exactly those.**
+  That release told the scan to skip the 5 status directories "which hold migrated ADRs and
+  not legacy ones" — untrue for the 2 cases the skill carries overlays for: `pre_1_6_overlay`
+  for machine fields still in the body, and `pre_cnlp_overlay` for a body that is prose. In a
+  project whose ADRs sit in the right directories in the old format, the skill reported that
+  it found nothing and asked the operator for paths.
+- The check is a command, not a judgement call: `ai-factory adr status --check` over the root
+  fails on an ADR whose body is not CNL-P, because `accepted` and `active` turn every body
+  issue into an error. A file that passes is migrated; a file that fails is legacy in place.
+- **`file_shape` gained the in-place case.** Both existing cases assume a file arriving from
+  outside — `git mv` it, or `import` a skeleton and `git rm` the source. An ADR already at
+  `<root>/<status-dir>/<id>.md` is neither: its body is rewritten where it lies, and its id
+  survives even if the title suggests a better one, since a rename silently breaks
+  `depends_on`, `supersedes` and `replaced_by` in every ADR pointing at it.
+- `purpose:` now says that bringing an older ADR of this extension up to the current format is
+  part of the job. It read as though only foreign formats — MADR, Nygard, homegrown — were.
+
 ## [2.0.1] — 2026-07-29
 
 ### Fixed

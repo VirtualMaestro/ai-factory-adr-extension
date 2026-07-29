@@ -7,11 +7,12 @@ mode: adr_migration
 
 purpose:
 - bring ADRs written before this extension — MADR, Nygard, or homegrown — into the audited lifecycle
+- bring ADRs written for an earlier version of this extension up to the current format: a pre-CNL-P body is prose and has to be rewritten into the blocks the ADR profile declares
 - read and map each legacy decision; the commands place and check
 - there is no deterministic migrate command: legacy formats vary too much to parse mechanically
 
 inputs:
-- legacy ADR location, from the scan, or from the operator when the scan comes up empty
+- legacy ADR location, from the scan of the foreign directories, from the check over the configured root, or from the operator when both come up empty
 
 preconditions:
 - the project is initialized: `.ai-factory.json` exists, which the `adr` commands gate on
@@ -44,26 +45,27 @@ workflow:
 2. create the migration branch, which is what makes the whole migration reviewable and revertible: `git checkout -b adr-migration`
 3. read `adr.root` from `.ai-factory/adr-extension.yaml`, default `docs/adr`, and use that root everywhere below
 4. run `ai-factory adr format --path` and `ai-factory adr format adr --path`, then read both: they are the rules and the block set every migrated file is rewritten into
-5. scan `adr/`, `docs/adr/`, `docs/decisions/`, and `architecture/decisions/` for legacy ADR files, skipping the 5 status directories under `adr.root`, which hold migrated ADRs and not legacy ones
-6. report what the scan found, each path with its file count, before reading any of them
-7. ask the operator where the legacy ADRs live when the scan finds nothing, or when what it found is not the corpus they meant: no scan covers every project layout
-8. read every legacy file found, noting its format and any existing status, date, and title
-9. note which files form a replace or deprecate pair
-10. assign each file a stable id `adr-<lowercase-hyphenated>` derived from its title
-11. assign each file a lifecycle status by the one matching case in `status_mapping`
-12. state the full mapping, old file to id and status, before moving anything
-13. process one file at a time, applying the one matching case in `file_shape`
-14. additionally apply `pre_1_6_overlay` to that file when it was written for a pre-1.6 version of this extension
-15. additionally apply `pre_cnlp_overlay` to that file when its body is prose in this extension's own format
-16. additionally apply `documentation_only_overlay` to that file when the decision is documentation-only
-17. migrate both sides of a replace pair at their live status before superseding: `ai-factory adr supersede` requires the old ADR to be `accepted` or `active`
-18. run `ai-factory adr supersede <old-file> <new-file> [--archive-plan | --delete-plan]` for each pair, in preference to hand-linking
-19. place any legacy plan doc under the configured `paths.plans` and link it: `ai-factory adr link-plan <adr-file> <plan-file>`
-20. run `ai-factory adr validate <file>` on each migrated ADR and fix until it is clean
-21. run `ai-factory adr status --check` and fix until it exits 0
-22. replace each stale ADR-process block in `AGENTS.md`, `CLAUDE.md`, `CONTRIBUTING.md`, and `README.md` with the `instruction_pointer` below
-23. substitute the configured `adr.root` for "the configured ADR root" in that pointer
-24. emit the mapping, then the status footer
+5. scan `adr/`, `docs/adr/`, `docs/decisions/`, and `architecture/decisions/` for ADR files written in a format this extension did not produce
+6. run `ai-factory adr status --check` over the configured root: an ADR already filed there that fails is legacy in place, written for a pre-1.6 or a pre-CNL-P version of this extension, and one that passes is migrated already
+7. report both lists, each path with its file count, before reading any of them
+8. ask the operator where the legacy ADRs live when both lists come up empty, or when what they hold is not the corpus they meant: no scan covers every project layout
+9. read every legacy file found, noting its format and any existing status, date, and title
+10. note which files form a replace or deprecate pair
+11. assign each file a stable id `adr-<lowercase-hyphenated>` derived from its title
+12. assign each file a lifecycle status by the one matching case in `status_mapping`
+13. state the full mapping, old file to id and status, before moving anything
+14. process one file at a time, applying the one matching case in `file_shape`
+15. additionally apply `pre_1_6_overlay` to that file when it was written for a pre-1.6 version of this extension
+16. additionally apply `pre_cnlp_overlay` to that file when its body is prose in this extension's own format
+17. additionally apply `documentation_only_overlay` to that file when the decision is documentation-only
+18. migrate both sides of a replace pair at their live status before superseding: `ai-factory adr supersede` requires the old ADR to be `accepted` or `active`
+19. run `ai-factory adr supersede <old-file> <new-file> [--archive-plan | --delete-plan]` for each pair, in preference to hand-linking
+20. place any legacy plan doc under the configured `paths.plans` and link it: `ai-factory adr link-plan <adr-file> <plan-file>`
+21. run `ai-factory adr validate <file>` on each migrated ADR and fix until it is clean
+22. run `ai-factory adr status --check` and fix until it exits 0
+23. replace each stale ADR-process block in `AGENTS.md`, `CLAUDE.md`, `CONTRIBUTING.md`, and `README.md` with the `instruction_pointer` below
+24. substitute the configured `adr.root` for "the configured ADR root" in that pointer
+25. emit the mapping, then the status footer
 
 status_mapping:
 - the overlays below are independent of this list: a file gets exactly 1 status here
@@ -77,6 +79,10 @@ status_mapping:
 
 file_shape:
 - select exactly 1 of the cases below, then apply any matching overlay on top of it
+- the legacy file already sits at `<root>/<status-dir>/<id>.md`, the pre-1.6 or pre-CNL-P case:
+  - do not move it and do not import over it: its path, id and status are already correct
+  - rewrite the body in place into the blocks the ADR profile declares, then apply the overlay that matches
+  - keep the id even when the title now suggests another one: a rename breaks `depends_on`, `supersedes` and `replaced_by` in every ADR that points at this one
 - one legacy file becomes one ADR, the common case:
   - preserve history with a rename: `git mv <legacy-file> <root>/<status-dir>/<id>.md`
   - edit the moved file to match `templates/adr.md`

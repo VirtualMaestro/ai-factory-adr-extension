@@ -51,6 +51,23 @@ test('aif-adr-migrate scans before it asks the operator', async () => {
   assert.ok(scan < ask, 'asking before looking costs a round trip and splits Claude from Codex');
 });
 
+test('aif-adr-migrate treats a non-conformant ADR under the root as legacy', async () => {
+  const body = await skillBody('aif-adr-migrate');
+  const step = body.split(/\r?\n/).find((l) => /^\d+\. run `ai-factory adr status --check` over the configured root/.test(l));
+  assert.ok(step, 'no workflow step checks the configured root for ADRs that are not CNL-P yet');
+  assert.doesNotMatch(
+    body,
+    /skipping the \d+ status directories/,
+    'those directories hold the pre-1.6 and pre-CNL-P files both overlays exist for',
+  );
+});
+
+test('aif-adr-migrate rewrites an in-place ADR without moving or renaming it', async () => {
+  const body = await skillBody('aif-adr-migrate');
+  assert.match(body, /already sits at `<root>\/<status-dir>\/<id>\.md`/, 'file_shape has no in-place case');
+  assert.match(body, /keep the id/, 'an in-place rename breaks depends_on, supersedes and replaced_by');
+});
+
 test('aif-adr-accept checks the conflict precondition against the corpus', async () => {
   const body = await skillBody('aif-adr-accept');
   assert.match(body, /conflicts with active ADRs are resolved/, 'the precondition still stands');
