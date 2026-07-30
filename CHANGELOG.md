@@ -4,6 +4,50 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and the project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [2.2.0] — 2026-07-30
+
+A run in an adopting project spent 6 cross-agent passes on a documentation change and produced
+4 ADRs — 2392 lines of decision record over a 646-line target, with the target itself untouched.
+Read against the skills, that run was what this extension asked for: no skill states which
+decisions deserve an ADR, `aif-adr-refine` never defined what "done" means, and every one of the
+21 shared rubric lines penalizes an under-specified record while none penalizes an obligation
+that costs more than the failure it prevents. 2 agents sharing that rubric converge on a
+formally faultless document, not on finished work. Everything below is that 3-sided gap.
+
+### Added
+
+- **`aif-adr-propose` has `preconditions:` — the admission test.** An ADR records a decision that
+  binds work beyond the change that prompts it: a public API, a data schema, a module boundary,
+  a protocol, a dependency, or an obligation later work is measured against. The question the
+  skill asks is what a `git revert` would *not* undo; when that is nothing, it names where the
+  fact belongs — the guide, the README, a comment — and writes no file. Reversibility was already
+  in the rubric as a criterion inside a decision, and never as a gate on the process.
+- **1 decision is 1 ADR.** "Exactly 1 primary decision" pushed a single decision into 4 records
+  because nothing bounded the other direction. An obligation that follows from the decision is
+  now a line of `rules:` in that ADR, and a separate ADR only when it can be superseded on its own.
+- **A stop condition for `aif-adr-refine`.** A pass that changes no `decision:`, `scope:`,
+  `constraints:` or `rules:` line is the last one: the skill says refinement is done, recommends
+  `aif-adr-accept`, and runs no further pass. It also reports the pass number and the blocks that
+  pass changed, so a flattening loop is visible to the operator instead of inferred.
+- **A depth the decision carries.** `documentation-only` shaped plans and verification, never the
+  record. A decision whose whole rollback is a `git revert` of markdown is held to `decision:`,
+  `scope:`, `rules:`, `negative:` and 1 alternative with its `rejected_because` — no 6–12 month
+  horizon, which a guide does not have.
+
+### Changed
+
+- **The shared rubric gained its missing half**, in all 5 skills that carry the long variant and
+  in `cnlp-kit/seed/quality_rules.md`: an obligation costs what it takes to satisfy, so each one
+  names the failure it prevents and the ones costing more than that failure are dropped. Without
+  it the rubric had one-sided loss, and a review round could only ever add.
+- **`aif-adr-refine` forbids 2 things it used to reward**: an obligation the decision does not
+  require, and rewriting a line whose meaning is unchanged.
+- **`aif-adr-reconcile` stops escalating.** A suggestion that adds an obligation without naming
+  the failure it prevents is a REJECT, and an adjudication that adopts no change to `decision:`,
+  `scope:`, `constraints:` or `rules:` ends the exchange rather than inviting another round.
+- `aif-adr-overview` and the README state the admission test where it is read before the work
+  starts, not after 4 records exist.
+
 ## [2.1.1] — 2026-07-30
 
 ### Fixed

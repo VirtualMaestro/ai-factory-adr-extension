@@ -13,6 +13,11 @@ purpose:
 inputs:
 - topic
 
+preconditions:
+- the decision binds work beyond the change that prompts it: a public API, a data schema, a module boundary, a protocol, a dependency, or an obligation later work is measured against
+- name what a `git revert` of the change would not undo; when that is nothing, the fact belongs in the guide, the README or a code comment, and no ADR is written
+- 1 decision is 1 ADR: an obligation that follows from the decision is a line of `rules:`, and a separate ADR only when it can be superseded on its own
+
 forbidden_behaviors:
 - do not hand-write the ADR file or invent its id: `ai-factory adr new` owns both
 - do not create a near-duplicate of an ADR that is already accepted or active
@@ -40,6 +45,7 @@ quality_rules:
 - justify any divergent local pattern explicitly: two ways of doing one thing is a real cost
 - name a large blast radius — many call sites, data migrations, compatibility breaks — as the genuine risk and cost it is
 - prefer the smaller change at equal architectural correctness, and add no abstractions for hypothetical needs
+- an obligation costs what it takes to satisfy: name the failure each one prevents, and drop the obligation whose cost is above that failure
 - count effort already sunk into existing code as nothing by itself; the compatibility and migration cost of replacing it does count
 - when the correct option costs more, present it alongside the cheap one, each with its cost, risk, and reversibility
 - demand stronger grounds for hard-to-reverse choices such as data schemas and public APIs
@@ -48,19 +54,20 @@ quality_rules:
 - disagreement alone is not new information: a flip with no new grounds means the original was ungrounded
 
 workflow:
-1. run `ai-factory adr status --json` to inventory accepted, active, and superseded ADRs
-2. run `ai-factory adr decisions` and read every line: it states what each accepted and active ADR obliges, which is the corpus this proposal cannot contradict
-3. name any `issues:` that command reports to the operator, then continue: the digest covers the corpus minus those files
-4. open in full the ADRs whose `decision:`, `constraints:`, `scope:` or `rules:` touch this topic
-5. stop and recommend `aif-adr-refine` or `aif-adr-supersede` on the existing ADR when one already covers this decision
-6. inspect `.ai-factory/ARCHITECTURE.md`, `.ai-factory/RULES.md`, any research artifacts, and the relevant source
-7. run `ai-factory adr new "<topic>"`: it generates the stable id, creates `<adr-root>/proposals/adr-<slug>.md` with `status: proposed` from the template, and refuses if that id already exists
-8. run `ai-factory adr format --path` and `ai-factory adr format adr --path`, then read both: the rules and the block set are read together, neither is complete alone
-9. fill `problem:`, `constraints:` and `decision_drivers:` under `## Context` in the created file
-10. state a numeric limit in canonical form, `open connections per client <= 2`, per the lexicon in `ai-factory adr format`
-11. record unresolved assumptions as placeholders in the body
-12. leave `status: proposed`; acceptance happens later via `aif-adr-refine` then `aif-adr-accept`
-13. report the status footer
+1. test the topic against the preconditions and stop when 1 of them fails: report which, and name where the fact is recorded instead of an ADR
+2. run `ai-factory adr status --json` to inventory accepted, active, and superseded ADRs
+3. run `ai-factory adr decisions` and read every line: it states what each accepted and active ADR obliges, which is the corpus this proposal cannot contradict
+4. name any `issues:` that command reports to the operator, then continue: the digest covers the corpus minus those files
+5. open in full the ADRs whose `decision:`, `constraints:`, `scope:` or `rules:` touch this topic
+6. stop and recommend `aif-adr-refine` or `aif-adr-supersede` on the existing ADR when one already covers this decision
+7. inspect `.ai-factory/ARCHITECTURE.md`, `.ai-factory/RULES.md`, any research artifacts, and the relevant source
+8. run `ai-factory adr new "<topic>"`: it generates the stable id, creates `<adr-root>/proposals/adr-<slug>.md` with `status: proposed` from the template, and refuses if that id already exists
+9. run `ai-factory adr format --path` and `ai-factory adr format adr --path`, then read both: the rules and the block set are read together, neither is complete alone
+10. fill `problem:`, `constraints:` and `decision_drivers:` under `## Context` in the created file
+11. state a numeric limit in canonical form, `open connections per client <= 2`, per the lexicon in `ai-factory adr format`
+12. record unresolved assumptions as placeholders in the body
+13. leave `status: proposed`; acceptance happens later via `aif-adr-refine` then `aif-adr-accept`
+14. report the status footer
 
 status_footer:
   format: "✔ aif-adr-propose · ADR: <adr-id> [proposed] · Plan: none"

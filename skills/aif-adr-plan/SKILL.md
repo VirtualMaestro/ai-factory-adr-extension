@@ -53,6 +53,7 @@ quality_rules:
 - justify any divergent local pattern explicitly: two ways of doing one thing is a real cost
 - name a large blast radius — many call sites, data migrations, compatibility breaks — as the genuine risk and cost it is
 - prefer the smaller change at equal architectural correctness, and add no abstractions for hypothetical needs
+- an obligation costs what it takes to satisfy: name the failure each one prevents, and drop the obligation whose cost is above that failure
 - count effort already sunk into existing code as nothing by itself; the compatibility and migration cost of replacing it does count
 - when the correct option costs more, present it alongside the cheap one, each with its cost, risk, and reversibility
 - demand stronger grounds for hard-to-reverse choices such as data schemas and public APIs

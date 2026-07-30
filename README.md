@@ -82,6 +82,17 @@ contradicting, redundant and area-sharing pairs, `aif-adr-next` reads the `depen
 and `aif-adr-reconcile` adjudicates a second reviewer's proposed improvements to an
 ADR or plan — adopting the sound ones and rejecting the rest, each with a reason.
 
+### When an ADR is not the tool
+
+The lifecycle costs what it costs because a decision record binds later work. A change whose
+whole rollback is `git revert` — wording in a guide, a README line, a comment — binds nothing
+beyond itself, and `aif-adr-propose` now says so and writes no file: its `preconditions:` ask
+what the revert would *not* undo (a public API, a data schema, a module boundary, a protocol,
+a dependency, an obligation later work is measured against). One decision is one ADR; the
+obligations that follow from it are lines of `rules:` inside it, not sibling ADRs. And
+refinement ends on a condition, not on taste: a pass that changes no `decision:`, `scope:`,
+`constraints:` or `rules:` line is the last one, and the ADR goes to `aif-adr-accept`.
+
 ### Migrating an existing ADR workflow
 
 Installing into a project that already kept ADRs its own way? Run

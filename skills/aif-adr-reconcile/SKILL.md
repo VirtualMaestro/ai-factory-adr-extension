@@ -29,6 +29,7 @@ forbidden_behaviors:
 - do not rubber-stamp: default to REJECT when a suggestion does not clear the bar
 - do not end with an offer such as "shall I implement this now?"
 - do not report anything beyond the adjudication and what changed
+- do not open a further review round when the adjudication adopted no change to `decision:`, `scope:`, `constraints:` or `rules:`: say the document is done and hand it to `aif-adr-accept`
 
 outputs:
 - adjudication table
@@ -42,6 +43,7 @@ verdicts:
 - ADOPT: genuinely improves the artifact per its lens and the project's rules
 - PARTIAL: the useful kernel only; name what you keep and what you drop
 - REJECT: vague, speculative, scope-creeping, contradicts the decision, duplicates what is already there, or is a material change to an active ADR
+- REJECT: adds an obligation without naming the failure it prevents, or one whose cost to satisfy is above that failure
 
 quality_rules:
 - measure every option by what serves the project best over its lifetime
@@ -58,6 +60,7 @@ quality_rules:
 - justify any divergent local pattern explicitly: two ways of doing one thing is a real cost
 - name a large blast radius — many call sites, data migrations, compatibility breaks — as the genuine risk and cost it is
 - prefer the smaller change at equal architectural correctness, and add no abstractions for hypothetical needs
+- an obligation costs what it takes to satisfy: name the failure each one prevents, and drop the obligation whose cost is above that failure
 - count effort already sunk into existing code as nothing by itself; the compatibility and migration cost of replacing it does count
 - when the correct option costs more, present it alongside the cheap one, each with its cost, risk, and reversibility
 - demand stronger grounds for hard-to-reverse choices such as data schemas and public APIs
