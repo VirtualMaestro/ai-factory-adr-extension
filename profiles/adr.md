@@ -61,13 +61,6 @@ sections:
   required: yes
   heading: "## Decision"
   note: the obligations the decision puts on the codebase
-- key: alternatives
-  form: record-list
-  required: yes
-  heading: "## Alternatives considered"
-  record_keys: id, description, rejected_because
-  optional_record_keys: kept_as
-  note: rejected_because is the cost of the road not taken, so it is not restated in negative
 - key: out_of_scope
   form: record-list
   required: no
@@ -79,6 +72,13 @@ sections:
   required: no
   heading: "## Decision"
   note: for a decision that ships in stages
+- key: alternatives
+  form: record-list
+  required: yes
+  heading: "## Alternatives considered"
+  record_keys: id, description, rejected_because
+  optional_record_keys: kept_as
+  note: rejected_because is the cost of the road not taken, so it is not restated in negative
 - key: positive
   form: bullet-list
   required: yes

@@ -43,7 +43,7 @@ sections:
   required: yes
   record_keys: key, form, required
   optional_record_keys: heading, record_keys, optional_record_keys, note
-  note: the blocks in order; form is one of the 5 in the format, required is yes or no
+  note: the blocks in order, no block naming a heading earlier than the block before it; form is one of the 5 in the format, required is yes or no
 - key: custom_sections
   form: bullet-list
   required: yes

@@ -4,7 +4,7 @@ Open items only. The MVP build log (verification spike, epics P0–P4, coverage 
 finished; it described the pre-1.6 body format in places and was history, not guidance, so it
 lives in Git history now and nowhere else.
 
-**Current state:** 2.1.0 · 16 skills · 149 tests green · one CNL-P format with no profile
+**Current state:** 2.1.1 · 16 skills · 150 tests green · one CNL-P format with no profile
 branching. The profiles are documents — `profiles/skill.md`, `profiles/adr.md`, and
 `profiles/profile.md`, which describes the other two and conforms to itself — read by both
 the agent and `src/artifacts/cnlp.js`. All 16 skill bodies and `templates/adr.md` are clean

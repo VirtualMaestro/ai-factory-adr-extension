@@ -45,6 +45,18 @@ for (const name of profiles) {
   });
 }
 
+// `bodyIssues` checks block order and heading placement separately, so a block declared after
+// one whose heading comes later warns whatever the author does: the profile asks for a body
+// nobody can write. This is the rule that makes the 2 checks agree.
+test('every profile can be satisfied — block order agrees with heading order', async () => {
+  for (const name of profiles) {
+    const p = await loadProfile(name);
+    const rank = p.sections.map((s) => p.headings.indexOf(s.heading)).filter((i) => i >= 0);
+    assert.deepEqual(rank, [...rank].sort((a, b) => a - b),
+      `profiles/${name}.md declares a block under an earlier heading than the block before it`);
+  }
+});
+
 test('a value outside its domain is rejected at load, not read as a default', async () => {
   const raw = await readFile(path.join(repoRoot, 'profiles', 'adr.md'), 'utf8');
   assert.throws(() => readProfile(raw.replace('required: yes', 'required: ye')), /required is "ye"/);

@@ -4,6 +4,22 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and the project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [2.1.1] — 2026-07-30
+
+### Fixed
+
+- **`profiles/adr.md` asked for a body no author could write.** `out_of_scope` and
+  `increment_order` both sit under `## Decision`, and both were declared after `alternatives`,
+  which sits under `## Alternatives considered`. `bodyIssues()` checks block order and heading
+  placement separately and both checks are right: under `## Decision` the body reported `blocks
+  out of order`, after `alternatives` it reported `"out_of_scope:" belongs under "## Decision"`.
+  A migrating agent hit it on the first ADR that deferred anything. The 2 optional blocks now
+  precede `alternatives`, where their heading already put them.
+- The contradiction was expressible because nothing read the 2 declarations together. A test
+  now holds every shipped profile to one rule: no block names a heading earlier than the block
+  before it. `profiles/profile.md` states the rule where a profile is written, not only where
+  it is checked.
+
 ## [2.1.0] — 2026-07-29
 
 A migration run converted a corpus with a script: it split `## Decision` prose on sentence
