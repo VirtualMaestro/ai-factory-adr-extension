@@ -56,6 +56,12 @@ ai-factory extension update --force                       # refresh even if vers
 Updating **preserves** your ADR documents and `.ai-factory/adr-extension.yaml`.
 Re-running `add` does not duplicate skills or extension entries.
 
+An update copies the new version over the install directory rather than replacing
+it, so a file a newer release no longer ships stays behind. Those leftovers are
+inert — the extension resolves every CNL-P document it does not own inside the
+bundled `cnlp-kit`, never next to it. `remove` followed by `add` gives a clean
+directory if you want one.
+
 To remove the extension while keeping project ADRs and plans:
 
 ```bash

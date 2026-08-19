@@ -99,6 +99,17 @@ test('packed extension bundles its dependencies and loads in a clean initialized
   // `skill` still resolves to this extension's own overlay rather than the generic one.
   assert.match(aif(['adr', 'format', '--path'], dir), /cnlp-kit/, 'the standard is served from the package');
   assert.match(aif(['adr', 'format', 'skill'], dir), /^- pre_cnlp_overlay$/m, 'the local skill overlay wins');
+
+  // ai-factory updates an extension by copying over its install directory without emptying it, so
+  // a `profiles/adr.md` left behind by a version that still shipped one sits next to the new files
+  // forever. It must not outrank the package — that orphan would pin the ADR profile at whatever
+  // the last self-contained release said.
+  const installed = path.join(dir, '.ai-factory', 'extensions', 'ai-factory-adr-extension');
+  await writeFile(path.join(installed, 'profiles', 'adr.md'), '---\nname: adr\n---\n\nformat: stale\n');
+  assert.match(aif(['adr', 'format', 'adr', '--path'], dir), /cnlp-kit/, 'a stale profile shadowed the package');
+  assert.doesNotMatch(aif(['adr', 'format', 'adr'], dir), /^format: stale$/m);
+  assert.match(aif(['adr', 'format', 'skill', '--path'], dir), /extensions/, 'the overlay stopped winning');
+
   aif(['adr', 'init'], dir);
   assert.ok(existsSync(path.join(dir, 'docs/adr/active')));
 });

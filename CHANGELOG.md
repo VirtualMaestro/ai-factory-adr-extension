@@ -45,6 +45,13 @@ section vocabulary those skills use.
 
 ### Fixed
 
+- **A profile left behind by an earlier version can no longer shadow the package.** ai-factory
+  updates an extension by copying the new version over the install directory without emptying it
+  first, so the `profiles/adr.md` and `profiles/profile.md` that shipped up to 2.2.0 stay on disk
+  after the upgrade. The adapter searches this repository for exactly one name, `skill`, and
+  resolves every other name inside `cnlp-kit` — otherwise those orphans would pin the ADR profile
+  at 2.2.0 for the life of the install, which is the drift this release exists to end. They are
+  now dead files; `extension remove` followed by `add` clears them.
 - **The integration suite no longer inherits the outer `npm test` configuration.** npm exports its
   whole config as `npm_config_*` to a lifecycle script, and npm 11 rejects an inherited
   `allow-scripts` outright, so the nested install failed under `npm test` and passed under
