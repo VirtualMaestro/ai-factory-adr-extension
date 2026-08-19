@@ -14,7 +14,7 @@ inputs:
 - adr_file
 
 preconditions:
-- the ADR status is `accepted` and it is not superseded
+- the ADR status is `accepted` and no other ADR supersedes it
 - no non-archived plan already implements it: check with `ai-factory adr resolve-plan <adr-file>`, which must report no active plan and exits non-zero on more than 1
 - the ADR actually requires implementation; documentation-only decisions skip straight to `aif-adr-finalize`
 

@@ -27,7 +27,7 @@ forbidden_behaviors:
 - do not attempt optional memory synchronization: it is post-MVP and not provided by this skill
 
 when_to_supersede_instead_of_editing:
-- an active ADR may be edited directly only for non-material changes: code links, commit and PR references, implementation evidence, file paths, spelling, formatting
+- edit an active ADR directly only for non-material changes: code links, commit and PR references, implementation evidence, file paths, spelling, formatting
 - a rewrite of the body into CNL-P is a non-material change: it restates the same decision, so `aif-adr-migrate` does it in place
 - a material change to the Decision, constraints, scope, or consequences is not an in-place edit: it requires a new ADR that supersedes the current one (PRD §18.3)
 - that is the reason to reach for this skill instead of rewriting an active decision

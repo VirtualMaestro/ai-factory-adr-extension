@@ -14,7 +14,7 @@ inputs:
 - adr_file
 
 preconditions:
-- the ADR status is `accepted` and it is not superseded
+- the ADR status is `accepted` and no other ADR supersedes it
 - exactly 1 non-archived plan implements it, which the workflow checks
 
 scope:
@@ -58,7 +58,7 @@ quality_rules:
 workflow:
 1. run `ai-factory adr resolve-plan <adr-file>`, which resolves via the plan's `implements` frontmatter; add `--json` for the plan's `file`
 2. stop and recommend `aif-adr-plan` first when there is no active plan: there is nothing to improve yet
-3. report the error and stop when more than 1 active plan exists: the command exits non-zero and that must be resolved before improving
+3. report the error and stop when more than 1 active plan exists: the command exits non-zero, and the author clears that before improving
 4. improve the resolved plan by applying `aif-improve` semantics in this run against that plan file
 5. re-verify: `ai-factory adr resolve-plan <adr-file>` still resolves to exactly 1 plan, and `ai-factory adr status --check` is clean
 6. leave the ADR `accepted`

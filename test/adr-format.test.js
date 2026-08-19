@@ -4,7 +4,9 @@ import { bodyIssues, loadProfile } from '../src/artifacts/cnlp.js';
 import { validateAdr } from '../src/lifecycle/validate.js';
 import { mkProject, writeAdr } from './helpers.js';
 
-// inv 12: the ADR body is CNL-P, shaped by profiles/adr.md.
+// inv 12: the ADR body is CNL-P, shaped by the ADR profile `cnlp-kit` ships. The checker itself
+// is tested upstream; what these assert is that profile — its blocks, headings and record keys —
+// and the severity gate this extension puts in front of it.
 
 const profile = await loadProfile('adr');
 const adrBodyIssues = (raw) => bodyIssues(raw, profile);
@@ -86,19 +88,6 @@ test('a prose body warns at draft and fails at accepted', async () => {
   assert.ok(asAccepted.errors.some((e) => /missing heading "## Consequences"/.test(e)));
 });
 
-test('a limit whose bound is open is reported, the canonical form is not', () => {
-  assert.match(messages(bodyWith('\nblast_radius:\n- no more than 2 open connections per client\n')),
-    /leaves its bound open/);
-  assert.deepEqual(adrBodyIssues(bodyWith('\nblast_radius:\n- open connections per client <= 2\n')), []);
-});
-
-test('an unquantified comparative is reported, quoted text is not', () => {
-  assert.match(messages(bodyWith('\nblast_radius:\n- the new store is faster\n')),
-    /unquantified comparative "faster"/);
-  // A claim named in order to reject it is data, not a claim the document makes.
-  assert.deepEqual(adrBodyIssues(bodyWith('\nblast_radius:\n- do not accept "faster to write" as a reason\n')), []);
-});
-
 test('a machine field in the body is reported', () => {
   assert.match(messages(bodyWith('\ncode:\n- src/store.js\n')),
     /"code:" is a frontmatter field/);
@@ -137,45 +126,6 @@ test('a structurally ambiguous body is reported', () => {
   const misnumbered = bodyWith('').replace('1. record the decision before a plan is written',
     '1. record the decision before a plan is written\n3. then plan');
   assert.match(messages(misnumbered), /step 3 is out of sequence/);
-});
-
-test('a required block says it has nothing the same way in every form', () => {
-  const none = bodyWith('').replace(/alternatives:\n[\s\S]*?rejected_because: it needs a second service/,
-    'alternatives:\n- none: no other approach was viable at this size');
-  assert.deepEqual(adrBodyIssues(none), []);
-
-  const bare = none.replace('- none: no other approach was viable at this size', '- none');
-  assert.match(messages(bare), /states "- none" without the reason/);
-
-  // The sentinel says the block is empty, so anything beside it says it is not.
-  const alongside = bodyWith('').replace('- the decision is recorded',
-    '- none: nothing improves\n- the decision is recorded');
-  assert.match(messages(alongside), /states "- none" alongside other items/);
-
-  // An optional block with nothing to say is deleted, not marked.
-  const optional = bodyWith('\nblast_radius:\n- none: no code changes\n');
-  assert.match(messages(optional), /is optional and has nothing to say — delete the block/);
-});
-
-test('the hard length limit covers a scalar, not only a bullet', () => {
-  const long = bodyWith('').replace('decision: use option A', `decision: ${'A'.repeat(260)}`);
-  assert.match(messages(long), /exceeds the 250 hard limit/);
-});
-
-// What a mechanical conversion of a legacy ADR leaves behind: an ordinal read as a sentence,
-// and a line cut to fit the hard limit. Neither is catchable as prose, both are catchable here.
-test('an item with no word, and a line cut mid-span, are reported', () => {
-  const ordinal = bodyWith('').replace('1. record the decision before a plan is written', '1. 4');
-  assert.match(messages(ordinal), /carries no word — it states no claim/);
-
-  const backtick = bodyWith('').replace('- the decision is recorded', '- the decision is recorded in `docs');
-  assert.match(messages(backtick), /unclosed backtick/);
-
-  const paren = bodyWith('').replace('- the decision is recorded', '- the decision is recorded (with evidence');
-  assert.match(messages(paren), /unclosed parenthesis/);
-
-  // A whole item and a balanced span stay silent: these checks fire on damage, not on style.
-  assert.deepEqual(adrBodyIssues(bodyWith('')), []);
 });
 
 test('block form and emptiness are checked (§3, §7)', () => {

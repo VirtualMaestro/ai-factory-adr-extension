@@ -15,7 +15,7 @@ inputs:
 - legacy ADR location, from the scan of the foreign directories, from the check over the configured root, or from the operator when both come up empty
 
 preconditions:
-- the project is initialized: `.ai-factory.json` exists, which the `adr` commands gate on
+- the project carries `.ai-factory.json`, which the `adr` commands gate on
 - the working tree is clean
 
 scope:
@@ -29,7 +29,7 @@ forbidden_behaviors:
 - do not cut a line to fit the 250-character limit: rewrite the idea shorter, or state it as 2 rules
 - do not hand-edit a `status` field to fake a transition
 - do not move ADR files outside `git mv` or the `adr` commands
-- do not move anything before the full mapping is stated
+- do not move anything before stating the full mapping
 - do not leave any template placeholder unresolved, including `[decision]` and `not implemented`
 - do not put legacy code or issue references in the body: they belong in the frontmatter `code:` and `issue:` fields
 - do not treat prose in the body as a substitute for planning
@@ -50,7 +50,7 @@ workflow:
 3. read `adr.root` from `.ai-factory/adr-extension.yaml`, default `docs/adr`, and use that root everywhere below
 4. run `ai-factory adr format --path` and `ai-factory adr format adr --path`, then read both: they are the rules and the block set every migrated file is rewritten into
 5. scan `adr/`, `docs/adr/`, `docs/decisions/`, and `architecture/decisions/` for ADR files written in a format this extension did not produce
-6. run `ai-factory adr status --check` over the configured root: an ADR already filed there that fails is legacy in place, written for a pre-1.6 or a pre-CNL-P version of this extension, and one that passes is migrated already
+6. run `ai-factory adr status --check` over the configured root: an ADR already filed there that fails is legacy in place, written for a pre-1.6 or a pre-CNL-P version of this extension, and one that passes needs no migration
 7. report both lists, each path with its file count, before reading any of them
 8. ask the operator where the legacy ADRs live when both lists come up empty, or when what they hold is not the corpus they meant: no scan covers every project layout
 9. read every legacy file found, noting its format and any existing status, date, and title
@@ -75,10 +75,10 @@ workflow:
 
 status_mapping:
 - the overlays below are independent of this list: a file gets exactly 1 status here
-- legacy status *accepted* or *approved*: map to `accepted`, or to `active` only when the decision is demonstrably implemented and concrete evidence can be recorded
+- legacy status *accepted* or *approved*: map to `accepted`, or to `active` only when the decision is demonstrably implemented and concrete evidence exists to record
 - legacy status *proposed*, *draft*, or *RFC*: map to `proposed` or `draft`
-- legacy status *deprecated* or *replaced*, replacement also being migrated: import at its prior live status, `accepted` or `active`, and let the supersede step move it
-- legacy status *deprecated* or *replaced*, replacement exists but is not itself being migrated: place it directly in `superseded/`
+- legacy status *deprecated* or *replaced*, this run migrates the replacement too: import at its prior live status, `accepted` or `active`, and let the supersede step move it
+- legacy status *deprecated* or *replaced*, the replacement exists but this run does not migrate it: place it directly in `superseded/`
 - fill that ADR's frontmatter `replaced_by:` with the replacement's id by hand
 - legacy status *deprecated* or *replaced*, no successor exists at all: stop and ask the operator which status the decision should carry
 - that case has no `superseded/` option: `ai-factory adr validate` rejects a `superseded` ADR whose `replaced_by:` is empty (inv 11), so the validation step could never pass
@@ -106,11 +106,11 @@ file_shape:
   - scaffold each target from the template instead of renaming: `ai-factory adr import "<title>" --status <status> --id <id>`, which writes a conformant skeleton at `<root>/<status-dir>/<id>.md`
   - fill each scaffold as the frontmatter and section rules above require
   - drop the source: `git rm <legacy-file>`
-  - expect the skeleton to fail `validate` until it is filled: `import` keeps the template placeholders on purpose
+  - expect the skeleton to fail `validate` until the migration fills it: `import` keeps the template placeholders on purpose
 
 pre_1_6_overlay:
 - applies when the ADR was written for a pre-1.6 version of this extension, so its machine fields live in the body
-- applies in addition to the file-shape case, never instead of it: the file still has to be moved and rewritten
+- applies in addition to the file-shape case, never instead of it: this still moves and rewrites the file
 - hoist `- **Plan:** <id>` to `plan: <id>`
 - hoist `- **Evidence:** …` to `evidence: …` as a short string
 - hoist `- **Replaced by:** …` to `replaced_by: <new-id>`

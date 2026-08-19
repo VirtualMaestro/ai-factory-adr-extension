@@ -142,5 +142,3 @@ vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 .vite/
 
-# The CNL-P kit archive — rebuilt by `npm run kit` and on every `npm version`
-cnlp-kit.zip

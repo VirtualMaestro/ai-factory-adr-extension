@@ -36,7 +36,7 @@ forbidden_behaviors:
 outputs:
 - refined ADR text
 - change summary
-- transition summary when a transition is applied
+- transition summary when this skill applies a transition
 
 quality_rules:
 - measure every option by what serves the project best over its lifetime

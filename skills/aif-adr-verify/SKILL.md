@@ -6,7 +6,7 @@ description: Verify one ADR against the implemented code — confirm its code an
 mode: adr_verification
 
 purpose:
-- answer, on demand, whether a single accepted or active ADR was implemented and whether the code still matches its Decision
+- answer, on demand, whether the code implements a single accepted or active ADR and whether it still matches the Decision
 - re-runnable, unlike `aif-adr-finalize`, which verifies once at activation against the linked plan
 - check the `code:` anchors against the current tree
 
@@ -29,7 +29,7 @@ outputs:
 
 verdicts:
 - implemented: code present at the anchors and consistent with the Decision
-- partial: some of the Decision is implemented; parts are missing or stubbed
+- partial: the code implements some of the Decision; parts are missing or stubbed
 - drift: code contradicts the accepted Decision
 - not-implemented: anchors missing, or no code realizes the Decision
 - doc-only: documentation-only ADR, nothing to verify

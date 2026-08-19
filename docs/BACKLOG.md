@@ -4,14 +4,15 @@ Open items only. The MVP build log (verification spike, epics P0–P4, coverage 
 finished; it described the pre-1.6 body format in places and was history, not guidance, so it
 lives in Git history now and nowhere else.
 
-**Current state:** 2.2.0 · 16 skills · 150 tests green · one CNL-P format with no profile
-branching. The profiles are documents — `profiles/skill.md`, `profiles/adr.md`, and
-`profiles/profile.md`, which describes the other two and conforms to itself — read by both
-the agent and `src/artifacts/cnlp.js`. All 16 skill bodies and `templates/adr.md` are clean
-against the current checks, with no skill exempt from its profile. An adopting project reaches
-the standard and the profiles through `ai-factory adr format`, never by path. `npm run kit`
-packs the format for another skill repository as `cnlp-kit.zip`, gitignored and rebuilt on
-every version bump; `cnlp-kit/` is authoring material and never ships in the package.
+**Current state:** 3.0.0 · 16 skills · 143 tests green · CNL-P comes from the
+[`cnlp-kit`](https://www.npmjs.com/package/cnlp-kit) package. The standard, the checker and the
+generic profiles live there and are upgraded by bumping a dependency; this repository keeps one
+overlay, `profiles/skill.md`, which names the 24 sections its own skills use. `src/artifacts/cnlp.js`
+is the adapter that makes the overlay win over the packaged `skill` profile and passes everything
+else through. All 16 skill bodies and `templates/adr.md` are clean against the current checks, with
+no skill exempt from its profile. An adopting project reaches the standard and the profiles through
+`ai-factory adr format`, never by path — the files themselves ride in as a bundled dependency,
+since ai-factory installs an extension by `npm pack` and never runs `npm install`.
 
 ---
 
@@ -44,9 +45,10 @@ Plan documents (`.ai-factory/plans/*.md`, written by `aif-adr-plan`) are the thi
 technical document this extension owns and the only one still in prose.
 
 - Adding it is one file, `profiles/plan.md`, plus whatever enforcement it earns. If it needs
-  a change to `docs/cnlp-format.md` or to `src/artifacts/cnlp.js`, the generalization did not
-  go far enough — that is the real test of it. `profiles/profile.md` was added in 1.14.0 with
-  no code change, which is the first evidence that it holds.
+  a change to the standard or the checker, both now live in `cnlp-kit` and the change belongs
+  there — which is also the real test of the generalization. Check first whether the packaged
+  `task` profile already covers what a plan document is; if it does, this item is a mapping,
+  not a new profile.
 - The block vocabulary starts from `aif-adr-plan`'s `plan_frontmatter:` and the steps the
   skill already dictates.
 - A plan has no lifecycle status of its own to gate severity on, unlike an ADR, so the

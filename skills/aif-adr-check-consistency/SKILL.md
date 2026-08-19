@@ -21,7 +21,7 @@ targeting_rationale:
 - `ai-factory adr decisions` prints what every accepted and active ADR obliges, so the whole corpus costs 1 read
 - a `proposed` or `draft` ADR is not a rule yet: 2 drafts in flight stop conflicting at `aif-adr-accept`, which reads the same digest before the transition
 - a `superseded` ADR is history, and its obligations bind nothing
-- structural checks are owned elsewhere: duplicate ids, broken references and cycles by `audit-artifacts`, dependency order by `ai-factory adr order`
+- other commands own the structural checks: `audit-artifacts` owns duplicate ids, broken references and cycles, `ai-factory adr order` owns dependency order
 
 forbidden_behaviors:
 - do not edit any ADR
@@ -71,9 +71,9 @@ report_format:
 ```
 
 follow_up:
-- contradiction where 1 ADR is `accepted` and the other `active`: recommend `aif-adr-refine` on the `accepted` one, which is not implemented, while the `active` one is protected (PRD §18.3)
+- contradiction where 1 ADR is `accepted` and the other `active`: recommend `aif-adr-refine` on the `accepted` one, which no code implements yet, while PRD §18.3 protects the `active` one
 - contradiction where both are `accepted`: name it and stop; which decision yields is the operator's call, and both may need refining
-- contradiction where both are `active`: name it and stop; both are implemented and protected, and the direction of replacement does not follow from the conflict
+- contradiction where both are `active`: name it and stop; code implements both and PRD §18.3 protects both, and the direction of replacement does not follow from the conflict
 - redundant: name the overlap and stop; `aif-adr-supersede` takes an explicit old and new ADR, which coverage alone does not supply
 - shared-area: no action; the row exists so the author of each ADR knows about the neighbour
 - `aif-adr-supersede` runs after the operator names the pair, never before

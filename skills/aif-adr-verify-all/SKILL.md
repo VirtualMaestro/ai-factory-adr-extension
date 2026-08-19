@@ -18,7 +18,7 @@ scope:
 - read-only inspection and one aggregated conformance table
 
 targeting_rationale:
-- an `accepted` ADR is decided but not yet implemented, and a half-implemented one stays `accepted` until `aif-adr-finalize` activates it, so there is no finished code to judge
+- an `accepted` ADR records a decision that no code implements yet, and a half-implemented one stays `accepted` until `aif-adr-finalize` activates it, so there is no finished code to judge
 - those belong to `aif-adr-next` and `aif-adr-implement`, not to a conformance sweep
 - to check a single `accepted` or `active` ADR, use `aif-adr-verify`
 
@@ -34,7 +34,7 @@ outputs:
 
 verdicts:
 - implemented: code present at the anchors and consistent with the Decision
-- partial: some of the Decision is implemented; parts are missing or stubbed
+- partial: the code implements some of the Decision; parts are missing or stubbed
 - drift: code contradicts the accepted Decision
 - not-implemented: anchors missing, or no code realizes the Decision
 - doc-only: documentation-only ADR, nothing to verify

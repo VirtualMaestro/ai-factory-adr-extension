@@ -14,9 +14,9 @@ inputs:
 - topic
 
 preconditions:
-- the decision binds work beyond the change that prompts it: a public API, a data schema, a module boundary, a protocol, a dependency, or an obligation later work is measured against
+- the decision binds work beyond the change that prompts it: a public API, a data schema, a module boundary, a protocol, a dependency, or an obligation that later work has to meet
 - name what a `git revert` of the change would not undo; when that is nothing, the fact belongs in the guide, the README or a code comment, and no ADR is written
-- 1 decision is 1 ADR: an obligation that follows from the decision is a line of `rules:`, and a separate ADR only when it can be superseded on its own
+- 1 decision is 1 ADR: an obligation that follows from the decision is a line of `rules:`, and a separate ADR only when a later decision can supersede it on its own
 
 forbidden_behaviors:
 - do not hand-write the ADR file or invent its id: `ai-factory adr new` owns both
@@ -54,7 +54,7 @@ quality_rules:
 - disagreement alone is not new information: a flip with no new grounds means the original was ungrounded
 
 workflow:
-1. test the topic against the preconditions and stop when 1 of them fails: report which, and name where the fact is recorded instead of an ADR
+1. test the topic against the preconditions and stop when 1 of them fails: report which, and name where the fact belongs instead of an ADR
 2. run `ai-factory adr status --json` to inventory accepted, active, and superseded ADRs
 3. run `ai-factory adr decisions` and read every line: it states what each accepted and active ADR obliges, which is the corpus this proposal cannot contradict
 4. name any `issues:` that command reports to the operator, then continue: the digest covers the corpus minus those files

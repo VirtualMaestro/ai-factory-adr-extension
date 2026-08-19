@@ -15,7 +15,7 @@ is advisory, never authoritative.
 ## Requirements
 
 - AI Factory `>=2.0.0 <3.0.0`
-- Node.js `>=18`
+- Node.js `>=22.14`
 
 ## Install
 

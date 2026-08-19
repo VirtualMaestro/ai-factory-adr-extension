@@ -78,6 +78,6 @@ test('aif-adr-migrate carries over by hand and proves it', async () => {
 
 test('aif-adr-accept checks the conflict precondition against the corpus', async () => {
   const body = await skillBody('aif-adr-accept');
-  assert.match(body, /conflicts with active ADRs are resolved/, 'the precondition still stands');
+  assert.match(body, /resolves .*every conflict with an active ADR/, 'the precondition still stands');
   assert.match(body, /adr decisions.*precondition/s, 'a workflow step must tie the precondition to the digest');
 });

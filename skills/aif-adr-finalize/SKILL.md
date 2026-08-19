@@ -14,7 +14,7 @@ inputs:
 - adr_file
 
 preconditions:
-- the ADR status is `accepted` and it is not superseded
+- the ADR status is `accepted` and no other ADR supersedes it
 - a linked plan exists, or the ADR explicitly states that no implementation is required
 
 scope:
@@ -56,13 +56,13 @@ workflow:
 6. fill the frontmatter `code:` array with the primary entry-point anchors
 7. write each anchor as a repo-root path with POSIX `/` separators and an optional `#symbol` suffix, such as `src/status.js#validateDirStatus`
 8. verify each anchor exists before writing it, so the ADR transitions with its anchors in place
-9. run `ai-factory adr validate <adr-file>` and fix what it reports: `finalize` moves the ADR to `active`, where a body issue becomes an error, so the file is checked while it is still cheap to fix
+9. run `ai-factory adr validate <adr-file>` and fix what it reports: `finalize` moves the ADR to `active`, where a body issue becomes an error, so this checks the file while fixing it is still cheap
 10. run `ai-factory adr finalize <adr-file>`
 11. run `ai-factory adr status --check` and resolve any failures
 12. report the status footer
 
 command_behaviour:
-- `ai-factory adr finalize` sets `evidence: implemented` only when the frontmatter `evidence:` field is still empty, so an authored value with commit refs or verification notes is preserved
+- `ai-factory adr finalize` sets `evidence: implemented` only when the frontmatter `evidence:` field is still empty, so it keeps an authored value with commit refs or verification notes
 - it then atomically moves the ADR to `active/`
 - it archives the plan following `aif-archive` semantics: to `paths.archive/plans/`, `status: done`, `archived: YYYY-MM-DD`, filename preserved
 

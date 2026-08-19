@@ -14,7 +14,7 @@ inputs:
 - adr_file
 
 preconditions:
-- the ADR status is `accepted` and it is not superseded
+- the ADR status is `accepted` and no other ADR supersedes it
 - exactly 1 non-archived plan implements it
 - the ADR↔plan links are reciprocal
 

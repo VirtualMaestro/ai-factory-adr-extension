@@ -3,7 +3,7 @@ name: skill
 description: The CNL-P profile of an agent skill — the sections a SKILL.md body uses, in order.
 ---
 
-format: docs/cnlp-format.md
+format: cnlp-format.md
 
 mood: imperative
 

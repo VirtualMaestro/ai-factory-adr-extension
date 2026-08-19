@@ -1,7 +1,6 @@
-import { readFile, readdir } from 'node:fs/promises';
-import path from 'node:path';
+import { readFile } from 'node:fs/promises';
 import { detectAif, AifError } from '../src/aif/detect.js';
-import { resolveDoc } from '../src/artifacts/cnlp.js';
+import { profileNames, resolveDoc } from '../src/artifacts/cnlp.js';
 import { init } from '../src/init.js';
 import { validateAdr } from '../src/lifecycle/validate.js';
 import { verifyAnchors } from '../src/lifecycle/verify.js';
@@ -241,7 +240,7 @@ export function register(program) {
 
   adr
     .command('format [name]')
-    .description('Print the CNL-P standard, or a profile: `adr`, `skill`, `profile` (§7)')
+    .description('Print the CNL-P standard, or one of the profiles it ships with (§7)')
     .option('--path', 'Print the resolved file path instead of the content')
     .option('--json', 'Machine-readable output')
     .action((name, opts) => guard(opts, async () => {
@@ -252,10 +251,10 @@ export function register(program) {
         file = resolveDoc(doc); // rejects anything that is a path rather than a name
         content = await readFile(file, 'utf8');
       } catch {
-        const known = (await readdir(path.dirname(resolveDoc('adr')))).filter((f) => f.endsWith('.md'));
+        const known = await profileNames();
         throw new AifError(
           'Unknown CNL-P document.\n' +
-            `  expected: format, or one of ${known.map((f) => f.replace(/\.md$/, '')).join(', ')}\n` +
+            `  expected: format, or one of ${known.join(', ')}\n` +
             `  detected: ${JSON.stringify(doc)}\n` +
             '  files:    nothing was changed\n' +
             '  next:     run `ai-factory adr format` for the standard itself',

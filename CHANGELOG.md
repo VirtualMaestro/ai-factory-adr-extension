@@ -4,6 +4,52 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and the project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [3.0.0] — 2026-08-19
+
+CNL-P was invented here, and for eleven releases this repository was the only place it existed:
+the standard, the checker, the profiles, and `cnlp-kit/export.mjs`, which copied all of them into
+another repository as a zip. A copy has no upgrade path — only an overwrite — and the first
+consumer had already drifted, missing `itemsOf` and two lexicon checks nobody could hand back.
+The format now has its own repository and its own npm package,
+[`cnlp-kit`](https://www.npmjs.com/package/cnlp-kit), and this extension is a consumer of it like
+any other. What stays here is what is actually about ADRs: the severity gate, the skills, and the
+section vocabulary those skills use.
+
+### Changed
+
+- **The CNL-P standard, the checker and the generic profiles now come from `cnlp-kit`.**
+  `docs/cnlp-format.md`, `profiles/adr.md` and `profiles/profile.md` are deleted; the package
+  supplies all three, plus six more profiles this extension does not use but `adr format` will
+  now list. Upgrading the format is a dependency bump, not a re-copy.
+- **`src/artifacts/cnlp.js` is an adapter, not an implementation.** 333 lines became 17. It
+  re-exports the package and names this repository as a profile root, so `profiles/skill.md`
+  shadows the generic `skill` profile the package ships. Every caller — `validate.js`,
+  `decisions.js`, `commands/adr.js` — imports the same path as before.
+- **`profiles/skill.md` is the one profile this repository still owns.** It declares the 24
+  `custom_sections` and the `transitions:` / `status_footer:` blocks that only make sense for a
+  lifecycle-driven ADR skill; the packaged `skill` profile declares none of them on purpose.
+- **Node.js `>=22.14`** — `cnlp-kit` requires it, where the APIs it rests on stop being experimental. AI Factory compatibility is unchanged.
+- **The passive voice is gone from all 16 skills.** The packaged checker enforces §5's active-voice
+  rule on any profile whose `mood:` is `imperative`, which the local copy never did: 35 lines
+  across 14 skills named a state without naming who brings it about, and now name the actor.
+- **`ai-factory adr format` lists every profile it can reach**, this repository's and the
+  package's, instead of reading a single directory.
+
+### Removed
+
+- **`cnlp-kit/` and `npm run kit`.** The zip existed because there was no package; there is one
+  now, and `npx cnlp init` does what the archive was a stand-in for. `test/kit.test.js` goes with
+  it, as does the `adm-zip` dev dependency.
+- **The checker's own grammar and lexicon tests.** `cnlp-kit` tests its checker; what stays here
+  asserts the ADR profile — blocks, headings, record keys — and the severity gate in front of it.
+
+### Fixed
+
+- **The integration suite no longer inherits the outer `npm test` configuration.** npm exports its
+  whole config as `npm_config_*` to a lifecycle script, and npm 11 rejects an inherited
+  `allow-scripts` outright, so the nested install failed under `npm test` and passed under
+  `node --test`. The child now gets a clean environment.
+
 ## [2.2.0] — 2026-07-30
 
 A run in an adopting project spent 6 cross-agent passes on a documentation change and produced

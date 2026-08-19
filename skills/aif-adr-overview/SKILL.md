@@ -63,9 +63,9 @@ rules_that_always_hold:
 - source of truth is the Markdown ADR files in Git; any external index is advisory, never authoritative
 - retrieval order (PRD §23): read active ADRs first, treat accepted ones as pending decisions, use superseded ones only for historical reasoning, and never treat proposals or drafts as active rules
 - always open the source Markdown after any semantic lookup, and resolve contradictions in favor of the authoritative file and its lifecycle status
-- active decisions are protected (PRD §18.3): edit an active ADR in place only for non-material changes such as code links, evidence, paths, and formatting
+- PRD §18.3 protects active decisions: edit an active ADR in place only for non-material changes such as code links, evidence, paths, and formatting
 - a material change to the Decision, constraints, scope, or consequences requires a new ADR that supersedes, which is what `aif-adr-supersede` is for
-- skills own judgment, the CLI owns file mechanics: `ai-factory adr …` performs deterministic moves, links, and audits, and the skills decide whether a transition is warranted
+- skills own judgment, the CLI owns file mechanics: `ai-factory adr …` performs deterministic moves, links, and audits, and the skills decide whether a transition is due
 - read `ai-factory adr decisions` before writing, refining, planning or accepting a decision: it states what every accepted and active ADR obliges, which is the corpus a new decision cannot contradict
 - an ADR records a decision that binds work beyond the change that prompts it: when a `git revert` undoes the change and binds nothing else, the fact belongs in the guide or the code, and `aif-adr-propose` writes no ADR
 

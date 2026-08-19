@@ -73,7 +73,7 @@ workflow:
 2. run `ai-factory adr status <adr-file>` for id, status, and active plan
 3. run `ai-factory adr validate <file>` when the target is an ADR
 4. read the target's frontmatter and pick the matching lens
-5. inspect project rules, architecture documents, relevant code, and existing ADRs: a suggestion cannot be judged without them
+5. inspect project rules, architecture documents, relevant code, and existing ADRs: no one can judge a suggestion without them
 6. split the reviewer's input into discrete suggestions
 7. give each suggestion one verdict with a one-line justification grounded in the lens and the project's rules
 8. apply the adopted changes to the artifact body using the matching lens

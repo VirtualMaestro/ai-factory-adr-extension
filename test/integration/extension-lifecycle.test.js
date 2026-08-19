@@ -26,7 +26,11 @@ function aifResult(args, cwd) {
 
 function npm(args, cwd) {
   const quoted = WIN ? args.map((a) => (/\s/.test(a) ? `"${a}"` : a)) : args;
-  return execFileSync('npm', quoted, { cwd, encoding: 'utf8', stdio: 'pipe', shell: WIN });
+  // Under `npm test` the outer run exports its whole config as `npm_config_*`, and the nested
+  // install reads it as if it had been asked for: npm 11 rejects the inherited `allow-scripts`
+  // outright. The child gets a clean environment so it behaves the same either way this file runs.
+  const env = Object.fromEntries(Object.entries(process.env).filter(([k]) => !/^npm_config_/i.test(k)));
+  return execFileSync('npm', quoted, { cwd, env, encoding: 'utf8', stdio: 'pipe', shell: WIN });
 }
 
 let available = false;
@@ -67,13 +71,18 @@ test('add installs all 16 skills for each configured runtime and registers `adr`
   assert.ok(existsSync(path.join(dir, 'docs/adr/active')), 'adr init created the structure');
 });
 
-test('packed extension bundles yaml and loads in a clean initialized project', opts, async () => {
+test('packed extension bundles its dependencies and loads in a clean initialized project', opts, async () => {
   const packDir = await mkdtemp(path.join(os.tmpdir(), 'adr-pack-'));
   const packed = JSON.parse(npm(['pack', '--json', '--pack-destination', packDir], EXT_ROOT))[0];
-  assert.ok(packed.files.some((f) => f.path === 'node_modules/yaml/package.json'), 'yaml is bundled');
+  // ai-factory installs an extension by `npm pack` → untar → copy, never `npm install`, so a
+  // dependency that is not bundled is simply absent and `adr` fails to load with a warning.
+  for (const dep of ['node_modules/yaml/package.json', 'node_modules/cnlp-kit/package.json']) {
+    assert.ok(packed.files.some((f) => f.path === dep), `${dep} is not bundled`);
+  }
   // The skills send the agent to `adr format`, which reads these out of the installed package:
   // dropping them from package.json `files` is invisible to every test that installs the checkout.
-  for (const shipped of ['docs/cnlp-format.md', 'profiles/adr.md', 'profiles/skill.md', 'profiles/profile.md']) {
+  // The standard and the generic profiles ride in with cnlp-kit; `profiles/skill.md` is ours.
+  for (const shipped of ['profiles/skill.md', 'node_modules/cnlp-kit/cnlp-format.md', 'node_modules/cnlp-kit/profiles/adr.md']) {
     assert.ok(packed.files.some((f) => f.path === shipped), `${shipped} is missing from the tarball`);
   }
 
@@ -86,6 +95,10 @@ test('packed extension bundles yaml and loads in a clean initialized project', o
   aif(['extension', 'add', unpacked], dir);
   assert.match(aif(['adr', '--help'], dir), /init/);
   assert.match(aif(['adr', 'format', 'adr'], dir), /^sections:$/m, 'the packed install serves the profile');
+  // The seam, proven where it matters: the standard comes out of the bundled package, and
+  // `skill` still resolves to this extension's own overlay rather than the generic one.
+  assert.match(aif(['adr', 'format', '--path'], dir), /cnlp-kit/, 'the standard is served from the package');
+  assert.match(aif(['adr', 'format', 'skill'], dir), /^- pre_cnlp_overlay$/m, 'the local skill overlay wins');
   aif(['adr', 'init'], dir);
   assert.ok(existsSync(path.join(dir, 'docs/adr/active')));
 });
