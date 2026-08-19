@@ -40,6 +40,9 @@ directories:
 ai-factory adr init
 ```
 
+`adr init` is idempotent: re-running it reports `present` for what already
+exists, `created` for what it added, and overwrites nothing.
+
 If your ADRs live outside `docs/adr`, set `adr.root` **before** running this —
 see [Configuration](#configuration).
 
@@ -62,11 +65,17 @@ inert — the extension resolves every CNL-P document it does not own inside the
 bundled `cnlp-kit`, never next to it. `remove` followed by `add` gives a clean
 directory if you want one.
 
-To remove the extension while keeping project ADRs and plans:
+To remove the extension:
 
 ```bash
 ai-factory extension remove ai-factory-adr-extension
 ```
+
+Removal takes the 16 skills out of each runtime's skills directory and deletes
+the extension's own install directory. It leaves everything the extension wrote
+while running: your ADR root with all its documents, your plans, and
+`.ai-factory/adr-extension.yaml`. Adding the extension again therefore needs no
+second `ai-factory adr init`.
 
 ## Lifecycle
 
@@ -173,8 +182,9 @@ ai-factory adr format adr      # the profile an ADR body is held to
 ai-factory adr format --path   # where it resolved, if you want to open it
 ```
 
-**There is nothing to initialize.** `ai-factory adr init` is the only one-time
-setup a project needs. CNL-P adds no project-level files: no `cnlp init`, no
+**There is nothing to initialize.** `ai-factory adr init` is the only setup a
+project needs, and it survives `extension remove` — reinstalling does not call
+for a second run. CNL-P adds no project-level files: no `cnlp init`, no
 `cnlp.config.json`, no `cnlp/profiles/`, no `cnlp-*` skills. Those belong to a
 repository that checks its own documents with the `cnlp` CLI; here the checker is
 embedded in `adr validate`, which the CLI cannot replace because it alone knows
