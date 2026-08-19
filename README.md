@@ -125,6 +125,7 @@ status directory (`git mv` preserves history), validates the set with
 | `status [file]` | Overview / diagnostics; JSON detail includes `replacedBy`; `--check` exits non-zero on blocking errors (CI) |
 | `order` | Dependency-ordered plan: what is ready to implement next, the topological order, blocked ADRs, and cycles (non-zero exit on a cycle) |
 | `decisions` | What every accepted and active ADR obliges — `decision:`, `constraints:`, `scope:`, `rules:` — so a new decision can be written against the whole corpus; reports per-file `issues` and always exits 0 |
+| `format [name]` | Print the CNL-P standard, or a profile such as `adr`; `--path` prints where it resolved instead |
 
 The lifecycle skills wrap these commands — prefer the skills for authoring work
 and reserve raw commands for scripting and CI.
@@ -152,6 +153,36 @@ warns when an `active` non-documentation-only ADR has no anchors. `verify-anchor
 catching drift when code is moved or deleted. The reverse
 question — "which decisions govern this file?" — is a plain grep over `code:`
 in the ADR root; no index or external tooling involved.
+
+## The ADR body format (CNL-P)
+
+ADR bodies are written in CNL-P — a controlled form of English with a fixed set
+of blocks, one idea per line, and no prose paragraphs. `ai-factory adr validate`
+holds a body to the `adr` profile: a **warning** while the ADR is `proposed`,
+`draft` or `superseded`, an **error** once it is `accepted` or `active`, because
+that is where the document becomes a rule other work is measured against.
+
+The standard and the profiles ship inside the extension as its
+[`cnlp-kit`](https://www.npmjs.com/package/cnlp-kit) dependency. Read them by
+command, never by path — the files live under
+`.ai-factory/extensions/` and that location is not part of the contract:
+
+```bash
+ai-factory adr format          # the standard itself
+ai-factory adr format adr      # the profile an ADR body is held to
+ai-factory adr format --path   # where it resolved, if you want to open it
+```
+
+**There is nothing to initialize.** `ai-factory adr init` is the only one-time
+setup a project needs. CNL-P adds no project-level files: no `cnlp init`, no
+`cnlp.config.json`, no `cnlp/profiles/`, no `cnlp-*` skills. Those belong to a
+repository that checks its own documents with the `cnlp` CLI; here the checker is
+embedded in `adr validate`, which the CLI cannot replace because it alone knows
+an ADR's lifecycle status.
+
+Of the profiles the package carries, this extension uses two: `adr`, taken from
+the package as-is, and `skill`, which it maintains itself because its skills use
+sections a generic skill profile does not declare.
 
 ## Configuration
 
@@ -188,6 +219,8 @@ because of it.
 
 - [Implementation backlog](./docs/BACKLOG.md)
 - [Changelog](./CHANGELOG.md)
+- The CNL-P standard — run `ai-factory adr format` (it ships inside the
+  extension, so there is no path to link)
 
 ## License
 
