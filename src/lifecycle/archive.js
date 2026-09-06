@@ -4,6 +4,7 @@ import path from 'node:path';
 import { read, serialize } from '../artifacts/frontmatter.js';
 import { readAifPaths } from '../config/paths.js';
 import { resolveInside, atomicWrite } from '../util/safe-path.js';
+import { stageMove } from '../util/git.js';
 
 export function todayUTC() {
   return new Date().toISOString().slice(0, 10); // YYYY-MM-DD
@@ -41,5 +42,6 @@ export async function archivePlan(planFile, { projectDir = process.cwd(), note =
     await unlink(target).catch(() => {});
     throw err;
   }
+  stageMove(source, target); // git sees a rename, not delete + untracked
   return { source, target };
 }

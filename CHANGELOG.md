@@ -4,6 +4,20 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and the project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [3.1.0] — 2026-09-05
+
+### Changed
+
+- **Lifecycle moves now land in Git as renames.** A status transition and a plan archival
+  still write the target and unlink the source atomically, but the CLI now stages both paths
+  afterwards, so `git status` reports `renamed: drafts/adr-007.md -> accepted/adr-007.md`
+  instead of a deletion beside an untracked file. An untracked file cannot take part in Git's
+  rename detection at all, so until now a document's history was invisible until someone
+  staged both sides by hand. `supersede --delete-plan` stages the deletion the same way.
+  Staging is a silent no-op outside a Git work tree, and a failure to stage never undoes the
+  file operation that already succeeded. Nothing is ever committed: the operator reviews and
+  commits.
+
 ## [3.0.0] — 2026-08-19
 
 CNL-P was invented here, and for eleven releases this repository was the only place it existed:

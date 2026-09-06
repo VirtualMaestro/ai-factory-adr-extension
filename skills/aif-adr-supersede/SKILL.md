@@ -48,7 +48,7 @@ workflow:
 command_behaviour:
 - adds `supersedes: [<old-id>]` to the new ADR
 - sets `replaced_by: <new-id>` in the old ADR's frontmatter
-- atomically moves the old ADR to `superseded/`
+- atomically moves the old ADR to `superseded/`, staged in Git as a rename
 - disposes the plan per the flag
 - changes nothing if a precondition fails (PRD §27): fix the cause and retry
 

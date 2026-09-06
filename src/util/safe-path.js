@@ -1,5 +1,6 @@
 import { readFile, writeFile, rename, mkdir, unlink } from 'node:fs/promises';
 import path from 'node:path';
+import { stageMove } from './git.js';
 
 /**
  * Resolve `target` and assert it stays inside `projectDir` (§28: reject traversal / outside-project).
@@ -58,6 +59,8 @@ export async function withFileRollback(files, action) {
         rollbackErrors.push(rollbackError);
       }
     }
+    // An inner step may already have staged its move; realign the index with the restored tree.
+    stageMove(...snapshots.map(([file]) => file));
     if (rollbackErrors.length) throw new AggregateError([err, ...rollbackErrors], `Operation failed and rollback was incomplete: ${err.message}`);
     throw err;
   }

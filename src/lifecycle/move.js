@@ -6,6 +6,7 @@ import { DIR_BY_STATUS, isValidStatus, validateDirStatus } from './status.js';
 import { isLegal, legalTargets } from './transitions.js';
 import { resolveActivePlan } from '../artifacts/plan.js';
 import { resolveInside, atomicWrite } from '../util/safe-path.js';
+import { stageMove } from '../util/git.js';
 
 class TransitionError extends Error {}
 
@@ -105,6 +106,7 @@ export async function transition(file, toStatus, { projectDir = process.cwd(), m
     await unlink(target).catch(() => {}); // rollback: leave the source untouched
     throw err;
   }
+  stageMove(source, target); // git sees a rename, not delete + untracked
 
   return { id: data.id, from, to: toStatus, source, target };
 }

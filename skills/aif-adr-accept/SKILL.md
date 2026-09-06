@@ -52,7 +52,7 @@ workflow:
 3. resolve any audit failures before continuing
 4. run `ai-factory adr decisions` and read every line: this is the step that checks the precondition "the ADR resolves every conflict with an active ADR" against the corpus rather than assuming it
 5. open in full every ADR whose `decision:`, `constraints:`, `scope:` or `rules:` overlap this draft, and stop when one of them contradicts it
-6. run `ai-factory adr transition <file> accepted`: a single atomic move of the status edit plus `drafts/` to `accepted/`
+6. run `ai-factory adr transition <file> accepted`: a single atomic move of the status edit plus `drafts/` to `accepted/`, staged in Git as a rename
 7. report any warnings
 8. report the status footer
 

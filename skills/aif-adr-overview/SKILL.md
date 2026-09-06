@@ -57,6 +57,7 @@ status_directories:
 - each status maps to one directory under the ADR root, default `docs/adr/`: `proposals/`, `drafts/`, `accepted/`, `active/`, `superseded/`
 - the filename stem always equals the ADR `id`
 - transitions are atomic file moves: do not hand-edit the `status` field or move files manually
+- the CLI stages every move in Git, so a transition lands as a rename and the file keeps its history
 - use the `adr` subcommands that the skills wrap
 
 rules_that_always_hold:

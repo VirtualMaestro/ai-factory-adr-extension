@@ -126,10 +126,10 @@ status directory (`git mv` preserves history), validates the set with
 | `import <topic> --status <s> [--id <id>]` | Scaffold a conformant ADR skeleton at any status (used by migration) |
 | `validate <file>` | Check one ADR against the lifecycle invariants |
 | `verify-anchors <file>` | Check that an ADR's `code:` anchors resolve on disk (non-zero exit if any are missing) |
-| `transition <file> <status>` | Atomic move between non-terminal lifecycle states |
+| `transition <file> <status>` | Atomic move between non-terminal lifecycle states, staged in Git as a rename |
 | `link-plan <adr> <plan>` | Write reciprocal ADR↔plan links |
 | `resolve-plan <adr>` | Resolve the plan(s) implementing an ADR |
-| `finalize <file>` | Activate an ADR; archive its plan |
+| `finalize <file>` | Activate an ADR; archive its plan (both staged as renames) |
 | `supersede <old> <new>` | Replace an ADR, preserving history |
 | `status [file]` | Overview / diagnostics; JSON detail includes `replacedBy`; `--check` exits non-zero on blocking errors (CI) |
 | `order` | Dependency-ordered plan: what is ready to implement next, the topological order, blocked ADRs, and cycles (non-zero exit on a cycle) |

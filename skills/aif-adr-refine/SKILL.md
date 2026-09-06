@@ -85,7 +85,7 @@ workflow:
 transitions:
 - from: proposed
   condition: first refine and the file is actually improved
-  action: `ai-factory adr transition <file> draft`, which moves it to `drafts/`
+  action: `ai-factory adr transition <file> draft`, which moves it to `drafts/` and stages the rename in Git
 - from: draft
   condition: repeat refine
   action: none, it stays draft

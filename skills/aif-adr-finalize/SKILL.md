@@ -65,6 +65,7 @@ command_behaviour:
 - `ai-factory adr finalize` sets `evidence: implemented` only when the frontmatter `evidence:` field is still empty, so it keeps an authored value with commit refs or verification notes
 - it then atomically moves the ADR to `active/`
 - it archives the plan following `aif-archive` semantics: to `paths.archive/plans/`, `status: done`, `archived: YYYY-MM-DD`, filename preserved
+- it stages both the ADR move and the plan archival in Git, so each one lands as a rename
 
 documentation_only_adrs:
 - an ADR with `evidence: documentation-only` or `documentation-only decision` in its frontmatter skips verification and the plan steps entirely

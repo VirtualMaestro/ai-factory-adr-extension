@@ -5,6 +5,7 @@ import { supersedeLink } from '../artifacts/links.js';
 import { transition, transitionTarget } from './move.js';
 import { archivePlan, archivePlanTarget } from './archive.js';
 import { resolveInside, withFileRollback } from '../util/safe-path.js';
+import { stageMove } from '../util/git.js';
 
 const REPLACEABLE = ['accepted', 'active'];
 
@@ -44,6 +45,7 @@ export async function supersede(oldFile, newFile, { projectDir = process.cwd(), 
       if (planDisposition === 'archive') disposed = { action: 'archived', ...(await archivePlan(plan.file, { projectDir, note: `superseded by ${newAdr.data.id}` })) };
       else if (planDisposition === 'delete') {
         await unlink(plan.file);
+        stageMove(plan.file); // stage the deletion, as `git rm` would
         disposed = { action: 'deleted', file: plan.file };
       }
     }
