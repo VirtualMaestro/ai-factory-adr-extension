@@ -73,7 +73,7 @@ test('adr-migrate carries over by hand and proves it', async () => {
   assert.match(body, /do not write or run a converter over the corpus/, 'the ban lived in `purpose:` as a remark, not as a rule');
   assert.match(body, /do not split prose into items by punctuation/, 'a sentence boundary is not an idea boundary');
   assert.match(body, /adr validate <file> --strict/, 'a warning at draft would otherwise pass for a migrated file');
-  assert.match(body, /^19\. state, for each item of the list from step 14/m, 'nothing forces the rewrite to account for what the original said');
+  assert.match(body, /^18\. state, for each item of the list from step 13/m, 'nothing forces the rewrite to account for what the original said');
 });
 
 test('adr-accept checks the conflict precondition against the corpus', async () => {

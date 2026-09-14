@@ -36,42 +36,41 @@ forbidden_behaviors:
 - do not invent an accepted rule when it is unclear whether a legacy item is a real decision: migrate it as `proposed`
 - do not invent new rules when repointing instruction files: point to the skills
 - do not treat a prior external index or wiki as the source of truth: the Markdown ADR files in Git are, and they supersede it
-- do not merge the migration branch: leave it for the maintainer to review
+- do not create a branch and do not commit: leave the migration in the working tree for the operator, who branches, commits or reverts as they see fit
 
 outputs:
 - the mapping of old file to new id and resulting status, one row per legacy file
 - the reconciliation for each file: every subsection and every rule of the original, and the block it now lives in
-- the migrated ADRs on the branch
+- the migrated ADRs in the working tree, uncommitted
 - repointed instruction files
 
 workflow:
 1. run `ai-factory adr init`: it is idempotent, scaffolds `proposals/`, `drafts/`, `accepted/`, `active/`, `superseded/` under the configured root, and writes the default `.ai-factory/adr-extension.yaml` when it is absent
-2. create the migration branch, which is what makes the whole migration reviewable and revertible: `git checkout -b adr-migration`
-3. read `adr.root` from `.ai-factory/adr-extension.yaml`, default `docs/adr`, and use that root everywhere below
-4. run `ai-factory adr format --path` and `ai-factory adr format adr --path`, then read both: they are the rules and the block set every migrated file is rewritten into
-5. scan `adr/`, `docs/adr/`, `docs/decisions/`, and `architecture/decisions/` for ADR files written in a format this extension did not produce
-6. run `ai-factory adr status --check` over the configured root: an ADR already filed there that fails is legacy in place, written for a pre-1.6 or a pre-CNL-P version of this extension, and one that passes needs no migration
-7. report both lists, each path with its file count, before reading any of them
-8. ask the operator where the legacy ADRs live when both lists come up empty, or when what they hold is not the corpus they meant: no scan covers every project layout
-9. read every legacy file found, noting its format and any existing status, date, and title
-10. note which files form a replace or deprecate pair
-11. assign each file a stable id `adr-<lowercase-hyphenated>` derived from its title
-12. assign each file a lifecycle status by the one matching case in `status_mapping`
-13. state the full mapping, old file to id and status, before moving anything
-14. list that file's `##` and `###` subsections and every rule it states, before changing a byte of it
-15. process one file at a time, applying the one matching case in `file_shape`
-16. additionally apply `pre_1_6_overlay` to that file when it was written for a pre-1.6 version of this extension
-17. additionally apply `pre_cnlp_overlay` to that file when its body is prose in this extension's own format
-18. additionally apply `documentation_only_overlay` to that file when the decision is documentation-only
-19. state, for each item of the list from step 14, the block it now lives in, and that it was neither dropped, split, nor merged with another
-20. migrate both sides of a replace pair at their live status before superseding: `ai-factory adr supersede` requires the old ADR to be `accepted` or `active`
-21. run `ai-factory adr supersede <old-file> <new-file> [--archive-plan | --delete-plan]` for each pair, in preference to hand-linking
-22. place any legacy plan doc under the configured `paths.plans` and link it: `ai-factory adr link-plan <adr-file> <plan-file>`
-23. run `ai-factory adr validate <file> --strict` on each migrated ADR and fix until it exits 0: a warning is work left undone here, whatever the status says
-24. run `ai-factory adr status --check` and fix until it exits 0
-25. replace each stale ADR-process block in `AGENTS.md`, `CLAUDE.md`, `CONTRIBUTING.md`, and `README.md` with the `instruction_pointer` below
-26. substitute the configured `adr.root` for "the configured ADR root" in that pointer
-27. emit the mapping, the reconciliation, then the status footer
+2. read `adr.root` from `.ai-factory/adr-extension.yaml`, default `docs/adr`, and use that root everywhere below
+3. run `ai-factory adr format --path` and `ai-factory adr format adr --path`, then read both: they are the rules and the block set every migrated file is rewritten into
+4. scan `adr/`, `docs/adr/`, `docs/decisions/`, and `architecture/decisions/` for ADR files written in a format this extension did not produce
+5. run `ai-factory adr status --check` over the configured root: an ADR already filed there that fails is legacy in place, written for a pre-1.6 or a pre-CNL-P version of this extension, and one that passes needs no migration
+6. report both lists, each path with its file count, before reading any of them
+7. ask the operator where the legacy ADRs live when both lists come up empty, or when what they hold is not the corpus they meant: no scan covers every project layout
+8. read every legacy file found, noting its format and any existing status, date, and title
+9. note which files form a replace or deprecate pair
+10. assign each file a stable id `adr-<lowercase-hyphenated>` derived from its title
+11. assign each file a lifecycle status by the one matching case in `status_mapping`
+12. state the full mapping, old file to id and status, before moving anything
+13. list that file's `##` and `###` subsections and every rule it states, before changing a byte of it
+14. process one file at a time, applying the one matching case in `file_shape`
+15. additionally apply `pre_1_6_overlay` to that file when it was written for a pre-1.6 version of this extension
+16. additionally apply `pre_cnlp_overlay` to that file when its body is prose in this extension's own format
+17. additionally apply `documentation_only_overlay` to that file when the decision is documentation-only
+18. state, for each item of the list from step 13, the block it now lives in, and that it was neither dropped, split, nor merged with another
+19. migrate both sides of a replace pair at their live status before superseding: `ai-factory adr supersede` requires the old ADR to be `accepted` or `active`
+20. run `ai-factory adr supersede <old-file> <new-file> [--archive-plan | --delete-plan]` for each pair, in preference to hand-linking
+21. place any legacy plan doc under the configured `paths.plans` and link it: `ai-factory adr link-plan <adr-file> <plan-file>`
+22. run `ai-factory adr validate <file> --strict` on each migrated ADR and fix until it exits 0: a warning is work left undone here, whatever the status says
+23. run `ai-factory adr status --check` and fix until it exits 0
+24. replace each stale ADR-process block in `AGENTS.md`, `CLAUDE.md`, `CONTRIBUTING.md`, and `README.md` with the `instruction_pointer` below
+25. substitute the configured `adr.root` for "the configured ADR root" in that pointer
+26. emit the mapping, the reconciliation, then the status footer
 
 status_mapping:
 - the overlays below are independent of this list: a file gets exactly 1 status here
@@ -143,7 +142,7 @@ instruction_pointer:
 ```
 
 status_footer:
-  format: "✔ adr-migrate · 4 ADRs → 2 active, 1 accepted, 1 superseded · branch: adr-migration"
+  format: "✔ adr-migrate · 4 ADRs → 2 active, 1 accepted, 1 superseded · uncommitted"
   source: `ai-factory adr status --json`
   note: the footer carries counts only; the migrated ids are in the mapping output, one row per file
 

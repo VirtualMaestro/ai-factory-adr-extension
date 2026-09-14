@@ -126,11 +126,16 @@ refinement ends on a condition, not on taste: a pass that changes no `decision:`
 ### Migrating an existing ADR workflow
 
 Installing into a project that already kept ADRs its own way? Run
-**`/adr-migrate`** (Codex: `$adr-migrate`) once. On a branch, it maps each
-legacy ADR to a lifecycle status, rewrites it into the template under the right
-status directory (`git mv` preserves history), validates the set with
-`ai-factory adr status --check`, and repoints stale ADR instructions in
+**`/adr-migrate`** (Codex: `$adr-migrate`) once. It maps each legacy ADR to a
+lifecycle status, rewrites it into the template under the right status directory
+(`git mv` preserves history), validates the set with `ai-factory adr status
+--check`, and repoints stale ADR instructions in
 `AGENTS.md`/`CLAUDE.md`/`CONTRIBUTING.md` to `/adr-overview`.
+
+It creates no branch and commits nothing — it works in the tree you are on and
+leaves the result for you to review. That is why it wants a clean working tree
+first: a clean tree is what makes `git checkout .` a complete undo. Branch
+beforehand if you want the migration isolated.
 
 ## `ai-factory adr` subcommands
 

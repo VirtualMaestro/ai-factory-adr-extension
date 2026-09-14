@@ -15,6 +15,12 @@ All notable changes to this project are documented here. The format follows
 - **BREAKING: `aif-adr-refine` is now `adr-improve`.** The skill applies quality criteria
   to a decision record; `improve` says that, `refine` did not. Its sibling `adr-plan-improve`
   keeps its name and still applies the stock `aif-improve` to a plan.
+- **`adr-migrate` no longer creates a branch.** It ran `git checkout -b adr-migration`
+  before touching anything, which bought a review boundary the operator had to pay for with
+  a merge afterwards. It now migrates in place and commits nothing, so the review boundary
+  is the working tree itself and the undo is `git checkout .` — which is also why the clean
+  working tree stays a precondition. Branch first if you want the isolation; the skill will
+  not decide that for you.
 
 ### Upgrading from 3.x
 
