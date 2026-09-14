@@ -101,16 +101,37 @@ proposed    draft     accepted                          active
                                                      supersede ─▶ superseded
 ```
 
-For the agent, start with the **`/adr-overview`** skill (Codex:
-`$adr-overview`) — it maps every stage to its skill and states the
-retrieval/immutability rules. The stage skills are `adr-{propose, improve,
-accept, plan, implement, finalize, supersede, status}`. Off the linear flow,
-`adr-verify` checks any accepted/active ADR against the implemented code
-(`adr-verify-all` runs that check over every active ADR in one sweep and reports a
-conformance table), `adr-check-consistency` checks the accepted and active ADRs against each other and reports
-contradicting, redundant and area-sharing pairs, `adr-next` reads the `depends_on` graph to tell you which ADR to implement next,
-and `adr-reconcile` adjudicates a second reviewer's proposed improvements to an
-ADR or plan — adopting the sound ones and rejecting the rest, each with a reason.
+## Skills
+
+Sixteen skills, installed into every runtime the project configures — invoked as
+`/adr-propose` in Claude Code and `$adr-propose` in Codex. Start with
+**`/adr-overview`**: it maps every stage to its skill and states the
+retrieval/immutability rules, so it is the one name worth remembering.
+
+Along the linear flow:
+
+| Skill | Does | Constraint |
+|---|---|---|
+| `adr-propose <topic>` | scaffolds a `proposed` ADR in `proposals/` | scans for duplicate and conflicting decisions first |
+| `adr-improve` | applies ADR-specific quality criteria | first pass moves `proposed` to `draft` |
+| `adr-accept` | moves `draft` to `accepted` | checks preconditions and runs the audit first |
+| `adr-plan` | creates the plan in `paths.plans` with reciprocal `implements` and `plan:` links | skip for documentation-only ADRs |
+| `adr-plan-improve <adr>` | improves that plan, named by the ADR | resolves the plan itself; `adr-improve` is for the decision |
+| `adr-implement` | resolves the plan by metadata and implements | the ADR stays `accepted` |
+| `adr-finalize` | strict verification, then `accepted` to `active`, and archives the plan | a documentation-only ADR goes straight to `active` with no plan |
+| `adr-supersede <old> <new>` | replaces an accepted or active decision with a newer one | reciprocal links and a move to `superseded`, preserving history |
+
+Off the linear flow:
+
+| Skill | Does | Constraint |
+|---|---|---|
+| `adr-status` | read-only overview and diagnostics, at any point | never mutates |
+| `adr-verify <adr>` | checks one accepted or active ADR against the implemented code | read-only, re-runnable: do the `code:` anchors resolve, does the code honor the Decision |
+| `adr-verify-all` | the same check swept across every active ADR, as one table | read-only |
+| `adr-check-consistency` | checks the accepted and active ADRs against each other, reporting contradiction, redundancy and shared areas | read-only; reads every ADR of each named pair in full |
+| `adr-reconcile <target>` | adjudicates a second reviewer's proposed improvements, adopting and rejecting each with a reason | never advances status, never implements |
+| `adr-next` | reads the `depends_on` graph and recommends what to implement next | ready means `accepted` with all dependencies `active`; also reports order, blocked ADRs, cycles |
+| `adr-migrate` | brings a project's pre-existing legacy ADRs into this lifecycle | one-time; run it before authoring new ADRs there |
 
 ### When an ADR is not the tool
 

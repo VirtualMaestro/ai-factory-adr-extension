@@ -21,6 +21,19 @@ test('every skill body conforms to profiles/skill.md', async () => {
   }
 });
 
+// The README is the package page on npm, and the skills are what the package ships. A rename or
+// an addition that lands in `skills/` and not in the README leaves that page describing something
+// the tarball no longer contains.
+test('the README names every skill', async () => {
+  const readme = await readFile(path.join(repoRoot, 'README.md'), 'utf8');
+  for (const name of skills) {
+    // The guards keep `adr-plan-improve` from standing in for `adr-plan`, and the old `aif-adr-*`
+    // names in the upgrade notes from standing in for anything.
+    const named = new RegExp('(?<![\\w-])' + name + '(?![\\w-])');
+    assert.match(readme, named, `README does not name ${name}`);
+  }
+});
+
 // A skill runs in the adopting project, where the extension lives under .ai-factory/extensions/
 // and the standard is deeper still, inside the bundled `cnlp-kit`. A path citation resolves in
 // this repository and nowhere else, so the skills name the command instead.

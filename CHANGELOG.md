@@ -4,6 +4,18 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and the project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [4.0.1] — 2026-09-14
+
+### Changed
+
+- **The README now lists the skills.** The package page on npm is the README, and the README
+  described the sixteen skills in a paragraph that named eleven of them and hid the rest inside
+  `adr-{propose, improve, …}` shorthand — so the page said almost nothing about the thing the
+  package exists to ship. A `## Skills` section now carries all sixteen in two tables, split
+  into the linear flow and what sits off it, with the same wording `adr-overview` already uses.
+  A test pins the list to the contents of `skills/`, so the next rename cannot quietly leave
+  the published page describing skills the tarball no longer contains.
+
 ## [4.0.0] — 2026-09-14
 
 ### Changed
