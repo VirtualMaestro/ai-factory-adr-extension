@@ -59,7 +59,7 @@ async function build() {
   console.log(`       ${dir}\n`);
   console.log('     Not the repository — the `adr` subcommand exists only in a project that');
   console.log('     installed the extension, and the repository holds no ADRs of its own.\n');
-  console.log('  2. in that session, run:  /aif-adr-check-consistency');
+  console.log('  2. in that session, run:  /adr-check-consistency');
   console.log('     Do not open the fixture\'s README.md or expected.json from it: both name');
   console.log('     the conflicts, and a session that has read either cannot score the run.\n');
   console.log('  3. score it:  npm run corpus -- --key   (from the repository)\n');

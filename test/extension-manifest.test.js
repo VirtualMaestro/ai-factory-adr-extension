@@ -26,11 +26,11 @@ test('commands use the corrected object shape (not string paths)', async () => {
 test('all sixteen ADR skills are listed, including the migration, verify, verify-all, check-consistency, next, plan-improve, and reconcile skills', async () => {
   const manifest = await load('extension.json');
   assert.equal(manifest.skills.length, 16);
-  assert.ok(manifest.skills.includes('skills/aif-adr-check-consistency'), 'aif-adr-check-consistency is installed');
-  assert.ok(manifest.skills.includes('skills/aif-adr-migrate'), 'aif-adr-migrate is installed');
-  assert.ok(manifest.skills.includes('skills/aif-adr-verify'), 'aif-adr-verify is installed');
-  assert.ok(manifest.skills.includes('skills/aif-adr-verify-all'), 'aif-adr-verify-all is installed');
-  assert.ok(manifest.skills.includes('skills/aif-adr-next'), 'aif-adr-next is installed');
-  assert.ok(manifest.skills.includes('skills/aif-adr-plan-improve'), 'aif-adr-plan-improve is installed');
-  assert.ok(manifest.skills.includes('skills/aif-adr-reconcile'), 'aif-adr-reconcile is installed');
+  assert.ok(manifest.skills.includes('skills/adr-check-consistency'), 'adr-check-consistency is installed');
+  assert.ok(manifest.skills.includes('skills/adr-migrate'), 'adr-migrate is installed');
+  assert.ok(manifest.skills.includes('skills/adr-verify'), 'adr-verify is installed');
+  assert.ok(manifest.skills.includes('skills/adr-verify-all'), 'adr-verify-all is installed');
+  assert.ok(manifest.skills.includes('skills/adr-next'), 'adr-next is installed');
+  assert.ok(manifest.skills.includes('skills/adr-plan-improve'), 'adr-plan-improve is installed');
+  assert.ok(manifest.skills.includes('skills/adr-reconcile'), 'adr-reconcile is installed');
 });

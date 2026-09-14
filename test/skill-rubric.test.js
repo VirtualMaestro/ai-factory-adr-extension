@@ -7,14 +7,14 @@ import { fileURLToPath } from 'node:url';
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 const FULL = [
-  'aif-adr-propose',
-  'aif-adr-refine',
-  'aif-adr-reconcile',
-  'aif-adr-plan',
-  'aif-adr-plan-improve'
+  'adr-propose',
+  'adr-improve',
+  'adr-reconcile',
+  'adr-plan',
+  'adr-plan-improve'
 ];
-const SHORT = ['aif-adr-implement', 'aif-adr-verify', 'aif-adr-verify-all', 'aif-adr-check-consistency', 'aif-adr-finalize', 'aif-adr-accept'];
-const NONE = ['aif-adr-next', 'aif-adr-migrate', 'aif-adr-supersede', 'aif-adr-status', 'aif-adr-overview'];
+const SHORT = ['adr-implement', 'adr-verify', 'adr-verify-all', 'adr-check-consistency', 'adr-finalize', 'adr-accept'];
+const NONE = ['adr-next', 'adr-migrate', 'adr-supersede', 'adr-status', 'adr-overview'];
 
 const HEADING = 'quality_rules:';
 

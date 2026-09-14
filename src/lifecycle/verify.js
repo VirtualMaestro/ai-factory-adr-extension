@@ -9,7 +9,7 @@ const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 /**
  * Deterministic anchor check: confirm each `code:` frontmatter anchor resolves on disk
  * (and, for a `path#symbol` anchor, that the file mentions the symbol). Read-only; never
- * touches the ADR or the code. The Decision-vs-code judgment is the `aif-adr-verify` skill's job.
+ * touches the ADR or the code. The Decision-vs-code judgment is the `adr-verify` skill's job.
  *
  * Returns { id, status, docOnly, anchors: [{ anchor, path, symbol, fileExists, symbolFound }], missing: [] }
  * where `missing` lists anchors whose file is absent (or whose `#symbol` was not found).

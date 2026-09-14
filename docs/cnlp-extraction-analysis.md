@@ -63,7 +63,7 @@ to the project), **delete** (superseded).
 | `src/lifecycle/validate.js` | — | stay | inv 12, the ADR severity gate; becomes a package consumer |
 | `src/decisions.js` | — | stay | reuses `parseBlocks`/`itemsOf`/`loadProfile('adr')` |
 | `commands/adr.js` (`format` subcommand, L243-267) | — | stay | serves the docs from the dependency instead of from `docs/` |
-| `skills/aif-adr-*` (16), `templates/adr.md` | — | stay | the corpus |
+| `skills/adr-*` (16), `templates/adr.md` | — | stay | the corpus |
 
 ### 1.2 `pure-typescript-reviewer`
 
@@ -220,7 +220,7 @@ ADR extension.
 **13. The examples teach ADR vocabulary as if it were format vocabulary.**
 `docs/cnlp-format.md:80` — `1. run `ai-factory adr validate <file>``;
 `:93` — `action: `ai-factory adr transition <file> draft``;
-`:104-105` — `format: "✔ aif-adr-refine · ADR: <adr-id> [<status>] · Plan: <plan-id or none>"`
+`:104-105` — `format: "✔ adr-improve · ADR: <adr-id> [<status>] · Plan: <plan-id or none>"`
 with `source: `ai-factory adr status <adr-file>``. §5 also picks `blast radius` as its model of
 an "established domain term". A reader learning the format from these examples absorbs an ADR
 tool's surface along with the grammar.
@@ -345,7 +345,7 @@ is the proof.
 **`ai-factory-adr-extension`** — the ADR lifecycle severity gate (`src/lifecycle/validate.js`,
 inv 12), the cross-ADR obligation digest (`src/decisions.js`), the rubric group lists
 (`test/skill-rubric.test.js`), `ai-factory adr format` now serving from the dependency, the 16
-`aif-adr-*` skills, `templates/adr.md`, and the 24 ADR `custom_sections` plus `transitions:`
+`adr-*` skills, `templates/adr.md`, and the 24 ADR `custom_sections` plus `transitions:`
 and `status_footer:` as a local overlay on the packaged `skill` profile.
 
 **`pure-typescript-reviewer`** — its four profiles' vocabularies, `AGENTS.md`, the

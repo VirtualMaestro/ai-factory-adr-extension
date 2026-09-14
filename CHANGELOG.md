@@ -4,6 +4,32 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and the project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [4.0.0] — 2026-09-14
+
+### Changed
+
+- **BREAKING: every skill dropped its `aif-` prefix.** `aif-adr-propose` is now
+  `adr-propose`, `aif-adr-plan` is `adr-plan`, and so on for all sixteen. The prefix
+  namespaced nothing — the extension already installs under its own package name — and
+  it cost four characters in every invocation the operator types by hand.
+- **BREAKING: `aif-adr-refine` is now `adr-improve`.** The skill applies quality criteria
+  to a decision record; `improve` says that, `refine` did not. Its sibling `adr-plan-improve`
+  keeps its name and still applies the stock `aif-improve` to a plan.
+
+### Upgrading from 3.x
+
+The host installs an extension by copying over its directory without emptying it, so an
+update alone leaves the sixteen old `aif-adr-*` skill directories behind next to the new
+ones. Remove and re-add instead:
+
+```sh
+ai-factory extension remove ai-factory-adr-extension
+ai-factory extension add ai-factory-adr-extension
+```
+
+Projects whose `AGENTS.md`/`CLAUDE.md` carries the ADR instruction pointer still name
+`/aif-adr-overview` there; `/adr-migrate` rewrites that pointer, or edit the line by hand.
+
 ## [3.1.0] — 2026-09-05
 
 ### Changed

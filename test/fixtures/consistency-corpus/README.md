@@ -5,7 +5,7 @@
 > conflicts the corpus contains — reading either makes your session useless for scoring.
 
 14 ADRs whose conflicts are labelled in `expected.json`. It exists to score
-`aif-adr-check-consistency`, which is a skill: no unit test can judge it, so a person runs it
+`adr-check-consistency`, which is a skill: no unit test can judge it, so a person runs it
 against a corpus whose answers are known and compares.
 
 The answer sheet is printed by `npm run corpus -- --key`, and lives nowhere else a runner
@@ -18,7 +18,7 @@ would stumble into it.
 2. Open a **new** session in the printed directory. Not in this repository: the `adr`
    subcommand exists only in a project that installed the extension, and this repository has
    no ADRs of its own. A session that has read this file or `expected.json` cannot score.
-3. `/aif-adr-check-consistency` there.
+3. `/adr-check-consistency` there.
 4. `npm run corpus -- --key` back in the repository, and compare.
 
 Pass: every labelled contradiction named, and no same-area pair called a contradiction. Fail:

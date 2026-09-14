@@ -70,7 +70,7 @@ export function register(program) {
         console.log(res.errors.length ? `Invalid: ${res.errors.length} error(s).` : 'Valid.');
       });
       // A body issue is a warning before `accepted` because the document is still being
-      // written. `aif-adr-migrate` claims the opposite — that it is done — so it asks for
+      // written. `adr-migrate` claims the opposite — that it is done — so it asks for
       // `--strict` and a warning there is work left undone, not advice.
       if (res.errors.length || (opts.strict && res.warnings.length)) process.exitCode = 1;
     }));

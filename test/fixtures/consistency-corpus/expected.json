@@ -1,11 +1,11 @@
 {
-  "purpose": "Labelled corpus for a manual aif-adr-check-consistency run. Not read by npm test: the skill is judged by a person against these labels. buildDecisions must report zero issues here.",
+  "purpose": "Labelled corpus for a manual adr-check-consistency run. Not read by npm test: the skill is judged by a person against these labels. buildDecisions must report zero issues here.",
   "contradiction": [
     {
       "pair": ["adr-order-ids-sequence", "adr-order-ids-uuid"],
       "statuses": ["accepted", "active"],
       "why": "one assigns the order id in application code as a 128-bit UUIDv7, the other assigns it in the database as a 64-bit sequence value; both claim the same scope",
-      "expected_follow_up": "aif-adr-refine on adr-order-ids-sequence, the accepted one",
+      "expected_follow_up": "adr-improve on adr-order-ids-sequence, the accepted one",
       "lexical": "shared vocabulary — order id, database, region"
     },
     {

@@ -20,7 +20,7 @@ since ai-factory installs an extension by `npm pack` and never runs `npm install
 
 Cross-ADR consistency is built and measured: `ai-factory adr decisions` prints what every
 accepted and active ADR obliges, the four authoring skills read it before they write, and
-`aif-adr-check-consistency` sweeps the corpus for contradictions. Three cold runs against the labelled corpus, by agents kept away from the labels,
+`adr-check-consistency` sweeps the corpus for contradictions. Three cold runs against the labelled corpus, by agents kept away from the labels,
 scored 3/3 on the contradictions with no false positive on either same-area pair and no extra
 pair; the tables and footers matched each other exactly, and only the evidence wording varied.
 All 3 ran on 1 runtime, so that number measures how steady the skill's wording is, not how it
@@ -41,7 +41,7 @@ travels between executors.
 
 ## Next — the plan profile
 
-Plan documents (`.ai-factory/plans/*.md`, written by `aif-adr-plan`) are the third kind of
+Plan documents (`.ai-factory/plans/*.md`, written by `adr-plan`) are the third kind of
 technical document this extension owns and the only one still in prose.
 
 - Adding it is one file, `profiles/plan.md`, plus whatever enforcement it earns. If it needs
@@ -49,7 +49,7 @@ technical document this extension owns and the only one still in prose.
   there — which is also the real test of the generalization. Check first whether the packaged
   `task` profile already covers what a plan document is; if it does, this item is a mapping,
   not a new profile.
-- The block vocabulary starts from `aif-adr-plan`'s `plan_frontmatter:` and the steps the
+- The block vocabulary starts from `adr-plan`'s `plan_frontmatter:` and the steps the
   skill already dictates.
 - A plan has no lifecycle status of its own to gate severity on, unlike an ADR, so the
   profile has to say what `enforcement:` means for it before any check is written.

@@ -40,7 +40,7 @@ export async function validateAdr(file, { projectDir = process.cwd() } = {}) {
 
   // inv 12: the body is CNL-P, shaped by `profiles/adr.md`. An ADR becomes a rule at
   // `accepted`, so that is where non-conformance stops being advice; before it, the document
-  // is still being written and `aif-adr-refine` is the loop that clears the warnings.
+  // is still being written and `adr-improve` is the loop that clears the warnings.
   const live = data.status === 'accepted' || data.status === 'active';
   for (const { line, message } of bodyIssues(body, await loadProfile('adr'))) {
     const text = line ? `body line ${line}: ${message}` : message;
@@ -67,7 +67,7 @@ export async function validateAdr(file, { projectDir = process.cwd() } = {}) {
   }
 
   if (data.status === 'active' && !String(data.evidence ?? '').trim()) {
-    errors.push('active ADR must record `evidence:` in frontmatter (implemented / documentation-only); legacy body format? run aif-adr-migrate'); // inv 10
+    errors.push('active ADR must record `evidence:` in frontmatter (implemented / documentation-only); legacy body format? run adr-migrate'); // inv 10
   }
 
   if (

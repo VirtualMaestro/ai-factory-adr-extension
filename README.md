@@ -3,7 +3,7 @@
 Architecture Decision Record (ADR) lifecycle for [AI Factory](https://github.com/lee-to/ai-factory).
 
 Adds an audited, Git-native ADR workflow to an AI Factory project: eight
-lifecycle skills for the agent (`propose → refine → accept → plan → implement →
+lifecycle skills for the agent (`propose → improve → accept → plan → implement →
 finalize`, plus `supersede` and `status`), a `verify` skill that checks an ADR
 against the implemented code on demand, an overview skill that maps the flow,
 and a deterministic `ai-factory adr` command that does the file mechanics
@@ -77,45 +77,60 @@ while running: your ADR root with all its documents, your plans, and
 `.ai-factory/adr-extension.yaml`. Adding the extension again therefore needs no
 second `ai-factory adr init`.
 
+### Upgrading from 3.x
+
+Every skill lost its `aif-` prefix in 4.0.0 (`aif-adr-propose` is now `adr-propose`), and
+`aif-adr-refine` became `adr-improve`. Because an update copies over the install directory,
+the sixteen old skill directories stay behind next to the new ones — and unlike a stale
+CNL-P document, a stale skill is not inert: the agent still sees it. Take the clean path:
+
+```bash
+ai-factory extension remove ai-factory-adr-extension
+ai-factory extension add ai-factory-adr-extension
+```
+
+If your `AGENTS.md`/`CLAUDE.md` carries the ADR instruction pointer, it still names
+`/aif-adr-overview`. Re-run `/adr-migrate` to repoint it, or edit the line by hand.
+
 ## Lifecycle
 
 ```text
-propose ─▶ refine ─▶ accept ─▶ plan ─▶ implement ─▶ finalize ─▶ (active)
-proposed    draft    accepted                          active
-                                                          │
-                                                    supersede ─▶ superseded
+propose ─▶ improve ─▶ accept ─▶ plan ─▶ implement ─▶ finalize ─▶ (active)
+proposed    draft     accepted                          active
+                                                           │
+                                                     supersede ─▶ superseded
 ```
 
-For the agent, start with the **`/aif-adr-overview`** skill (Codex:
-`$aif-adr-overview`) — it maps every stage to its skill and states the
-retrieval/immutability rules. The stage skills are `aif-adr-{propose, refine,
+For the agent, start with the **`/adr-overview`** skill (Codex:
+`$adr-overview`) — it maps every stage to its skill and states the
+retrieval/immutability rules. The stage skills are `adr-{propose, improve,
 accept, plan, implement, finalize, supersede, status}`. Off the linear flow,
-`aif-adr-verify` checks any accepted/active ADR against the implemented code
-(`aif-adr-verify-all` runs that check over every active ADR in one sweep and reports a
-conformance table), `aif-adr-check-consistency` checks the accepted and active ADRs against each other and reports
-contradicting, redundant and area-sharing pairs, `aif-adr-next` reads the `depends_on` graph to tell you which ADR to implement next,
-and `aif-adr-reconcile` adjudicates a second reviewer's proposed improvements to an
+`adr-verify` checks any accepted/active ADR against the implemented code
+(`adr-verify-all` runs that check over every active ADR in one sweep and reports a
+conformance table), `adr-check-consistency` checks the accepted and active ADRs against each other and reports
+contradicting, redundant and area-sharing pairs, `adr-next` reads the `depends_on` graph to tell you which ADR to implement next,
+and `adr-reconcile` adjudicates a second reviewer's proposed improvements to an
 ADR or plan — adopting the sound ones and rejecting the rest, each with a reason.
 
 ### When an ADR is not the tool
 
 The lifecycle costs what it costs because a decision record binds later work. A change whose
 whole rollback is `git revert` — wording in a guide, a README line, a comment — binds nothing
-beyond itself, and `aif-adr-propose` now says so and writes no file: its `preconditions:` ask
+beyond itself, and `adr-propose` now says so and writes no file: its `preconditions:` ask
 what the revert would *not* undo (a public API, a data schema, a module boundary, a protocol,
 a dependency, an obligation later work is measured against). One decision is one ADR; the
 obligations that follow from it are lines of `rules:` inside it, not sibling ADRs. And
 refinement ends on a condition, not on taste: a pass that changes no `decision:`, `scope:`,
-`constraints:` or `rules:` line is the last one, and the ADR goes to `aif-adr-accept`.
+`constraints:` or `rules:` line is the last one, and the ADR goes to `adr-accept`.
 
 ### Migrating an existing ADR workflow
 
 Installing into a project that already kept ADRs its own way? Run
-**`/aif-adr-migrate`** (Codex: `$aif-adr-migrate`) once. On a branch, it maps each
+**`/adr-migrate`** (Codex: `$adr-migrate`) once. On a branch, it maps each
 legacy ADR to a lifecycle status, rewrites it into the template under the right
 status directory (`git mv` preserves history), validates the set with
 `ai-factory adr status --check`, and repoints stale ADR instructions in
-`AGENTS.md`/`CLAUDE.md`/`CONTRIBUTING.md` to `/aif-adr-overview`.
+`AGENTS.md`/`CLAUDE.md`/`CONTRIBUTING.md` to `/adr-overview`.
 
 ## `ai-factory adr` subcommands
 
@@ -158,7 +173,7 @@ entry-point files/symbols the decision lives in (repo-root paths, POSIX `/`,
 optional `#symbol` suffix, e.g. `src/status.js#validateDirStatus`). `finalize`
 populates it at activation, `migrate` backfills it on import, and `validate`
 warns when an `active` non-documentation-only ADR has no anchors. `verify-anchors` (and the
-`aif-adr-verify` skill wrapping it) checks that the listed anchors actually resolve on disk,
+`adr-verify` skill wrapping it) checks that the listed anchors actually resolve on disk,
 catching drift when code is moved or deleted. The reverse
 question — "which decisions govern this file?" — is a plain grep over `code:`
 in the ADR root; no index or external tooling involved.

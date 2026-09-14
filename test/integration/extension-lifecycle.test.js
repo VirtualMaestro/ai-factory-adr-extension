@@ -55,7 +55,7 @@ async function newProject(agents) {
 const skillsDir = (dir, runtime) => path.join(dir, `.${runtime}`, 'skills');
 const adrSkills = async (dir, runtime) =>
   existsSync(skillsDir(dir, runtime))
-    ? (await readdir(skillsDir(dir, runtime))).filter((n) => n.startsWith('aif-adr-'))
+    ? (await readdir(skillsDir(dir, runtime))).filter((n) => n.startsWith('adr-'))
     : [];
 
 test('add installs all 16 skills for each configured runtime and registers `adr` (Acc 2,3,4,6)', opts, async () => {
@@ -64,7 +64,7 @@ test('add installs all 16 skills for each configured runtime and registers `adr`
 
   assert.equal((await adrSkills(dir, 'claude')).length, 16, 'claude skills');
   assert.equal((await adrSkills(dir, 'codex')).length, 16, 'codex skills');
-  assert.ok((await adrSkills(dir, 'claude')).includes('aif-adr-migrate'), 'migration skill installed');
+  assert.ok((await adrSkills(dir, 'claude')).includes('adr-migrate'), 'migration skill installed');
   assert.match(aif(['adr', '--help'], dir), /init/);
 
   aif(['adr', 'init'], dir);
@@ -135,7 +135,7 @@ test('wave-1 lifecycle: propose → refine (draft) → accept, driven by the rea
   assert.equal((await adrSkills(dir, 'claude')).length, 16, 'claude skills');
   assert.equal((await adrSkills(dir, 'codex')).length, 16, 'codex skills');
   const acceptSkill = await readFile(
-    path.join(skillsDir(dir, 'claude'), 'aif-adr-accept', 'SKILL.md'),
+    path.join(skillsDir(dir, 'claude'), 'adr-accept', 'SKILL.md'),
     'utf8',
   );
   assert.doesNotMatch(acceptSkill, /Placeholder/, 'skill body authored');
@@ -196,7 +196,7 @@ test('wave-1 lifecycle: propose → refine (draft) → accept, driven by the rea
 });
 
 // Before `accepted` a body issue is advice, which is right while the document is being written
-// and wrong for `aif-adr-migrate`: it claims the file is finished. `--strict` is that claim.
+// and wrong for `adr-migrate`: it claims the file is finished. `--strict` is that claim.
 test('validate --strict fails a draft whose body is still prose', opts, async () => {
   const dir = await newProject('claude');
   aif(['extension', 'add', EXT_ROOT], dir);
@@ -310,10 +310,10 @@ test('wave-2 lifecycle: plan → finalize activates the ADR and archives the pla
 
   // The 3 P3 skill bodies are authored (not placeholders) and installed for both runtimes.
   for (const runtime of ['claude', 'codex']) {
-    for (const skill of ['aif-adr-plan', 'aif-adr-implement', 'aif-adr-finalize']) {
+    for (const skill of ['adr-plan', 'adr-implement', 'adr-finalize']) {
       const body = await readFile(path.join(skillsDir(dir, runtime), skill, 'SKILL.md'), 'utf8');
       assert.doesNotMatch(body, /Placeholder/, `${runtime}/${skill} authored`);
-      if (skill !== 'aif-adr-finalize') {
+      if (skill !== 'adr-finalize') {
         assert.match(body, /ai-factory adr status <adr-file>/, `${runtime}/${skill} checks dependencies`);
         assert.match(body, /confirm/i, `${runtime}/${skill} asks before continuing`);
       }
@@ -379,8 +379,8 @@ test('wave-3 lifecycle: supersede moves the old ADR to superseded and archives i
 
   // The P4 supersede skill body is authored (not a placeholder) and installed for both runtimes.
   for (const runtime of ['claude', 'codex']) {
-    const body = await readFile(path.join(skillsDir(dir, runtime), 'aif-adr-supersede', 'SKILL.md'), 'utf8');
-    assert.doesNotMatch(body, /Placeholder/, `${runtime}/aif-adr-supersede authored`);
+    const body = await readFile(path.join(skillsDir(dir, runtime), 'adr-supersede', 'SKILL.md'), 'utf8');
+    assert.doesNotMatch(body, /Placeholder/, `${runtime}/adr-supersede authored`);
   }
 
   const oldId = 'adr-old-storage';
