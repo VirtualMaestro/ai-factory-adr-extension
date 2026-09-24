@@ -137,8 +137,8 @@ Running a whole phase in one call:
 
 | Skill | Does | Constraint |
 |---|---|---|
-| `adr-auto-plan <topic or adr> ...` | propose, improve, accept and plan for a batch of ADRs | stops only for principled questions and the acceptance decision; commits nothing |
-| `adr-auto-implement [adr ...]` | implement, write tests, verify and review in fresh subagents, fix, finalize, commit and push | asks nothing and stops on a blocker; works on the current branch |
+| `adr-auto-plan <topic or adr> ...` | propose, improve, accept and plan for a batch of ADRs, update the docs, commit and push | stops only for principled questions and the acceptance decision; a rejected draft interrupts it until the operator says how to proceed |
+| `adr-auto-implement [adr ...]` | implement, write tests, verify and review in fresh subagents, fix, update the docs, finalize, commit and push | asks nothing and stops on a blocker; 1 commit per ADR on the current branch |
 
 The two phases stay separate on purpose. Planning often covers several ADRs at once, and one
 decision can wait on another's answer, so a batch rarely reaches implementation in the same
@@ -146,7 +146,8 @@ sitting. `adr-auto-plan` asks only what a `git revert` would not undo — a publ
 schema, a module boundary, a protocol, a dependency, a destructive action, or a goal no
 research can settle — decides the rest itself and lists those picks in its report. It asks
 once, when no ADR in the batch can advance without the operator, and accepting stays the
-operator's call. `adr-auto-implement` asks nothing: a question there means the plan left a
+operator's call: rejecting a draft interrupts the run, which accepts and commits nothing until
+the operator says what to change. `adr-auto-implement` asks nothing: a question there means the plan left a
 gap, so it stops, leaves the ADR `accepted` and commits nothing for it.
 
 Both end with a table of one row per stage, pass and round, including a row with the reason

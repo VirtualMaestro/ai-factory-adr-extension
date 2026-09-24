@@ -52,8 +52,8 @@ off_flow_skills:
 | `adr-reconcile <target>` | adjudicates a second reviewer's proposed improvements, adopting and rejecting each with a reason | never advances status, never implements |
 | `adr-next` | reads the `depends_on` graph and recommends what to implement next | ready means `accepted` with all dependencies `active`; also reports order, blocked ADRs, cycles |
 | `adr-migrate` | brings a project's pre-existing legacy ADRs into this lifecycle | one-time; run it before authoring new ADRs there |
-| `adr-auto-plan <topic or adr> ...` | runs propose, improve, accept and plan for a batch of ADRs in 1 call | asks only principled questions, and the operator approves each acceptance |
-| `adr-auto-implement [adr ...]` | runs implement, tests, verify, review, fix, finalize, commit and push in 1 call | asks nothing, stops on a blocker, and stays on the current branch |
+| `adr-auto-plan <topic or adr> ...` | runs propose, improve, accept, plan, docs, commit and push for a batch of ADRs in 1 call | asks only principled questions, and the operator approves each acceptance; a rejection interrupts the run |
+| `adr-auto-implement [adr ...]` | runs implement, tests, verify, review, fix, docs, finalize, commit and push in 1 call | asks nothing, stops on a blocker, and makes 1 commit per ADR on the current branch |
 
 status_directories:
 - each status maps to one directory under the ADR root, default `docs/adr/`: `proposals/`, `drafts/`, `accepted/`, `active/`, `superseded/`

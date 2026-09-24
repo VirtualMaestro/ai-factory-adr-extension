@@ -4,6 +4,25 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and the project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [4.2.0] — 2026-09-24
+
+### Changed
+
+- **A planned and implemented feature is now two commits.** `adr-auto-plan` used to leave its
+  files uncommitted, and `adr-auto-implement` made two commits per ADR: the code, then the
+  `adr-finalize` move. Both skills now end by updating the project documentation the change
+  makes incorrect and the project memory the runtime keeps, then commit once and push to the
+  current branch. Planning commits the ADRs, plans and documents of its batch; implementation
+  commits each ADR's code, tests, documents, ADR move and plan archive together. `evidence:` no
+  longer cites a commit id, since the ADR lands in the commit it would cite; `git log --
+  <adr-file>` finds it. Planning documents only what an accepted decision makes incorrect and
+  leaves documents of current behaviour to implementation.
+- **Rejecting a draft interrupts `adr-auto-plan`.** At the acceptance gate the operator reads
+  each draft and approves or rejects it. A rejection stops the run with nothing accepted and
+  nothing committed, until the operator says what to change; the run applies that through
+  `adr-improve` and returns to the gate. An approval carries over when the later passes leave
+  that draft unchanged.
+
 ## [4.1.0] — 2026-09-24
 
 ### Added
