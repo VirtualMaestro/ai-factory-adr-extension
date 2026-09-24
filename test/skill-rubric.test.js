@@ -14,7 +14,7 @@ const FULL = [
   'adr-plan-improve'
 ];
 const SHORT = ['adr-implement', 'adr-verify', 'adr-verify-all', 'adr-check-consistency', 'adr-finalize', 'adr-accept'];
-const NONE = ['adr-next', 'adr-migrate', 'adr-supersede', 'adr-status', 'adr-overview'];
+const NONE = ['adr-next', 'adr-auto-plan', 'adr-auto-implement', 'adr-migrate', 'adr-supersede', 'adr-status', 'adr-overview'];
 
 const HEADING = 'quality_rules:';
 

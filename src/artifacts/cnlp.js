@@ -1,6 +1,6 @@
 // CNL-P itself — the standard, the checker and the generic profiles — lives in `cnlp-kit`. This
 // adapter exists for one reason: it names this repository as a profile root, so `profiles/skill.md`
-// (the 24 sections the 16 ADR skills actually use) shadows the generic profile the package ships.
+// (the 25 sections the 18 ADR skills actually use) shadows the generic profile the package ships.
 // Everything else passes through untouched.
 export * from 'cnlp-kit';
 

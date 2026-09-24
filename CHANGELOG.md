@@ -4,6 +4,31 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and the project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [4.1.0] — 2026-09-24
+
+### Added
+
+- **`adr-auto-plan` runs the planning phase in one call.** Propose, improve, accept, plan and
+  plan-improve used to be five to seven manual invocations per ADR, each able to stop on a
+  question of any weight. The new skill takes a batch of topics or ADR files, continues each
+  from its current status, and asks only principled questions: an option a `git revert` does
+  not undo, a destructive action, or a goal no research can settle. It decides minor questions
+  itself and lists them in its report. It stops once, when no ADR of the batch can advance
+  without the operator, and it accepts nothing the operator has not approved. It also reads
+  the drafts of a batch against each other, which `ai-factory adr decisions` cannot do: that
+  digest covers only accepted and active ADRs.
+- **`adr-auto-implement` runs the implementation phase in one call, with no questions.** Per
+  ADR in dependency order: implement the whole plan, write automated tests from `aif-qa` test
+  cases, check the change with `adr-verify` and `aif-review` in fresh subagents, fix, repeat for
+  at most three rounds, then commit, finalize and push to the current branch. A blocker stops
+  the run with the ADR still `accepted` and nothing of it committed. The implementation commit
+  lands before `adr-finalize`, so `evidence:` can cite it.
+
+### Fixed
+
+- **The packaging test runs on npm 12.** `npm pack --json` now prints an object keyed by
+  package name instead of an array, and the test read it as an array.
+
 ## [4.0.1] — 2026-09-14
 
 ### Changed

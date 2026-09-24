@@ -4,12 +4,12 @@ Open items only. The MVP build log (verification spike, epics P0–P4, coverage 
 finished; it described the pre-1.6 body format in places and was history, not guidance, so it
 lives in Git history now and nowhere else.
 
-**Current state:** 3.0.0 · 16 skills · 143 tests green · CNL-P comes from the
+**Current state:** 4.1.0 · 18 skills · 141 tests green · CNL-P comes from the
 [`cnlp-kit`](https://www.npmjs.com/package/cnlp-kit) package. The standard, the checker and the
 generic profiles live there and are upgraded by bumping a dependency; this repository keeps one
-overlay, `profiles/skill.md`, which names the 24 sections its own skills use. `src/artifacts/cnlp.js`
+overlay, `profiles/skill.md`, which names the 25 sections its own skills use. `src/artifacts/cnlp.js`
 is the adapter that makes the overlay win over the packaged `skill` profile and passes everything
-else through. All 16 skill bodies and `templates/adr.md` are clean against the current checks, with
+else through. All 18 skill bodies and `templates/adr.md` are clean against the current checks, with
 no skill exempt from its profile. An adopting project reaches the standard and the profiles through
 `ai-factory adr format`, never by path — the files themselves ride in as a bundled dependency,
 since ai-factory installs an extension by `npm pack` and never runs `npm install`.

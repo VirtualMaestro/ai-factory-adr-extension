@@ -58,12 +58,12 @@ const adrSkills = async (dir, runtime) =>
     ? (await readdir(skillsDir(dir, runtime))).filter((n) => n.startsWith('adr-'))
     : [];
 
-test('add installs all 16 skills for each configured runtime and registers `adr` (Acc 2,3,4,6)', opts, async () => {
+test('add installs all 18 skills for each configured runtime and registers `adr` (Acc 2,3,4,6)', opts, async () => {
   const dir = await newProject('claude,codex');
   aif(['extension', 'add', EXT_ROOT], dir);
 
-  assert.equal((await adrSkills(dir, 'claude')).length, 16, 'claude skills');
-  assert.equal((await adrSkills(dir, 'codex')).length, 16, 'codex skills');
+  assert.equal((await adrSkills(dir, 'claude')).length, 18, 'claude skills');
+  assert.equal((await adrSkills(dir, 'codex')).length, 18, 'codex skills');
   assert.ok((await adrSkills(dir, 'claude')).includes('adr-migrate'), 'migration skill installed');
   assert.match(aif(['adr', '--help'], dir), /init/);
 
@@ -73,7 +73,9 @@ test('add installs all 16 skills for each configured runtime and registers `adr`
 
 test('packed extension bundles its dependencies and loads in a clean initialized project', opts, async () => {
   const packDir = await mkdtemp(path.join(os.tmpdir(), 'adr-pack-'));
-  const packed = JSON.parse(npm(['pack', '--json', '--pack-destination', packDir], EXT_ROOT))[0];
+  // npm <= 11 prints an array of packages, npm 12 an object keyed by package name.
+  const out = JSON.parse(npm(['pack', '--json', '--pack-destination', packDir], EXT_ROOT));
+  const packed = Array.isArray(out) ? out[0] : Object.values(out)[0];
   // ai-factory installs an extension by `npm pack` → untar → copy, never `npm install`, so a
   // dependency that is not bundled is simply absent and `adr` fails to load with a warning.
   for (const dep of ['node_modules/yaml/package.json', 'node_modules/cnlp-kit/package.json']) {
@@ -132,8 +134,8 @@ test('wave-1 lifecycle: propose → refine (draft) → accept, driven by the rea
   aif(['adr', 'init'], dir);
 
   // Skills authored (no longer placeholders) and installed for both runtimes.
-  assert.equal((await adrSkills(dir, 'claude')).length, 16, 'claude skills');
-  assert.equal((await adrSkills(dir, 'codex')).length, 16, 'codex skills');
+  assert.equal((await adrSkills(dir, 'claude')).length, 18, 'claude skills');
+  assert.equal((await adrSkills(dir, 'codex')).length, 18, 'codex skills');
   const acceptSkill = await readFile(
     path.join(skillsDir(dir, 'claude'), 'adr-accept', 'SKILL.md'),
     'utf8',
@@ -426,7 +428,7 @@ test('re-adding does not duplicate skills or extension entries (Acc 7)', opts, a
   aif(['extension', 'add', EXT_ROOT], dir);
   aif(['extension', 'add', EXT_ROOT], dir); // second add
 
-  assert.equal((await adrSkills(dir, 'claude')).length, 16);
+  assert.equal((await adrSkills(dir, 'claude')).length, 18);
   const cfg = JSON.parse(await readFile(path.join(dir, '.ai-factory.json'), 'utf8'));
   const entries = (cfg.extensions ?? []).filter((e) => e.name === 'ai-factory-adr-extension');
   assert.equal(entries.length, 1, 'exactly one extension entry');

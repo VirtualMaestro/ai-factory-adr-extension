@@ -86,6 +86,7 @@ custom_sections:
 - plan_frontmatter
 - pre_1_6_overlay
 - pre_cnlp_overlay
+- principled_questions
 - report_format
 - retrieval_order_afterwards
 - rules_that_always_hold

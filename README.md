@@ -32,7 +32,7 @@ ai-factory extension add ai-factory-adr-extension        # npm
 The extension requires the valid `.ai-factory.json` marker created by
 `ai-factory init`; a directory named `.ai-factory/` alone is not sufficient.
 
-This installs the 16 skills into each configured runtime (`.claude/skills/`,
+This installs the 18 skills into each configured runtime (`.claude/skills/`,
 `.codex/skills/`) and registers the `adr` command. Then scaffold the ADR
 directories:
 
@@ -71,7 +71,7 @@ To remove the extension:
 ai-factory extension remove ai-factory-adr-extension
 ```
 
-Removal takes the 16 skills out of each runtime's skills directory and deletes
+Removal takes the 18 skills out of each runtime's skills directory and deletes
 the extension's own install directory. It leaves everything the extension wrote
 while running: your ADR root with all its documents, your plans, and
 `.ai-factory/adr-extension.yaml`. Adding the extension again therefore needs no
@@ -103,7 +103,7 @@ proposed    draft     accepted                          active
 
 ## Skills
 
-Sixteen skills, installed into every runtime the project configures — invoked as
+Eighteen skills, installed into every runtime the project configures — invoked as
 `/adr-propose` in Claude Code and `$adr-propose` in Codex. Start with
 **`/adr-overview`**: it maps every stage to its skill and states the
 retrieval/immutability rules, so it is the one name worth remembering.
@@ -132,6 +132,29 @@ Off the linear flow:
 | `adr-reconcile <target>` | adjudicates a second reviewer's proposed improvements, adopting and rejecting each with a reason | never advances status, never implements |
 | `adr-next` | reads the `depends_on` graph and recommends what to implement next | ready means `accepted` with all dependencies `active`; also reports order, blocked ADRs, cycles |
 | `adr-migrate` | brings a project's pre-existing legacy ADRs into this lifecycle | one-time; run it before authoring new ADRs there |
+
+Running a whole phase in one call:
+
+| Skill | Does | Constraint |
+|---|---|---|
+| `adr-auto-plan <topic or adr> ...` | propose, improve, accept and plan for a batch of ADRs | stops only for principled questions and the acceptance decision; commits nothing |
+| `adr-auto-implement [adr ...]` | implement, write tests, verify and review in fresh subagents, fix, finalize, commit and push | asks nothing and stops on a blocker; works on the current branch |
+
+The two phases stay separate on purpose. Planning often covers several ADRs at once, and one
+decision can wait on another's answer, so a batch rarely reaches implementation in the same
+sitting. `adr-auto-plan` asks only what a `git revert` would not undo — a public API, a data
+schema, a module boundary, a protocol, a dependency, a destructive action, or a goal no
+research can settle — decides the rest itself and lists those picks in its report. It asks
+once, when no ADR in the batch can advance without the operator, and accepting stays the
+operator's call. `adr-auto-implement` asks nothing: a question there means the plan left a
+gap, so it stops, leaves the ADR `accepted` and commits nothing for it.
+
+Both end with a table of one row per stage, pass and round, including a row with the reason
+for every stage they skipped, so a missing step shows as a missing row. An `improve` or
+`plan-improve` sequence is complete only when its last row reads `converged` (a pass that
+changed nothing) or it hit its pass limit. Most rows can be checked against something the
+agent did not write: `ai-factory adr status` for each status, `git log` for the commit ids,
+and the ADR's `evidence:` for the commit `adr-finalize` cites.
 
 ### When an ADR is not the tool
 
