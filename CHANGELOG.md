@@ -4,6 +4,15 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and the project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [4.2.1] — 2026-09-24
+
+### Changed
+
+- **`adr-auto-plan` allows up to five improvement passes.** Improving an ADR stopped after three
+  passes and improving a plan after two, which cut runs short while the agent still found
+  changes to make. Both now stop after five. An ADR still changing after pass five is marked
+  unsettled as before, and a plan still changing is now reported as unsettled too.
+
 ## [4.2.0] — 2026-09-24
 
 ### Changed

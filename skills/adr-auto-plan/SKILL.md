@@ -36,7 +36,7 @@ workflow:
 2. apply `adr-propose` to each topic, and drop a topic whose preconditions fail, recording where the fact belongs instead
 3. order the batch so that an ADR whose decision rests on the decision of another ADR of the batch follows that ADR
 4. apply `adr-improve` to each `proposed` or `draft` ADR in batch order, and repeat the pass until 1 pass changes no `decision:`, `scope:`, `constraints:` or `rules:` line
-5. stop the passes on an ADR after pass 3, and mark it unsettled for the stop in step 8
+5. stop the passes on an ADR with passes per ADR <= 5, and mark an ADR still changing after pass 5 unsettled for the stop in step 8
 6. park an ADR on a principled question at any stage, and continue with the ADRs that do not rest on it
 7. read each draft of the batch in full against every other draft, and record each contradiction as a principled question
 8. stop when no ADR of the batch can advance without the operator: present every open principled question, then every draft ready for acceptance
@@ -49,7 +49,7 @@ workflow:
 15. apply `adr-plan` to each `accepted` ADR without a plan, in the order `ai-factory adr order` reports
 16. skip `adr-plan` for a documentation-only ADR: `adr-auto-implement` finalizes it with no plan
 17. record the dependency warnings `adr-plan` states and continue: a plan may rest on an ADR not yet implemented, and the implementation phase waits for it
-18. apply `adr-plan-improve` to each plan this run created, and repeat the pass until 1 pass changes no task, with plan passes per plan <= 2
+18. apply `adr-plan-improve` to each plan this run created, and repeat the pass until 1 pass changes no task, with plan passes per plan <= 5, and record a plan still changing after pass 5 as unsettled for the report
 19. update each project document that an accepted decision makes incorrect, applying `aif-docs` semantics inline: `.ai-factory/DESCRIPTION.md`, `.ai-factory/ARCHITECTURE.md`, `AGENTS.md`, `README.md`, the docs directory
 20. leave a document that describes current behaviour for the implementation phase: the code does not change in this run
 21. update the project memory the runtime keeps with each durable fact of the run that it lacks, such as a convention the operator stated
