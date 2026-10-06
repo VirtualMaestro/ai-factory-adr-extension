@@ -4,6 +4,44 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and the project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [4.3.0] — 2026-10-06
+
+### Changed
+
+- **`adr-auto-implement` sees a test fail before every fix of a behaviour.** A fix used to need
+  no test, so a bug the review rounds caught could come back unseen, and a fix could trade one
+  bug for another. Now the run writes a test that reproduces each finding and sees it fail on the
+  unfixed code, then fixes it. A fix that changes a condition, a `catch` or a status code also
+  gets a test for each outcome it must keep. A failing test is the regression test of its own
+  fix, and a structural deviation needs none, since verify checks it every round.
+- **An untested case no longer passes silently.** A test case or a fix that no harness of the
+  project can check is recorded as `needs <harness>` or `manual`. Each one becomes an
+  `Untested:` line in the ADR's commit body and counts in the new `untested:` field of the status
+  footer.
+- **A flaky failure is a finding.** The run no longer reruns a failing test until it passes; it
+  fixes the cause, in the harness or in the product.
+- **`adr-plan` writes 1 test task per user-visible scenario** the decision adds, each naming the
+  failure it prevents. `adr-implement` writes those tests with the rest of the plan, and the
+  exploratory agent below walks them.
+
+### Added
+
+- **An optional acceptance step in `adr-auto-implement`.** An `adr.acceptance` block in
+  `.ai-factory/adr-extension.yaml` names a project command, such as a browser suite against mock
+  executors, and optionally an exploratory agent with its instructions file. The command runs
+  once before the first ADR, where a failure stops the run, and then every round, where a failure
+  is a failing test. The agent drives the running product through the ADR's scenarios in the
+  first round where the tests and the command pass; an anomaly it reports becomes a finding only
+  when a test reproduces it. Projects without the block run as before, and the report says the
+  step was skipped. The README's Configuration section has the block and a skeleton of the
+  instructions file.
+
+### Fixed
+
+- **The README sent readers to `evidence:` for the commit of an implemented ADR.** Since 4.2.0
+  `adr-auto-implement` writes `evidence:` without a commit id, because the ADR lands in the commit
+  it would cite. The README now points to `git log -- <adr-file>`.
+
 ## [4.2.1] — 2026-09-24
 
 ### Changed

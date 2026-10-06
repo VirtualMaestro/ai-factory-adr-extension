@@ -138,7 +138,7 @@ Running a whole phase in one call:
 | Skill | Does | Constraint |
 |---|---|---|
 | `adr-auto-plan <topic or adr> ...` | propose, improve, accept and plan for a batch of ADRs, update the docs, commit and push | stops only for principled questions and the acceptance decision; a rejected draft interrupts it until the operator says how to proceed |
-| `adr-auto-implement [adr ...]` | implement, write tests, verify and review in fresh subagents, fix, update the docs, finalize, commit and push | asks nothing and stops on a blocker; 1 commit per ADR on the current branch |
+| `adr-auto-implement [adr ...]` | implement, write tests, run the optional acceptance step, verify and review in fresh subagents, fix each finding after a test that fails on it, update the docs, finalize, commit and push | asks nothing and stops on a blocker; 1 commit per ADR on the current branch, with a body line per untested case |
 
 The two phases stay separate on purpose. Planning often covers several ADRs at once, and one
 decision can wait on another's answer, so a batch rarely reaches implementation in the same
@@ -155,7 +155,7 @@ for every stage they skipped, so a missing step shows as a missing row. An `impr
 `plan-improve` sequence is complete only when its last row reads `converged` (a pass that
 changed nothing) or it hit its pass limit. Most rows can be checked against something the
 agent did not write: `ai-factory adr status` for each status, `git log` for the commit ids,
-and the ADR's `evidence:` for the commit `adr-finalize` cites.
+and `git log -- <adr-file>` for the commit that landed each ADR.
 
 ### When an ADR is not the tool
 
@@ -279,6 +279,52 @@ once to generate it), set `adr.root`, then run `init`.
 
 Commands and `adr status --check` resolve this setting automatically, including
 when the root is outside AI Factory's default audit paths.
+
+**The acceptance step of `adr-auto-implement` is optional.** Without the block
+below, the run skips it and says so in its report:
+
+```yaml
+adr:
+  acceptance:
+    command: npm run test:browser:mock       # once before the first ADR, then every round
+    exploratory:
+      instructions: docs/testing/exploratory-acceptance.md
+      rounds: 1                              # rounds per ADR that may start the agent
+```
+
+- `command` is a deterministic project command, such as a browser suite against
+  mock executors. A failure before the first ADR stops the run, because the run
+  did not cause it. A failure in a round is a failing test of that round.
+- `exploratory` starts a fresh agent that drives the running product through the
+  ADR's scenarios, in the first round where the tests and `command` pass. An
+  anomaly it reports becomes a finding only when a test reproduces it.
+- The instructions file tells the agent how to start, check and stop the app,
+  which tools to use, and what it must not touch or pay for. The run stops when
+  the file is missing. A skeleton:
+
+```markdown
+## Start
+npm run build && npm run start:mock    # mock executors, no paid provider
+
+## Ready when
+GET http://localhost:3000/health returns 200
+
+## Stop
+the process started above, and nothing else
+
+## Tools
+the browser tools of the runtime, such as Playwright through MCP
+
+## Never
+the live provider, the production database, any paid API
+
+## Artifacts
+.acceptance/   # ignored by git
+```
+
+Write every output of `command` and of the agent to a path git ignores. The
+first check of the next run stops on any change outside the ADR root, the plans
+directory and the QA directory, so a stray `playwright-report/` blocks it.
 
 ## Current scope
 

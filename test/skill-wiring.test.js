@@ -76,6 +76,23 @@ test('adr-migrate carries over by hand and proves it', async () => {
   assert.match(body, /^18\. state, for each item of the list from step 13/m, 'nothing forces the rewrite to account for what the original said');
 });
 
+// A test written after its fix never saw the bug: it passes on the fixed code and proves nothing.
+test('adr-auto-implement sees a test fail before it fixes a finding', async () => {
+  const body = await skillBody('adr-auto-implement');
+  const steps = body.split(/\r?\n/).filter((l) => /^\d+\. /.test(l));
+  const red = steps.findIndex((l) => /^\d+\. write a test that reproduces/.test(l) && /see it fail/.test(l));
+  const fix = steps.findIndex((l) => /^\d+\. fix every listed finding/.test(l));
+  assert.ok(red >= 0 && fix >= 0, 'both the failing-test step and the fix step must exist');
+  assert.ok(red < fix, 'the failing test must come before the fix');
+});
+
+test('adr-auto-implement fixes no anomaly that no test reproduces', async () => {
+  const body = await skillBody('adr-auto-implement');
+  const step = body.split(/\r?\n/).find((l) => /^\d+\. record an anomaly no test reproduces/.test(l));
+  assert.ok(step, 'no step records an anomaly no test reproduces');
+  assert.match(step, /do not fix it/, 'an observation of a non-deterministic agent would drive a fix');
+});
+
 test('adr-accept checks the conflict precondition against the corpus', async () => {
   const body = await skillBody('adr-accept');
   assert.match(body, /resolves .*every conflict with an active ADR/, 'the precondition still stands');

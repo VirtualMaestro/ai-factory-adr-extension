@@ -68,12 +68,13 @@ workflow:
 4. name any `issues:` entry for another ADR to the operator, then continue
 5. open in full the ADRs whose `decision:`, `constraints:`, `scope:` or `rules:` touch the work this plan will do
 6. state every dependency warning it reports to the operator and confirm they want to continue before creating the plan
-7. create the plan by applying `aif-plan full` planning semantics in this run, with the frontmatter above
-8. run `ai-factory adr link-plan <adr-file> <plan-file>`: it sets the ADR's `plan:` field to the plan id and adds `implements` and `depends_on` to the plan, leaving the ADR body untouched
-9. leave `evidence:` empty
-10. run `ai-factory adr status --check` and resolve any failures; it honors the configured ADR root
-11. leave the ADR `accepted`
-12. report the status footer
+7. create the plan by applying `aif-plan full` planning semantics in this run, with the frontmatter above and 1 test task per user-visible scenario the decision adds
+8. name in each test task the failure it prevents: a plan-improve pass drops an obligation that names no failure
+9. run `ai-factory adr link-plan <adr-file> <plan-file>`: it sets the ADR's `plan:` field to the plan id and adds `implements` and `depends_on` to the plan, leaving the ADR body untouched
+10. leave `evidence:` empty
+11. run `ai-factory adr status --check` and resolve any failures; it honors the configured ADR root
+12. leave the ADR `accepted`
+13. report the status footer
 
 expected_warnings:
 - the built-in `audit-artifacts` warning "Accepted ADR without `affects` links" is expected while `affects` is honestly empty, and is safe to accept
