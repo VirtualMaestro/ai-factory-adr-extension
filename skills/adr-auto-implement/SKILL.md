@@ -96,9 +96,9 @@ report_format:
 ```
 
 status_footer:
-  format: "✔ adr-auto-implement · active: <n> · untested: <k> · stopped at: <adr-id or none> · pushed: <branch or no>"
+  format: "✔ adr-auto-implement: <adr-id, ...> · active: <n> · untested: <k> · stopped at: <adr-id or none> · pushed: <branch or no>"
   source: `ai-factory adr status` for each ADR of the run
-  note: untested counts the records of steps 10 and 26 across the ADRs the run committed
+  note: the list names each ADR the run took up, in run order, or `none` when the run stopped before the first; untested counts the records of steps 10 and 26 across the ADRs the run committed
 
 invocation:
 - Claude Code: `/adr-auto-implement [@adr-file ...]`

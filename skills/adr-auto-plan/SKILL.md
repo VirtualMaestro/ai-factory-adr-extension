@@ -81,9 +81,9 @@ Minor picks:
 ```
 
 status_footer:
-  format: "✔ adr-auto-plan · planned: <n> · waiting: <m> · dropped: <k> · pushed: <branch or no> → adr-auto-implement"
+  format: "✔ adr-auto-plan: <adr-id, ...> · planned: <n> · waiting: <m> · dropped: <k> · pushed: <branch or no> → adr-auto-implement"
   source: `ai-factory adr status` for each ADR of the batch, where waiting counts the ADRs still `proposed` or `draft`
-  note: a rerun on the files the report lists continues each ADR from its status
+  note: the list names each ADR of the batch, in batch order; a rerun on the files the report lists continues each ADR from its status
 
 invocation:
 - Claude Code: `/adr-auto-plan <topic or @adr-file> ...`

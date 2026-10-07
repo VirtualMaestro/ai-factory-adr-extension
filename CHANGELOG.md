@@ -4,6 +4,16 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and the project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [4.3.1] — 2026-10-07
+
+### Changed
+
+- **The status footers of `adr-auto-implement` and `adr-auto-plan` name their ADRs.** The footer
+  gave only counts, so finding out which ADRs a run took meant scrolling back to its start. Now
+  the ADR ids follow the skill name, in run order:
+  `✔ adr-auto-implement: adr-0012-cache-layer · active: 1 · …`. A run that stopped before its
+  first ADR shows `none`.
+
 ## [4.3.0] — 2026-10-06
 
 ### Changed
