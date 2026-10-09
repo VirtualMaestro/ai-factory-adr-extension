@@ -1,6 +1,6 @@
 # Proposal — `LIVE.md`, the current state of the project, merged when a change is done
 
-Written 2026-10-09 and revised 4 times the same day. The revisions followed 3 independent reviews against the code,
+Written 2026-10-09 and revised 5 times the same day. The revisions followed 4 independent reviews against the code,
 the AI Factory core skills and the CNL-P checker, the operator's decisions, and live probes in Codex and Claude Code
 (§9, §10).
 This is a proposal, not a governed artifact. It is prose and deliberately not CNL-P.
@@ -170,9 +170,10 @@ sources only**.
 **Superseded refs.** Both legal orders of `adr-supersede` are covered (`src/lifecycle/supersede.js:10,27` accepts a
 replacement that is `accepted` or `active`):
 
-- **Supersede first, finalize later.** Applying an ADR with a non-empty `supersedes:` rewrites refs. That covers
-  `finalize`, a standalone `adr live apply` and `--pending`. Every entry that refs a superseded id and that the delta
-  does not name gets that id replaced by the new one, with a warning naming those entries.
+- **Supersede first, finalize later.** Applying an ADR with a non-empty `supersedes:` rewrites refs, whatever its
+  delta: a `changes:` delta and a `none:` delta alike. That covers `finalize`, a standalone `adr live apply` and
+  `--pending`. Every entry that refs a superseded id and that the delta does not name gets that id replaced by the new
+  one, with a warning naming those entries.
 - **Finalize first, supersede later.** At finalize, `supersedes:` is still empty (`supersedeLink` writes it later,
   `src/artifacts/links.js:46`). So `adr supersede` performs the same rewrite when the new ADR is `active`, inside its
   own `withFileRollback`, and stages `LIVE.md`. Whether the new ADR is applied does not matter: an imported active ADR
@@ -192,6 +193,9 @@ previewed.
 
 **Idempotency.** A source whose delta already has `applied:` is refused with `already applied on <date>`, exit 1.
 `--pending` skips it silently.
+
+**No-op writes.** `LIVE.md` is written and staged only when the render differs from the file on disk. A `none:` delta
+with no rewrite to do changes nothing, so it cannot reorder or stage a hand-edited file.
 
 **Rendering.**
 
@@ -215,8 +219,9 @@ record. The first `added` replaces it, and the last `removed` restores it.
    `evidence:`, which `adr-finalize` step 5 always writes. `transition` re-reads the file from disk
    (`src/lifecycle/move.js:46`), so `live.applied` must be on disk before it. This is the only real ordering
    constraint.
-4. `transition`, then `archivePlan`, then write `LIVE.md`, then `stageMove(livePath)`. That helper is a plain
-   `git add` (`src/util/git.js`). An archive collision (`src/lifecycle/archive.js:27-33`) is the rollback test.
+4. Write `LIVE.md`, then `transition`, then `archivePlan`, then `stageMove(livePath)`. That helper is a plain
+   `git add` (`src/util/git.js`). `LIVE.md` is written first so that an archive collision
+   (`src/lifecycle/archive.js:27-33`) is a real rollback test for it.
 
 On a failure, the rollback runs `git add` on every restored file (`safe-path.js:63`), so an operator's unstaged edit
 to `LIVE.md` ends up staged. The ADR file already behaves this way today.
@@ -237,8 +242,8 @@ Lookup, in this order, and every hit is counted:
 - `resolveInside` throws on a path outside the project (`src/util/safe-path.js:13-20`). The resolver maps that to
   `broken-ref` and does not crash.
 - A trailing `/` is dropped.
-- A path hit must match the case of the name on disk, compared with `readdir`. Otherwise `existsSync` succeeds on
-  Windows and the ref breaks on Linux CI.
+- A path hit and a plan-stem hit must match the case of the name on disk, compared with `readdir`. Otherwise
+  `existsSync` succeeds on Windows and the ref breaks on Linux CI.
 - Shape alone is not enough, as the audit showed:
   - a branch named `adr-foo` gives the plan stem `adr-foo`, which matches `ID_RE` (`src/artifacts/id.js:4`);
   - a stem such as `v1.2-api` looks like a file name;
@@ -255,12 +260,25 @@ Lookup, in this order, and every hit is counted:
   Existing projects keep working.
 - **The gate is in the CLI, at the 2 transitions that matter** (D5), when `LIVE.md` exists:
   - `adr transition <file> accepted` refuses an ADR with an absent or malformed `live:`, in the house error shape with
-    `next: write live: or none:, see adr-improve`. `adr-accept` reaches that command at step 6
+    `next: write live: with changes: or none:, see adr-improve`. `adr-accept` reaches that command at step 6
     (`skills/adr-accept/SKILL.md:55`), before any plan or code exists;
   - `adr finalize` refuses the same. Today it never calls `validateAdr` (`src/lifecycle/finalize.js:16-53`), so
     finalize step 1 checks it itself (§3.4).
-- **`validateAdr` reports a missing `live:` only for an ADR in `accepted`,** as an error, and as a warning while it is
-  `proposed` or `draft`. **Not for `active`.** The overview `adr status --check`, which every skill runs
+- Two paths put a file into `accepted/` without `transition`, and both bypass the CLI refusal:
+  - `adr import --status accepted` writes the template directly (`src/artifacts/import.js:63-68`);
+  - `adr-migrate` uses `git mv` into the status directory (`skills/adr-migrate/SKILL.md:92`).
+
+  `validateAdr` catches both. `adr-migrate` runs `adr validate --strict` (`:69`), which also fails on the `proposed` and
+  `draft` warning. So when `LIVE.md` exists, `adr-migrate` writes `live:` on every file it migrates.
+- **`validateAdr` reports an absent or malformed `live:` only for an ADR in `accepted`,** as an error, and as a warning
+  while it is `proposed` or `draft`. **Not for `active`.**
+- **Accepted ADRs already in flight at opt-in turn the overview `--check` red. This is intended**: they are the ADRs
+  that would reach finalize with no delta. The route out:
+  - `adr live init` lists every accepted ADR without `live:`, with `next: add live: by hand, or run adr-live-seed`;
+  - an accepted ADR is not protected by PRD §18.3, so adding `live:` is an ordinary edit;
+  - `adr-improve` cannot help here: returning an accepted ADR with a plan to `draft` is refused
+    (`src/lifecycle/move.js:79-89`);
+  - the phase 2 seed backfills accepted ADRs too. The overview `adr status --check`, which every skill runs
   (`adr-accept:51`, `adr-plan:75`, `adr-implement:47`, `adr-finalize:61`, `adr-supersede:44` and others), counts the
   `validateAdr` errors of every ADR (`src/status.js:70-71`). An error on `active` would turn every existing project red
   from `adr live init` until phase 2's backfill. An active ADR without `live:` is the `missing-delta` check code
@@ -279,7 +297,7 @@ All are subcommands of `adr`, so `extension.json` keeps 1 command (`test/extensi
 |---|---|---|
 | `adr live` | prints `LIVE.md` | 0; 1 with `run adr live init` when absent |
 | `adr live init` | creates the file with `title`, `since: <today>` and the `- none:` line | 1 if it exists |
-| `adr live apply <file> [--dry-run]` | applies an ADR (finalize does this for you; standalone only for an active ADR without `applied:`), a plan entrypoint, a bundle directory or a plan file anywhere (`aif-implement` accepts `@plan-file` anywhere; outside the plan directories the ref is the repository path). `--dry-run` works on an ADR of any status and on any plan, prints the effect, the warnings and the guard, and writes nothing | 1 on error; 0 with `skipped: …` when `LIVE.md` is absent, the plan is linked to an ADR, or the source is a `none:` delta |
+| `adr live apply <file> [--dry-run]` | applies an ADR (finalize does this for you; standalone only for an active ADR without `applied:`), a plan entrypoint, a bundle directory or a plan file anywhere (`aif-implement` accepts `@plan-file` anywhere; outside the plan directories the ref is the repository path). `--dry-run` works on an ADR of any status and on any plan, prints the effect, the warnings and the guard, and writes nothing | 1 on error; 0 with `skipped: …` when `LIVE.md` is absent, the plan is linked to an ADR, or nothing changed (a `none:` delta with no superseded-ref rewrite) |
 | `adr live apply --pending` | applies every source that `unapplied-delta` reports | 1 if any failed; 0 with `skipped: no LIVE.md` when absent |
 | `adr live check [--json]` | the coded issues below | always 0, like `adr decisions` |
 
@@ -288,8 +306,8 @@ All are subcommands of `adr`, so `extension.json` keeps 1 command (`test/extensi
 - by the date of the last commit that touched the source (`git log -1 --format=%cI -- <file>`), falling back to the
   file's mtime. For a file that moved (an archived plan, an activated ADR), that is the date of the move commit,
   which is the moment the change was done;
-- `added` before `modified` before `removed` only between sources with the same date. Otherwise date order wins, so a
-  remove-then-re-add across 2 sources applies correctly;
+- date order wins. Between sources with the same date (`%cI` has second granularity, so 2 ADRs finalized in 1 commit
+  share it), the order is `removed`, then `added`, then `modified`, so a remove-then-re-add applies correctly;
 - 2 pending `added` on 1 id both fail, named;
 - it continues past a failure and lists every failure. The applies that succeeded stay written and staged, so the
   result is partial; run `--pending` again after fixing. Exit 1 if there was any failure.
@@ -492,8 +510,8 @@ declared in `profiles/skill.md` `custom_sections`. Imperative mood forbids the p
   - write `live:` or `none:` with a reason, with the summary double-quoted and written by the lexicon of
     `ai-factory adr format`;
   - run `adr live apply <adr> --dry-run`.
-- `adr-accept`: a precondition that `live:` or `none:` is present when `LIVE.md` exists, with `adr-improve` as the next
-  step when it is not. Show the delta and the `--dry-run` output to the operator with the decision. The CLI refusal
+- `adr-accept`: a precondition that `live:` with `changes:` or `none:` is present when `LIVE.md` exists, with
+  `adr-improve` as the next step when it is not. Show the delta and the `--dry-run` output to the operator with the decision. The CLI refusal
   at step 6 backs it up.
 - `adr-finalize`:
   - run `--dry-run`;
@@ -503,7 +521,8 @@ declared in `profiles/skill.md` `custom_sections`. Imperative mood forbids the p
 - `adr-supersede`: report the ref rewrite and `adr live check`. Add `live:` to its non-material list (`:30`).
 - `adr-reconcile`: allow a suggestion on `live:` while the ADR is not active. Today it forbids every frontmatter edit
   (`:27`).
-- `adr-migrate`: add `live` to the frontmatter fields its `file_shape` lists (`:94`).
+- `adr-migrate`: add `live` to the frontmatter fields its `file_shape` lists (`:94`). When `LIVE.md` exists, every
+  migrated file gets `live:`, because its `validate --strict` step (`:69`) fails on the warning too (§3.6).
 - `adr-auto-implement`:
   - step 3 stays as it is. A dirty `LIVE.md` at the start comes from an interrupted run and must stop this one. Each
     ADR's commit takes its own `LIVE.md` change, so the file is clean between ADRs;
@@ -551,7 +570,11 @@ Gate, with the file present and no `live:`:
 
 With the file absent, `adr live apply` exits 0 with `skipped: no LIVE.md`.
 
-Supersede: both orders end with the refs rewritten.
+Supersede: both orders end with the refs rewritten, for a `changes:` successor and for a `none:` successor.
+
+No-op: an apply that changes nothing leaves `LIVE.md` byte-identical and unstaged.
+
+Init: `adr live init` lists the accepted ADRs without `live:`.
 
 Apply twice: refused the second time.
 
@@ -567,6 +590,8 @@ Check: every code of `adr live check` on a fixture.
   - it backfills every active ADR: `live:` with `changes` for the entries whose refs name it, plus
     `applied: <since>`, or `none:` with a reason. That edit is non-material (§5.1 Q4), and `missing-delta` is clean
     from day 1;
+  - it backfills every accepted ADR the same way, without `applied:`: their finalize applies it. This clears the red
+    overview `--check` of §3.6;
   - it lists completed plans still in `paths.plans`, for the operator to archive or give a fence.
 
   A capability with no document gets a repository-path ref.
@@ -651,8 +676,9 @@ Steps:
 6. Improve the plan by `aif-improve` semantics, at most 5 passes, as `adr-auto-plan` allows. After each pass, check
    that the fence still parses.
 7. Run `adr live apply <entrypoint> --dry-run`, and rewrite the summary until it passes.
-8. Implement every task by `aif-implement` semantics, with no commit between tasks. The installed `aif-implement`
-   carries the phase 3 injection, so the apply may already run here.
+8. Implement every task by `aif-implement` semantics, with no commit between tasks, and without the apply step that
+   the phase 3 injection adds to the installed `aif-implement`. Step 12 is the only apply: an apply here would set
+   `applied:`, and the correction of step 12 would then never reach `LIVE.md`.
 9. Tests, as in `adr-auto-implement` steps 9–12: `aif-qa`, an automated test per checkable case, the project's test
    suite, and `adr.acceptance.command` when it is set.
 10. Run 2 fresh read-only subagents, and the exploratory one when configured, at most 3 rounds:
@@ -663,8 +689,7 @@ Steps:
 11. Update the documents the change makes incorrect, as in `adr-auto-implement` step 29, and the project memory as in
     its step 30.
 12. Check that the fence still matches what was built, and correct it when it does not. Then run
-    `ai-factory adr live apply <entrypoint>`, unless the fence already has `applied:` from step 8. Stop on failure,
-    and commit nothing.
+    `ai-factory adr live apply <entrypoint>`. Stop on failure, and commit nothing.
 13. Archive the plan by `aif-archive` semantics (§5.3 B).
 14. Commit by `aif-commit` without its push step, in 1 commit with `Untested:` lines. Stage by name:
     - code and tests;
@@ -675,10 +700,18 @@ Steps:
 15. Push as `adr-auto-implement` steps 36–37 do.
 
 **Its own `report_format`,** because `adr-auto-implement`'s table is keyed by ADR and has `finalize` rows. The table
-here has 1 row per step: plan, improve, implement, tests, verify, review, exploratory, docs, apply, archive.
+here is keyed by step and has the rows of `adr-auto-implement` minus finalize, plus 3 of its own:
 
-**Its own `status_footer`:** `✔ adr-auto-change: <capability-id, ...> · plan: <stem> · untested: <k> · stopped at:
-<step or none> · pushed: <branch or no>`. Its `source:` is `ai-factory adr live check`.
+- acceptance baseline, plan, improve, implement;
+- tests, acceptance per round, verify, review, exploratory, fix, untested;
+- docs, memory, apply, archive, commit, push.
+
+**Its own `status_footer`:**
+
+- `format:` `✔ adr-auto-change: <capability-id, ...> · plan: <stem> · untested: <k> · stopped at: <step or none> ·
+  pushed: <branch or no>`;
+- `source:` the output of the step 12 apply for the capability ids, `git` for the branch, and the run's own records
+  for the untested count.
 
 - Forbidden: creating an ADR, and applying a plan with `implements:`.
 - Rubric group: `NONE`, like the 2 other auto skills.
@@ -885,6 +918,24 @@ revision 4 rewrote and found 14 issues. Each claim was checked in the code, and 
 | 12 | phase 4 dropped steps silently and borrowed a report that does not fit | kept and dropped steps listed; its own report and footer (phase 4) |
 | 13 | phase 1 and 2 lists: step 29 wording, test titles, `adr-overview` is not a test | corrected (phase 1, phase 2) |
 | 14 | a gate described at acceptance while wired at plan time | resolved by finding 2 |
+
+**Revision 6.** A fourth review read only what revision 5 changed. It found no blocker, 4 major issues and 8 minor
+ones. Each claim was checked in the code, and all were adopted:
+
+| # | Finding | Change |
+|---|---|---|
+| 1 | accepted ADRs in flight turn the overview `--check` red at opt-in, with no route out | intended, with a route: `adr live init` lists them, the seed backfills them (§3.6, phase 2) |
+| 2 | finalize wrote `LIVE.md` after `archivePlan`, so the rollback test could not exist | `LIVE.md` is written first (§3.4) |
+| 3 | a `none:` successor in supersede-first order never got the ref rewrite | the rewrite runs on any ADR apply with `supersedes:` (§3.4, §3.7) |
+| 4 | `adr-auto-change` step 12 was dead when step 8 had applied | step 8 skips the injected apply; step 12 is the only one (phase 4) |
+| 5 | same-second commits broke remove-then-re-add | equal dates order `removed`, `added`, `modified` (§3.7) |
+| 6 | the case check covered paths, not plan stems | both (§3.5) |
+| 7 | `adr import --status accepted` and `adr-migrate` bypass the CLI gate | named; `validateAdr` catches them; `adr-migrate` writes `live:` (§3.6, phase 1) |
+| 8 | the report table lacked 7 rows | listed (phase 4) |
+| 9 | the footer `source:` could not give the footer's values | corrected (phase 4) |
+| 10 | a no-op apply could reorder and stage `LIVE.md` | write only when the render differs (§3.4) |
+| 11 | "`live:` or `none:`" wording | "`live:` with `changes:` or `none:`" |
+| 12 | §10 rev-4 row 8 contradicted §3.4 | consistent again after finding 2 |
 
 After revision 4, the worktree path and `aif-verify --strict` were probed and held. For the flat-file runtimes, only
 injection placement was verified: their models could not be run (§9).
