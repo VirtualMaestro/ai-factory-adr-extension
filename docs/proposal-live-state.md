@@ -5,8 +5,8 @@ the AI Factory core skills and the CNL-P checker, the operator's decisions, and 
 (§9, §10).
 This is a proposal, not a governed artifact. It is prose and deliberately not CNL-P.
 
-**Status: ready for implementation.** Every decision is settled: with evidence (§5.1) or by the operator (§5.2, §5.3 B).
-One default awaits the operator's confirmation (§5.3 A). Nothing below is implemented.
+**Status: ready for implementation.** Every decision is settled: with evidence (§5.1) or by the operator (§5.2, §5.3).
+Nothing below is implemented.
 
 ---
 
@@ -87,6 +87,7 @@ changes:
     summary: "Finalizing an ADR archives its plan in the same atomic step, with rollback on failure."
     refs: src/lifecycle/finalize.js   # optional; required only in a fast plan
 applied: 2026-10-09        # written by the CLI, never by hand
+contradicts: [adr-cart-continuity]   # plans only, written by the CLI when a removal undoes an active ADR (§3.4)
 ```
 
   or the opt-out, with its reason:
@@ -132,7 +133,7 @@ The parser takes the first ```` ```adr-live ```` fence in the entrypoint and fai
 | Fast plan completed | the same, before `aif-implement` offers to delete `PLAN.md` | apply; refs come from each record's `refs:`, because `PLAN.md` is deleted or overwritten by the next fast plan |
 | Plan archived | `aif-archive` | nothing: the plan-stem ref resolves in the archive too |
 | Plan linked to an ADR completed or archived | `adr-implement`, `adr finalize`, `adr supersede --archive-plan` | nothing: `adr live apply` exits 0 with `skipped: linked to <adr-id>` |
-| Capability removed | an ADR or plan whose delta says `removed` | delete the entry, subject to the active-ADR guard (§3.4). No `deprecated` status is added |
+| Capability removed | an ADR or plan whose delta says `removed` | delete the entry; a plan that removes an active ADR's capability records the contradiction (§3.4). No `deprecated` status is added |
 | ADR imported as `active` | `adr import --status active` (`adr-migrate`) | nothing at import; `missing-delta` flags it, and `adr live apply <adr>` applies it once a delta is written |
 | Bug fix | `aif-fix` (no plan), or a plan whose delta is `none:` | nothing |
 | One-shot change | `aif-implement` inline mode (no plan file) | nothing: no carrier exists. Known hole (§7) |
@@ -156,13 +157,20 @@ Per change:
 - `removed`: the id must exist. The entry is deleted.
 - A rename is a `removed` plus an `added`; the author carries the refs over.
 
-**Active-ADR guard** (§5.3 A). A plan without an ADR must not undo what an active decision established: PRD §18.3, as
-stated in `skills/adr-overview/SKILL.md:69-70` and `skills/adr-supersede/SKILL.md:32`. The guard applies to **plan
-sources only**.
+**Active-ADR guard** (§5.3 A). A plan without an ADR should not undo what an active decision established: PRD §18.3,
+as stated in `skills/adr-overview/SKILL.md:69-70` and `skills/adr-supersede/SKILL.md:32`. The guard does not block;
+it records. It applies to **plan sources only**.
 
-- A `removed` from a plan on an entry whose refs include an active ADR is refused. The error names the ADR, with
-  `next: adr-propose, then adr-supersede`.
-- A `modified` from a plan on such an entry is applied with a warning naming the ADR.
+- A `removed` from a plan on an entry whose refs include an active ADR is **applied, not refused** (§5.3 A). A small
+  change must not pay for a full ADR cycle up front. The contradiction is recorded so it cannot be lost:
+  - the apply prints a warning naming the ADR, with `next: adr-auto-plan to supersede it`;
+  - the CLI writes `contradicts: [<adr-id>, ...]` into the plan's fence, next to `applied:`. The ADR file is not
+    touched;
+  - `adr live check` and `adr-status` report `contradicts-active-adr` for as long as a listed ADR is still `active`.
+    The code clears when that ADR is superseded;
+  - `adr decisions` adds the issue code `contradicted-by-plan` to that ADR's obligations. An agent that reads the
+    digest before writing sees that the code no longer honours it, and does not restore the removed behaviour.
+- A `modified` from a plan on such an entry is applied with a warning naming the ADR, and is not recorded.
 - An ADR source is exempt. A conflict between 2 ADRs belongs to `adr decisions`, `adr-check-consistency` and
   `adr-supersede`, not to `LIVE.md`. With the guard on ADRs too, a successor finalized before `adr supersede` ran would
   have its `removed` refused, because its `supersedes:` is still empty at that point (`src/artifacts/links.js:46`).
@@ -328,6 +336,7 @@ All are subcommands of `adr`, so `extension.json` keeps 1 command (`test/extensi
 | `missing-delta` | no `adr-live` fence | plans without `implements:`: archived on or after `since:` (full plan: frontmatter `archived:`; ultra: `<!-- aif:archived:DATE -->`), and completed plans still in `paths.plans` (no `- [ ]` in the entrypoint; ultra keeps progress only in `index.md`, `ULTRA-FORMAT.md:31`) |
 | `unapplied-delta` | a `changes:` delta without `applied:` | active ADRs, and completed or archived plans without `implements:` |
 | `delta-on-linked-plan` | a plan with `implements:` carries an `adr-live` fence | plans |
+| `contradicts-active-adr` | a plan's fence lists in `contradicts:` an ADR that is still `active` | completed and archived plans |
 
 `adr-status` shows the counts. `adr-finalize`, `adr-supersede`, `adr-auto-implement` and `adr-auto-change` run the
 check after their mutation and report it.
@@ -463,10 +472,16 @@ enforcement: `ai-factory adr live check`
 - **D8. `adr-auto-change` is built now,** as phase 4, right after the phase 3 code.
 - **Q3. Not now.** `adr-check-consistency` keeps its scope of accepted and active ADRs.
 
-### 5.3 Defaults chosen in revision 4, for the operator to confirm
+### 5.3 Settled by the operator in revisions 5 and 7
 
-- **A. A plan without an ADR against an active ADR's capability:** `removed` is refused, `modified` is warned (§3.4).
-  ADR sources are exempt. The alternative is to warn on both.
+- **A. A plan without an ADR against an active ADR's capability: warn, and record the debt** (§3.4).
+  - Refusing would force the full ADR cycle onto every small change that happens to remove such a capability.
+  - Warning alone would leave the active ADR claiming behaviour the code no longer has, and agents read active ADRs as
+    binding rules through `adr decisions`.
+  - The middle path applies the change now and keeps the contradiction visible in `adr live check`, `adr-status` and
+    `adr decisions` until `adr-auto-plan` supersedes the ADR.
+
+  ADR sources are exempt.
 - **B. Settled by the operator: `adr-auto-change` archives its plan at the end,** by `aif-archive` semantics inline, as
   `adr finalize` does for ADR plans. The plan-stem ref survives the move.
 
@@ -541,7 +556,7 @@ Apply:
 
 - `added`, `modified`, `removed`;
 - each refusal: `added` on an existing id, `modified`/`removed` on a missing one, a malformed delta, `changes`
-  together with `none`, the active-ADR guard;
+  together with `none`;
 - a lexicon failure and a 251-character summary are refused, and nothing is written;
 - the `- none:` swap in both directions.
 
@@ -613,7 +628,8 @@ Check: every code of `adr live check` on a fixture.
   - keep an existing fence when the plan is rewritten;
   - write no fence when the plan declares `implements:`;
   - read `LIVE.md` and `ai-factory adr decisions` first. When the change removes or alters a capability whose refs
-    name an active ADR, tell the operator it needs `adr-propose` and `adr-supersede`.
+    name an active ADR, tell the operator which ADR it contradicts. The change may proceed, and the apply records the
+    debt (§3.4).
 
   The text used in the probes (§9) is the starting point.
 - `injections/aif-improve.md` (append): keep the first `adr-live` fence, and update it when the refinement changes what
@@ -629,12 +645,20 @@ Check: every code of `adr live check` on a fixture.
   (`dist/core/injections.js:66-69`).
 - `adr live apply` accepts plans: full file, bundle directory or its `index.md`, fast plan, a plan file anywhere. It
   also accepts `--pending`.
+- The active-ADR guard of §3.4. It only concerns plans, so it lands here:
+  - `contradicts:` written into the fence;
+  - the `contradicts-active-adr` code in `src/live/check.js` and in `adr-status`;
+  - the `contradicted-by-plan` issue in `src/decisions.js`, which scans completed and archived plans for a fence
+    whose `contradicts:` lists an active ADR.
 - Tests:
   - every `manifest.injections[].file` exists and lies under a `files` entry;
   - apply on each plan kind;
   - the skip on `implements:`;
   - a fast plan without `refs:` is refused;
-  - `--pending` order and continue-past-failure.
+  - `--pending` order and continue-past-failure;
+  - the guard: a plan's `removed` on an entry that refs an active ADR is applied and writes `contradicts:`;
+    `adr live check` reports `contradicts-active-adr` and `adr decisions` carries `contradicted-by-plan` until that
+    ADR is superseded; then both clear.
 - Acceptance: on a real consumer project, under Claude Code and Codex, run one `aif-plan full` → `aif-improve` →
   `aif-implement` → `aif-archive` sequence and one `aif-plan fast` → `aif-implement` sequence. Check the entry, the
   staging and the archived plan.
@@ -669,9 +693,9 @@ Steps:
    stops the run too: it is left over from an interrupted apply and would be swept into this commit.
 2. Run `adr.acceptance.command` once when it is set, and stop when it fails.
 3. Read `LIVE.md` and `ai-factory adr decisions`.
-4. Stop and recommend `adr-propose` in 2 cases:
-   - the change binds work beyond itself (the rule of `adr-overview`);
-   - the change removes or alters a capability whose refs name an active ADR.
+4. Stop and recommend `adr-propose` when the change binds work beyond itself (the rule of `adr-overview`). A change
+   that removes or alters a capability whose refs name an active ADR does not stop the run: the apply of step 12
+   records it (§3.4), and the report names the ADR as debt for `adr-auto-plan`.
 5. Create the plan by `aif-plan full` semantics, with the fence, or take the given plan.
 6. Improve the plan by `aif-improve` semantics, at most 5 passes, as `adr-auto-plan` allows. After each pass, check
    that the fence still parses.
@@ -936,6 +960,16 @@ ones. Each claim was checked in the code, and all were adopted:
 | 10 | a no-op apply could reorder and stage `LIVE.md` | write only when the render differs (§3.4) |
 | 11 | "`live:` or `none:`" wording | "`live:` with `changes:` or `none:`" |
 | 12 | §10 rev-4 row 8 contradicted §3.4 | consistent again after finding 2 |
+
+**Revision 7.** The operator settled §5.3 A on a middle path. A plan without an ADR may remove a capability that an
+active ADR established; the change is applied, not refused. The contradiction is recorded instead:
+
+- `contradicts:` in the plan's fence;
+- `contradicts-active-adr` in `adr live check` and `adr-status`;
+- `contradicted-by-plan` in `adr decisions`.
+
+All 3 stay until `adr-auto-plan` supersedes the ADR (§3.4, phase 3). `adr-auto-change` step 4 and the `aif-plan`
+injection now warn instead of stopping.
 
 After revision 4, the worktree path and `aif-verify --strict` were probed and held. For the flat-file runtimes, only
 injection placement was verified: their models could not be run (§9).
