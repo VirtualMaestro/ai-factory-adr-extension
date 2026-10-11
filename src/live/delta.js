@@ -11,6 +11,12 @@ const CHANGE_KEYS = new Set(['capability', 'change', 'summary', 'refs']);
 const isMapping = (v) => v != null && typeof v === 'object' && !Array.isArray(v);
 const text = (v) => (typeof v === 'string' ? v.trim() : '');
 
+// shortcut: a sentence ends at . ! ? before a capital; use a tokenizer if abbreviations become a problem.
+export function summaryProblem(summary) {
+  return text(summary).split(/(?<=[.!?])\s+(?=\p{Lu})/u).filter(Boolean).length > 2
+    ? 'the summary has more than 2 sentences' : null;
+}
+
 /** A ref value as authored — 1 string separated by `,`, or a YAML list — as a list. */
 export function splitRefs(refs) {
   if (refs == null) return [];
@@ -59,6 +65,8 @@ export function deltaProblems(delta) {
     if (!CHANGES.includes(c.change)) out.push(`${at}: change ${JSON.stringify(c.change ?? null)} is not one of ${CHANGES.join(', ')}`);
     if (c.change !== 'removed' && !text(c.summary)) out.push(`${at}: summary is required for change "${c.change}"`);
     if (c.summary != null && (typeof c.summary !== 'string' || /\n/.test(c.summary))) out.push(`${at}: summary is 1 line of text`);
+    const summaryIssue = summaryProblem(c.summary);
+    if (summaryIssue) out.push(`${at}: ${summaryIssue}`);
     if (c.refs != null) {
       const ok = typeof c.refs === 'string' || (Array.isArray(c.refs) && c.refs.every((r) => typeof r === 'string'));
       if (!ok || splitRefs(c.refs).some((r) => /\n/.test(r))) out.push(`${at}: refs is 1 line separated by ", ", or a list of strings`);

@@ -85,7 +85,7 @@ test('pending falls back to mtime for untracked plans and includes active ADR so
 test('malformed and lexicon-invalid plan deltas fail without writes or staging', async () => {
   const dir = await gitProject();
   await writeLive(dir);
-  for (const delta of [{ changes: [] }, added('cap-a', 'The product is faster.'), added('cap-a', 'x'.repeat(251))]) {
+  for (const delta of [{ changes: [] }, added('cap-a', 'The product is faster.'), added('cap-a', 'x'.repeat(251)), added('cap-a', 'Users greet names. They retain order. They pick a separator.')]) {
     const file = await fencedPlan(dir, '.ai-factory/plans/bad.md', delta);
     commitAll(dir);
     const before = await readFile(file, 'utf8');
@@ -377,14 +377,16 @@ test('a delta that fails the lexicon or the line limit is refused, and nothing i
   await writeLive(dir);
   const lexicon = await writeAdr(dir, { id: 'adr-lex', status: 'accepted', evidence: 'documentation-only', live: added('lex-cap', 'It ensures faster pages.') });
   const long = await writeAdr(dir, { id: 'adr-long', status: 'accepted', evidence: 'documentation-only', live: added('long-cap', `${'word '.repeat(47)}word.`) });
+  const sentences = await writeAdr(dir, { id: 'adr-sentences', status: 'accepted', evidence: 'documentation-only', live: added('sentence-cap', 'Users read greetings. They retain order. They pick a separator.') });
   const before = await readFile(LIVE(dir), 'utf8');
 
   await assert.rejects(() => finalize(lexicon, { projectDir: dir }), /deny-list word "ensures"[\s\S]*nothing was changed/);
   // `  summary: ` plus 240 characters is 251 on the rendered line.
   assert.equal(`  summary: ${'word '.repeat(47)}word.`.length, 251);
   await assert.rejects(() => finalize(long, { projectDir: dir }), /251 chars exceeds/);
+  await assert.rejects(() => finalize(sentences, { projectDir: dir }), /more than 2 sentences[\s\S]*nothing was changed/);
   assert.equal(await readFile(LIVE(dir), 'utf8'), before);
-  assert.ok(existsSync(lexicon) && existsSync(long), 'neither ADR moved');
+  assert.ok([lexicon, long, sentences].every(existsSync), 'no ADR moved');
 });
 
 // --- the gate ---

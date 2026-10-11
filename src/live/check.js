@@ -2,17 +2,13 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { read } from '../artifacts/frontmatter.js';
 import { liveContext } from './apply.js';
-import { deltaProblems, splitRefs } from './delta.js';
+import { deltaProblems, splitRefs, summaryProblem } from './delta.js';
 import { readPlans, linkedAdrs } from './plans.js';
 import { resolveRef } from './refs.js';
 import { parseLive, liveIssues } from './state.js';
 
 const UNFINISHED = new Set(['proposed', 'draft', 'accepted']);
 const MAX_REFS = 3;
-const MAX_SENTENCES = 2;
-
-// shortcut: a sentence ends at . ! ? before a capital, so "e.g. Foo" counts 2; a real tokenizer if that ever matters.
-const sentences = (s) => s.trim().split(/(?<=[.!?])\s+(?=\p{Lu})/u).filter(Boolean).length;
 
 /** The active ADR a superseded id's `replaced_by` chain ends in, or null. */
 function activeSuccessor(id, adrs) {
@@ -53,7 +49,8 @@ export async function checkLive({ projectDir = process.cwd() } = {}) {
   for (const e of entries) {
     if (!e.refs.length) add('no-refs', e.id, 'the entry has no ref: name the ADR, plan or path that describes it');
     if (e.refs.length > MAX_REFS) add('ref-creep', e.id, `${e.refs.length} refs, more than ${MAX_REFS}: the capability is 2 capabilities, or its refs name history`);
-    if (sentences(e.summary) > MAX_SENTENCES) add('summary-too-long', e.id, `the summary has more than ${MAX_SENTENCES} sentences`);
+    const summaryIssue = summaryProblem(e.summary);
+    if (summaryIssue) add('summary-too-long', e.id, summaryIssue);
     for (const ref of e.refs) {
       const hits = resolveRef(ref, ctx);
       if (!hits.length) {
