@@ -4,6 +4,30 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and the project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [4.6.0] — 2026-10-11
+
+### Added
+
+- **Plans without an ADR update `LIVE.md`** (phase 3 of `docs/proposal-live-state.md`).
+  `adr live apply` accepts full plans, ultra directories or `index.md`, fast plans and
+  repository-local plan files. It keeps authored plan content, writes `applied:` into the
+  fence and stages the plan and changed LIVE.md. Linked plans skip; fast plans require
+  durable refs on every change. Core `aif-plan`, `aif-improve` and `aif-implement` receive
+  packaged injections to author, preserve and apply the delta before artifact cleanup.
+- **`adr live apply --pending`** applies the checker's pending sources by last commit date
+  (mtime fallback), with removal before addition before modification for ties. It rejects
+  conflicting additions, continues after errors and exits 1 with every failure; successful
+  applies remain written and staged.
+- Plan diagnostics: `missing-delta`, `unapplied-delta`, `delta-on-linked-plan` and
+  `contradicts-active-adr`. Removing an active ADR's capability records `contradicts:` in
+  the plan and `contradicted-by-plan` in `adr decisions` until the ADR is superseded.
+
+### Fixed
+
+- `adr live init/apply/check --json` now inherit the parent command's JSON flag.
+- Plan fences with CRLF parse without leaking the final carriage return into YAML values;
+  applying a removal merges existing block or inline `contradicts:` lists.
+
 ## [4.5.0] — 2026-10-11
 
 ### Added

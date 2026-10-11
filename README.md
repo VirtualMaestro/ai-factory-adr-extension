@@ -203,7 +203,8 @@ beforehand if you want the migration isolated.
 | `format [name]` | Print the CNL-P standard, or a profile such as `adr`; `--path` prints where it resolved instead |
 | `live` | Print `LIVE.md`, what the product does now |
 | `live init` | Create `LIVE.md` and list the accepted ADRs that still need a `live:` delta |
-| `live apply <adr> [--dry-run]` | Apply the `live:` delta of an active ADR (finalize applies an accepted one); `--dry-run` previews any ADR and writes nothing |
+| `live apply <file> [--dry-run]` | Apply an active ADR or a full, ultra or fast plan delta; `--dry-run` previews any ADR status or plan without writing |
+| `live apply --pending` | Apply every reported unapplied delta in completion order; keep successes, list failures and exit 1 if any failed |
 | `live check` | Broken, ambiguous and stale refs in `LIVE.md`, and every delta that never reached it; always exits 0 |
 
 The lifecycle skills wrap these commands — prefer the skills for authoring work
@@ -248,6 +249,22 @@ ADR without one. `finalize` applies the delta inside its rollback, checks the
 result against the `live` profile before writing, and stages `LIVE.md`, so the
 entry lands in the same commit as the code. `supersede` rewrites refs to the old
 ADR once its replacement is active.
+
+Plans without an ADR carry the same mapping in an `adr-live` fence after the title.
+The extension injects instructions into `aif-plan`, `aif-improve` and `aif-implement`
+to write, preserve and apply it when every task is complete, before plan cleanup.
+Full and ultra plans use their filename or bundle stem as ref, which survives
+archiving. Fast plans require durable `refs:` on every change because PLAN.md may
+be deleted. A plan with `implements:` carries no fence and skips apply.
+
+A plan may remove a capability established by an active ADR. Apply warns and writes
+`contradicts:` into its fence; `live check` reports `contradicts-active-adr` and
+`decisions` reports `contradicted-by-plan` until the ADR is superseded. Review this
+debt rather than restoring behavior the completed plan removed.
+
+`adr live apply --pending` applies the reported pending deltas in completion order.
+Successful applies stay written and staged even when another source fails; correct
+the listed failures and rerun. It exits 1 if any failed.
 
 ### `code` source anchors
 

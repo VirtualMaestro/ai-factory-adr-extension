@@ -95,6 +95,11 @@ live_events:
 | `adr supersede` with an `accepted` replacement | nothing: the old code runs until the replacement's finalize, which rewrites the refs |
 | `adr import --status active`, from `adr-migrate` | nothing at import: `adr live check` reports `missing-delta`, and `adr live apply <adr>` applies the delta once it is written |
 | a bug fix, or a delta of `none:` | nothing |
+| an unlinked full or ultra plan completed | `aif-implement` applies its `adr-live` fence, with the plan stem as ref |
+| a fast plan completed | `aif-implement` applies before deleting `PLAN.md`; every change carries durable `refs:` |
+| a plan archived | nothing: its stem resolves in the archive too |
+| a plan with `implements:` completed | nothing: the linked ADR carries the delta; apply exits with `skipped: linked to <adr-id>` |
+| a plan removes an active ADR's capability | apply writes `contradicts:`; read `contradicts-active-adr` in the live check and `contradicted-by-plan` in decisions |
 
 workflow:
 - none: this skill is reference material, read before invoking a stage skill, and runs no steps of its own

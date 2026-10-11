@@ -2,7 +2,8 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { read } from '../artifacts/frontmatter.js';
 import { liveContext } from './apply.js';
-import { deltaProblems } from './delta.js';
+import { deltaProblems, splitRefs } from './delta.js';
+import { readPlans, linkedAdrs } from './plans.js';
 import { resolveRef } from './refs.js';
 import { parseLive, liveIssues } from './state.js';
 
@@ -87,7 +88,24 @@ export async function checkLive({ projectDir = process.cwd() } = {}) {
     const problems = delta == null ? [] : deltaProblems(delta);
     if (delta == null) add('missing-delta', id, 'the active ADR has no `live:`: write `changes:` with `applied:`, or `none:` with the reason');
     else if (problems.length) add('missing-delta', id, `\`live:\` is malformed: ${problems.join('; ')}`);
-    else if (delta.changes && delta.applied == null) add('unapplied-delta', id, `the delta never reached LIVE.md: run \`ai-factory adr live apply ${rel(adr.file)}\``);
+    else if (delta.changes && delta.applied == null) issues.push({ code: 'unapplied-delta', target: id, source: rel(adr.file), message: `the delta never reached LIVE.md: run \`ai-factory adr live apply ${rel(adr.file)}\`` });
+  }
+
+  const since = String((await read(ctx.livePath)).data.since ?? '');
+  for (const { file, doc, archived, completed, date } of await readPlans(ctx)) {
+    const target = rel(file);
+    const linked = linkedAdrs(doc).length > 0;
+    if (linked && (doc.fence || doc.problems.length)) add('delta-on-linked-plan', target, 'the linked ADR carries the delta: remove the plan fence');
+    if (!archived && !completed) continue;
+    for (const id of splitRefs(doc.delta?.contradicts)) {
+      if (ctx.adrs.get(id)?.status === 'active') add('contradicts-active-adr', target, `the plan removed a capability established by ${id}; next: adr-auto-plan to supersede it`);
+    }
+    if (linked) continue;
+    if (doc.delta == null || doc.problems.length) {
+      if (!archived || (date && date >= since)) add('missing-delta', target, doc.problems.join('; ') || 'the completed plan has no `adr-live` fence');
+    } else if (doc.delta.changes && doc.delta.applied == null) {
+      issues.push({ code: 'unapplied-delta', target, source: target, message: `run \`ai-factory adr live apply ${target}\`` });
+    }
   }
 
   issues.sort((a, b) => a.code.localeCompare(b.code) || a.target.localeCompare(b.target));

@@ -95,7 +95,7 @@ export function findFence(content) {
     outer = { ticks: open[1].length, live };
   }
   if (found && found.end == null) throw new Error(`the \`adr-live\` fence at line ${found.start + 1} never closes`);
-  return found && { ...found, lines, yaml: lines.slice(found.start + 1, found.end).join('\n') };
+  return found && { ...found, lines, yaml: lines.slice(found.start + 1, found.end).map((line) => line.replace(/\r$/, '')).join('\n') };
 }
 
 /**
@@ -129,7 +129,8 @@ export async function readDelta(file) {
 
 /**
  * The source's content with `applied:` (and, for a plan, `contradicts:`) written into the carrier
- * it was read from. A fence gains lines before its close and keeps every authored byte.
+ * it was read from. A fence gains lines before its close; an existing contradiction list
+ * merges in place, leaving every other authored field and the surrounding plan untouched.
  */
 export function markApplied(doc, { date, contradicts = [] }) {
   if (doc.carrier === 'adr') {
@@ -138,8 +139,18 @@ export function markApplied(doc, { date, contradicts = [] }) {
   }
   const eol = doc.fence.lines[doc.fence.start].endsWith('\r') ? '\r' : '';
   const added = [`applied: ${date}${eol}`];
-  if (contradicts.length) added.push(`contradicts: [${contradicts.join(', ')}]${eol}`);
+  if (contradicts.length && doc.delta.contradicts == null) added.push(`contradicts: [${contradicts.join(', ')}]${eol}`);
   const lines = [...doc.fence.lines];
+  if (contradicts.length && doc.delta.contradicts != null) {
+    // YAML's value range also covers a block list, without touching adjacent fields.
+    const value = YAML.parseDocument(doc.fence.yaml).get('contradicts', true);
+    const [start, end] = value.range;
+    const column = start - (doc.fence.yaml.lastIndexOf('\n', start - 1) + 1);
+    const indent = doc.fence.yaml[start] === '-' ? ' '.repeat(Math.max(0, 2 - column)) : '';
+    const replacement = `${indent}[${contradicts.join(', ')}]${doc.fence.yaml[end - 1] === '\n' ? '\n' : ''}`;
+    const yaml = doc.fence.yaml.slice(0, start) + replacement + doc.fence.yaml.slice(end);
+    return [...lines.slice(0, doc.fence.start + 1), ...yaml.split('\n').map((line) => line + eol), ...added, ...lines.slice(doc.fence.end)].join('\n');
+  }
   lines.splice(doc.fence.end, 0, ...added);
   return lines.join('\n');
 }

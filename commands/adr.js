@@ -17,7 +17,7 @@ import { runAudit } from '../src/audit.js';
 import { createProposal } from '../src/artifacts/create.js';
 import { importAdr } from '../src/artifacts/import.js';
 import { liveFile } from '../src/config/paths.js';
-import { applySource, initLive, liveError } from '../src/live/apply.js';
+import { applySource, applyPending, initLive, liveError } from '../src/live/apply.js';
 import { checkLive } from '../src/live/check.js';
 
 /**
@@ -284,11 +284,14 @@ export function register(program) {
       out(opts, { command: 'live', path: file, content }, () => process.stdout.write(content));
     }));
 
+  // Commander consumes --json on the parent `live`; carry it into each subcommand.
+  const liveOpts = (opts) => Object.assign(opts, { json: opts.json || live.opts().json });
+
   live
     .command('init')
     .description('Create LIVE.md with no capability recorded yet; the project opts in by having it')
     .option('--json', 'Machine-readable output')
-    .action((opts) => guard(opts, async () => {
+    .action((opts) => guard(liveOpts(opts), async () => {
       const res = await initLive({ projectDir: process.cwd() });
       out(opts, { command: 'live init', ...res }, () => {
         console.log(`Created ${res.live} (since ${res.since}).`);
@@ -300,11 +303,28 @@ export function register(program) {
     }));
 
   live
-    .command('apply <file>')
-    .description('Apply the live: delta of an active ADR to LIVE.md (finalize does this for an accepted one)')
+    .command('apply [file]')
+    .description('Apply an active ADR or plan delta to LIVE.md')
+    .option('--pending', 'Apply every unapplied delta in completion order; continue past failures')
     .option('--dry-run', 'Print the effect, the warnings and the guard; write nothing (any ADR status)')
     .option('--json', 'Machine-readable output')
-    .action((file, opts) => guard(opts, async () => {
+    .action((file, opts) => guard(liveOpts(opts), async () => {
+      if (opts.pending) {
+        if (file || opts.dryRun) throw new Error('Use --pending without a file or --dry-run.');
+        const res = await applyPending({ projectDir: process.cwd() });
+        out(opts, { command: 'live apply', ...res }, () => {
+          if (res.skipped) return console.log(`skipped: ${res.skipped}`);
+          for (const result of res.results) {
+            console.log(`Applied ${result.source}.`);
+            printLive(result);
+          }
+          for (const failure of res.failures) console.error(`${failure.source}: ${failure.error}`);
+          console.log(`${res.results.length} applied; ${res.failures.length} failed.`);
+        });
+        if (res.failures.length) process.exitCode = 1;
+        return;
+      }
+      if (!file) throw new Error('Pass a source file or --pending.');
       const res = await applySource(file, { projectDir: process.cwd(), dryRun: Boolean(opts.dryRun) });
       out(opts, { command: 'live apply', ...res }, () => {
         if (res.skipped) return console.log(`skipped: ${res.skipped}`);
@@ -319,7 +339,7 @@ export function register(program) {
     .command('check')
     .description('Broken, ambiguous and stale refs in LIVE.md, and every delta that never reached it (exit 0)')
     .option('--json', 'Machine-readable output')
-    .action((opts) => guard(opts, async () => {
+    .action((opts) => guard(liveOpts(opts), async () => {
       const res = await checkLive({ projectDir: process.cwd() });
       out(opts, { command: 'live check', ...res }, () => {
         if (!res.exists) return console.log(`No ${res.live}: this project does not keep LIVE.md.`);

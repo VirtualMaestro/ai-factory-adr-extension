@@ -1025,9 +1025,9 @@ Code map of what exists:
   of the reply, and quoted summaries in `LIVE.md`. The last run was clean.
 - Not probed: the accepted-ADR steps of the seed (the fixture had no accepted ADR).
 
-### Next: phase 3 — plans without an ADR
+### Phase 3 handoff — implemented in 4.6.0
 
-Read §3.2–§3.7 and §6 phase 3 first. What is left, in the order it builds:
+The following list records the handoff used for phase 3, in implementation order:
 
 1. `applySource` accepts plans (today it throws `Not an ADR.`):
    - a full plan file, an ultra bundle directory or its `index.md`, the fast plan (`ctx.fastPlan`), a plan
@@ -1057,3 +1057,24 @@ Read §3.2–§3.7 and §6 phase 3 first. What is left, in the order it builds:
 9. Version 4.6.0, CHANGELOG, `docs/BACKLOG.md` state line, this section.
 
 Phase 4 (`adr-auto-change`) follows only after phase 3 is committed.
+
+### Phase 3 results (2026-10-11)
+
+Implemented in the working tree for 4.6.0; no commit, push or publication.
+The carriers, pending batch, plan diagnostics, contradiction obligations and all 3 packaged
+injections are complete. Both touched skills and the README describe plan events and linked skips.
+`npm test` passed 179/179 with no skips; the packed-install integration checks the injections.
+
+Claude Code and Codex completed full → improve → implement → archive and fast → implement
+in isolated consumer projects. Both final live checks and status checks are clean. Standard
+consumer tests passed 4/4 and 5/5 outside the nested sandbox.
+Codex's sandbox blocked isolated test spawning and left staging empty; an independent replay
+of its actual authored deltas outside that sandbox verified staging and clean diagnostics.
+See [validation-live-phase3.md](validation-live-phase3.md) for evidence and limits.
+
+Additional fixes from verification: CRLF fence parsing, merging existing `contradicts:` lists,
+and inheriting the parent `live --json` option into all 3 subcommands.
+For pending ties, a source with several change kinds uses its earliest kind in the
+removed → added → modified order; each source remains one atomic apply.
+
+Next: the operator reviews and commits phase 3, then phase 4 starts from §6 above.

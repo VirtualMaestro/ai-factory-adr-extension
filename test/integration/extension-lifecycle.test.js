@@ -65,10 +65,40 @@ test('add installs all 19 skills for each configured runtime and registers `adr`
   assert.equal((await adrSkills(dir, 'claude')).length, 19, 'claude skills');
   assert.equal((await adrSkills(dir, 'codex')).length, 19, 'codex skills');
   assert.ok((await adrSkills(dir, 'claude')).includes('adr-migrate'), 'migration skill installed');
+  for (const runtime of ['claude', 'codex']) {
+    for (const skill of ['aif-plan', 'aif-improve', 'aif-implement']) {
+      assert.match(await readFile(path.join(skillsDir(dir, runtime), skill, 'SKILL.md'), 'utf8'), /ADR extension/);
+    }
+  }
   assert.match(aif(['adr', '--help'], dir), /init/);
 
   aif(['adr', 'init'], dir);
   assert.ok(existsSync(path.join(dir, 'docs/adr/active')), 'adr init created the structure');
+});
+
+test('live apply CLI accepts plan entrypoints and pending failures exit 1 after staging successes', opts, async () => {
+  const dir = await newProject('codex');
+  aif(['extension', 'add', EXT_ROOT], dir);
+  aif(['adr', 'init'], dir);
+  assert.equal(JSON.parse(aif(['adr', 'live', 'init', '--json'], dir)).command, 'live init');
+  spawnSync('git', ['init', '-q'], { cwd: dir });
+  const plans = path.join(dir, '.ai-factory', 'plans');
+  await mkdir(plans, { recursive: true });
+  await writeFile(path.join(plans, 'good.md'), '# Plan\n\n```adr-live\nchanges:\n- capability: cap-a\n  change: added\n  summary: "Users read the report."\n```\n\n- [x] Done\n');
+  await writeFile(path.join(plans, 'bad.md'), '# Plan\n\n```adr-live\nchanges:\n- capability: absent\n  change: removed\n```\n\n- [x] Done\n');
+  assert.equal(JSON.parse(aif(['adr', 'live', 'check', '--json'], dir)).issues.filter((i) => i.code === 'unapplied-delta').length, 2);
+  const res = aifResult(['adr', 'live', 'apply', '--pending', '--json'], dir);
+  assert.equal(res.status, 1);
+  const report = JSON.parse(res.stdout);
+  assert.equal(report.results.length, 1);
+  assert.equal(report.failures.length, 1);
+  assert.match(await readFile(path.join(plans, 'good.md'), 'utf8'), /applied: \d{4}-\d{2}-\d{2}/);
+  assert.doesNotMatch(await readFile(path.join(plans, 'bad.md'), 'utf8'), /applied:/);
+  const staged = spawnSync('git', ['diff', '--cached', '--name-only'], { cwd: dir, encoding: 'utf8' }).stdout;
+  assert.match(staged, /\.ai-factory\/LIVE.md/);
+  assert.match(staged, /\.ai-factory\/plans\/good.md/);
+  assert.equal(aifResult(['adr', 'live', 'apply'], dir).status, 1, 'a source or --pending is required');
+  assert.equal(aifResult(['adr', 'live', 'apply', 'missing.md', '--pending'], dir).status, 1);
 });
 
 test('packed extension bundles its dependencies and loads in a clean initialized project', opts, async () => {
@@ -84,7 +114,7 @@ test('packed extension bundles its dependencies and loads in a clean initialized
   // The skills send the agent to `adr format`, which reads these out of the installed package:
   // dropping them from package.json `files` is invisible to every test that installs the checkout.
   // The standard and the generic profiles ride in with cnlp-kit; `profiles/skill.md` is ours.
-  for (const shipped of ['profiles/skill.md', 'profiles/live.md', 'node_modules/cnlp-kit/cnlp-format.md', 'node_modules/cnlp-kit/profiles/adr.md']) {
+  for (const shipped of ['injections/aif-plan.md', 'injections/aif-improve.md', 'injections/aif-implement.md', 'profiles/skill.md', 'profiles/live.md', 'node_modules/cnlp-kit/cnlp-format.md', 'node_modules/cnlp-kit/profiles/adr.md']) {
     assert.ok(packed.files.some((f) => f.path === shipped), `${shipped} is missing from the tarball`);
   }
 

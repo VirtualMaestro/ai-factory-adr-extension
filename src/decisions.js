@@ -5,6 +5,9 @@ import { isValidId } from './artifacts/id.js';
 import { parseBlocks, itemsOf, loadProfile } from './artifacts/cnlp.js';
 import { listAdrs } from './status.js';
 import { STATUS_BY_DIR } from './lifecycle/status.js';
+import { liveContext } from './live/apply.js';
+import { readPlans } from './live/plans.js';
+import { splitRefs } from './live/delta.js';
 
 /**
  * The standing body of obligations, compressed. `decision:`, `constraints:`, `scope:` and
@@ -122,6 +125,14 @@ export async function buildDecisions({ projectDir = process.cwd() } = {}) {
     delete it._malformed;
   }
 
+  for (const { file, doc, archived, completed } of await readPlans(await liveContext(projectDir))) {
+    if (!archived && !completed) continue;
+    for (const id of splitRefs(doc.delta?.contradicts)) {
+      for (const it of items.filter((i) => i.status === 'active' && i.id === id)) {
+        add('contradicted-by-plan', it.file, `${rel(file)} removed a capability this ADR established; next: adr-auto-plan to supersede it`);
+      }
+    }
+  }
   issues.sort((a, b) => a.file.localeCompare(b.file) || a.code.localeCompare(b.code));
   return { items, issues };
 }

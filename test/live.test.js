@@ -2,7 +2,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile, utimes } from 'node:fs/promises';
+import YAML from 'yaml';
 import path from 'node:path';
 import { read } from '../src/artifacts/frontmatter.js';
 import { finalize } from '../src/lifecycle/finalize.js';
@@ -10,10 +11,11 @@ import { supersede } from '../src/lifecycle/supersede.js';
 import { transition } from '../src/lifecycle/move.js';
 import { validateAdr } from '../src/lifecycle/validate.js';
 import { buildStatus } from '../src/status.js';
-import { deltaProblems, findFence, readDelta } from '../src/live/delta.js';
+import { deltaProblems, findFence, readDelta, markApplied } from '../src/live/delta.js';
 import { normaliseRef, resolveRef } from '../src/live/refs.js';
 import { applyDelta, parseLive, renderLive, SENTINEL } from '../src/live/state.js';
-import { applySource, initLive, liveContext } from '../src/live/apply.js';
+import { applySource, applyPending, initLive, liveContext } from '../src/live/apply.js';
+import { buildDecisions } from '../src/decisions.js';
 import { checkLive } from '../src/live/check.js';
 import { mkProject, writeAdr, writePlan } from './helpers.js';
 
@@ -42,6 +44,164 @@ async function writeLive(dir, entries = []) {
 }
 
 const added = (capability, summary = 'The product does one observable thing.', extra = {}) => ({ changes: [{ capability, change: 'added', summary, ...extra }] });
+
+async function fencedPlan(dir, name, delta, { tasks = '- [x] Done', frontmatter = '', suffix = '' } = {}) {
+  const file = path.join(dir, name);
+  await mkdir(path.dirname(file), { recursive: true });
+  const fence = delta == null ? '' : `\n\n\`\`\`adr-live\n${YAML.stringify(delta)}\`\`\``;
+  await writeFile(file, `${frontmatter}# Plan${fence}\n\n${tasks}\n${suffix}`, 'utf8');
+  return file;
+}
+
+test('markApplied updates a pre-existing block contradiction list without losing adjacent YAML or CRLF', async () => {
+  const dir = await mkProject();
+  const file = path.join(dir, 'plan.md');
+  const content = '# Plan\r\n\r\n```adr-live\r\ncontradicts:\r\n- adr-old\r\nchanges:\r\n- capability: cap-a\r\n  change: removed\r\n```\r\n\r\n- [x] Done\r\n';
+  await writeFile(file, content);
+  const doc = await readDelta(file);
+  const after = markApplied(doc, { date: '2026-10-11', contradicts: ['adr-old', 'adr-new'] });
+  await writeFile(file, after);
+  const updated = await readDelta(file);
+  assert.deepEqual(updated.problems, []);
+  assert.deepEqual(updated.delta.contradicts, ['adr-old', 'adr-new']);
+  assert.deepEqual(updated.delta.changes, doc.delta.changes);
+  assert.equal(after.replaceAll('\r\n', '').includes('\n'), false);
+  assert.ok(after.endsWith('```\r\n\r\n- [x] Done\r\n'));
+});
+
+test('pending falls back to mtime for untracked plans and includes active ADR sources', async () => {
+  const dir = await gitProject();
+  await writeLive(dir);
+  const first = await writeAdr(dir, { id: 'adr-first', status: 'active', live: added('cap-a') });
+  const second = await fencedPlan(dir, '.ai-factory/plans/second.md', { changes: [{ capability: 'cap-a', change: 'modified', summary: 'The product does another observable thing.' }] });
+  await utimes(first, new Date('2026-01-01'), new Date('2026-01-01'));
+  await utimes(second, new Date('2026-02-01'), new Date('2026-02-01'));
+  const res = await applyPending({ projectDir: dir });
+  assert.deepEqual(res.failures, []);
+  assert.deepEqual(res.results.map((r) => r.id), ['adr-first', '.ai-factory/plans/second.md']);
+  assert.deepEqual(parseLive(await readFile(LIVE(dir), 'utf8')).entries[0].refs, ['adr-first', 'second']);
+});
+
+test('malformed and lexicon-invalid plan deltas fail without writes or staging', async () => {
+  const dir = await gitProject();
+  await writeLive(dir);
+  for (const delta of [{ changes: [] }, added('cap-a', 'The product is faster.'), added('cap-a', 'x'.repeat(251))]) {
+    const file = await fencedPlan(dir, '.ai-factory/plans/bad.md', delta);
+    commitAll(dir);
+    const before = await readFile(file, 'utf8');
+    const live = await readFile(LIVE(dir), 'utf8');
+    await assert.rejects(applySource(file, { projectDir: dir }), /nothing was changed/);
+    assert.equal(await readFile(file, 'utf8'), before);
+    assert.equal(await readFile(LIVE(dir), 'utf8'), live);
+    assert.deepEqual(staged(dir), []);
+  }
+});
+
+test('apply plan carriers, durable refs, dry-run, byte preservation and staging', async () => {
+  for (const [name, ref] of [
+    ['.ai-factory/plans/full.md', 'full'],
+    ['.ai-factory/plans/ultra/index.md', 'ultra'],
+    ['.ai-factory/archive/plans/old.md', 'old'],
+    ['.ai-factory/archive/plans/bundle/index.md', 'bundle'],
+    ['notes/custom.md', 'notes/custom.md'],
+    ['.ai-factory/PLAN.md', 'src/main.js'],
+  ]) {
+    const dir = await gitProject();
+    await writeLive(dir);
+    const file = await fencedPlan(dir, name, added('cap-a', undefined, name.endsWith('PLAN.md') ? { refs: 'src/main.js' } : {}));
+    const before = await readFile(file, 'utf8');
+    commitAll(dir);
+    const source = name.includes('bundle/') || name.includes('ultra/') ? path.dirname(file) : file;
+    assert.ok((await applySource(source, { projectDir: dir, dryRun: true })).changed);
+    assert.equal(await readFile(file, 'utf8'), before);
+    assert.deepEqual(staged(dir), []);
+    await applySource(source, { projectDir: dir });
+    assert.equal((await readDelta(file)).delta.applied, new Date().toISOString().slice(0, 10));
+    assert.equal((await readFile(file, 'utf8')).replace(/^applied: .*\n/m, ''), before);
+    assert.deepEqual(parseLive(await readFile(LIVE(dir), 'utf8')).entries[0].refs, [ref]);
+    assert.deepEqual(staged(dir).sort(), ['.ai-factory/LIVE.md', name].sort());
+    await assert.rejects(applySource(source, { projectDir: dir }), /already applied/);
+  }
+});
+
+test('linked plans skip before validation; fast changes all require refs; none leaves LIVE untouched', async () => {
+  const dir = await gitProject();
+  await writeLive(dir, [{ id: 'cap-a', summary: 'The product does one observable thing.', refs: ['src/main.js'] }]);
+  const linked = await fencedPlan(dir, '.ai-factory/plans/linked.md', null, { frontmatter: '---\nimplements: [adr-one]\n---\n' });
+  assert.equal((await applySource(linked, { projectDir: dir })).skipped, 'linked to adr-one');
+  for (const change of ['added', 'modified', 'removed']) {
+    const file = await fencedPlan(dir, '.ai-factory/PLAN.md', { changes: [{ capability: 'cap-a', change, summary: 'The product does one observable thing.' }] });
+    await assert.rejects(applySource(file, { projectDir: dir }), /durable refs/);
+  }
+  const noop = await fencedPlan(dir, '.ai-factory/plans/noop.md', { none: 'Refactor only.' });
+  commitAll(dir);
+  const before = await readFile(LIVE(dir), 'utf8');
+  assert.equal((await applySource(noop, { projectDir: dir })).skipped, 'nothing changed');
+  assert.equal(await readFile(LIVE(dir), 'utf8'), before);
+  assert.deepEqual(staged(dir), []);
+});
+
+test('plan removal records active ADR debt, both reports clear after supersede', async () => {
+  const dir = await gitProject();
+  const old = await writeAdr(dir, { id: 'adr-old', status: 'active', live: { none: 'Seeded.' } });
+  const next = await writeAdr(dir, { id: 'adr-next', status: 'active', live: { none: 'Replacement.' } });
+  await writeLive(dir, [{ id: 'cap-a', summary: 'The product does one observable thing.', refs: ['adr-old'] }]);
+  const plan = await fencedPlan(dir, '.ai-factory/plans/remove.md', { changes: [{ capability: 'cap-a', change: 'removed' }], contradicts: ['adr-historic'] });
+  commitAll(dir);
+  const dry = await applySource(plan, { projectDir: dir, dryRun: true });
+  assert.match(dry.warnings.join(' '), /adr-old/);
+  assert.equal((await readDelta(plan)).delta.applied, undefined);
+  await applySource(plan, { projectDir: dir });
+  const doc = await readDelta(plan);
+  assert.deepEqual(doc.problems, []);
+  assert.deepEqual(doc.delta.contradicts, ['adr-historic', 'adr-old']);
+  assert.deepEqual(parseLive(await readFile(LIVE(dir), 'utf8')).entries, []);
+  assert.ok((await checkLive({ projectDir: dir })).issues.some((i) => i.code === 'contradicts-active-adr'));
+  assert.ok((await buildDecisions({ projectDir: dir })).issues.some((i) => i.code === 'contradicted-by-plan'));
+  await supersede(old, next, { projectDir: dir });
+  assert.ok(!(await checkLive({ projectDir: dir })).issues.some((i) => i.code === 'contradicts-active-adr'));
+  assert.ok(!(await buildDecisions({ projectDir: dir })).issues.some((i) => i.code === 'contradicted-by-plan'));
+});
+
+test('plan checks scope missing, unapplied, linked and contradiction issues to entrypoints', async () => {
+  const dir = await gitProject();
+  await writeLive(dir);
+  await writeAdr(dir, { id: 'adr-one', status: 'active', live: { none: 'Seeded.' } });
+  await fencedPlan(dir, '.ai-factory/plans/completed.md', null);
+  await fencedPlan(dir, '.ai-factory/plans/open.md', null, { tasks: '- [ ] Open' });
+  await fencedPlan(dir, '.ai-factory/archive/plans/before.md', null, { frontmatter: '---\narchived: 2026-09-30\n---\n' });
+  await fencedPlan(dir, '.ai-factory/archive/plans/after/index.md', null, { suffix: '<!-- aif:archived:2026-10-01 -->\n' });
+  await fencedPlan(dir, '.ai-factory/plans/pending/index.md', added('new-cap'));
+  await fencedPlan(dir, '.ai-factory/plans/pending/task.md', null);
+  await fencedPlan(dir, '.ai-factory/plans/linked.md', { none: 'ADR owns it.' }, { tasks: '- [ ] Open', frontmatter: '---\nimplements: [adr-one]\n---\n' });
+  await fencedPlan(dir, '.ai-factory/archive/plans/debt.md', { changes: [{ capability: 'old-cap', change: 'removed' }], applied: '2026-09-01', contradicts: ['adr-one'] });
+  const issues = (await checkLive({ projectDir: dir })).issues;
+  assert.deepEqual(issues.filter((i) => i.code === 'missing-delta').map((i) => i.target), ['.ai-factory/archive/plans/after/index.md', '.ai-factory/plans/completed.md']);
+  assert.deepEqual(issues.filter((i) => i.code === 'unapplied-delta').map((i) => i.target), ['.ai-factory/plans/pending/index.md']);
+  assert.equal(issues.filter((i) => i.code === 'delta-on-linked-plan').length, 1);
+  assert.equal(issues.filter((i) => i.code === 'contradicts-active-adr').length, 1);
+});
+
+test('pending uses commit dates then change order, continues past failures and rejects both duplicate adds', async () => {
+  const dir = await gitProject();
+  await writeLive(dir, [{ id: 'cap-a', summary: 'The product does one observable thing.', refs: ['source.md'] }]);
+  const add = await fencedPlan(dir, '.ai-factory/plans/a-add.md', added('cap-a'));
+  const remove = await fencedPlan(dir, '.ai-factory/plans/z-remove.md', { changes: [{ capability: 'cap-a', change: 'removed' }] });
+  const modify = await fencedPlan(dir, '.ai-factory/plans/b-modify.md', { changes: [{ capability: 'cap-a', change: 'modified', summary: 'The product does another observable thing.' }] });
+  commitAll(dir);
+  await utimes(remove, new Date('2030-01-01'), new Date('2030-01-01'));
+  const bad = await fencedPlan(dir, '.ai-factory/plans/c-bad.md', { changes: [{ capability: 'absent', change: 'removed' }] });
+  const good = await fencedPlan(dir, '.ai-factory/plans/d-good.md', added('cap-b'));
+  for (const file of [bad, good]) await utimes(file, new Date('2031-01-01'), new Date('2031-01-01'));
+  const dup1 = await fencedPlan(dir, '.ai-factory/plans/dup1.md', added('collision'));
+  const dup2 = await fencedPlan(dir, '.ai-factory/plans/dup2.md', added('collision'));
+  const res = await applyPending({ projectDir: dir });
+  assert.deepEqual(res.results.map((r) => r.source), [remove, add, modify, good].map((f) => path.relative(dir, f).split(path.sep).join('/')));
+  assert.equal(res.failures.length, 3);
+  for (const file of [bad, dup1, dup2]) assert.equal((await readDelta(file)).delta.applied, undefined);
+  for (const file of [remove, add, modify, good]) assert.ok((await readDelta(file)).delta.applied);
+  assert.equal((await applyPending({ projectDir: dir })).results.length, 0);
+});
 
 // --- the delta ---
 

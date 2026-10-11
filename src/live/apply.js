@@ -1,4 +1,5 @@
-import { existsSync } from 'node:fs';
+import { existsSync, statSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { adrRoot, liveFile, readAifPaths } from '../config/paths.js';
@@ -6,7 +7,9 @@ import { indexAdrsById } from '../status.js';
 import { resolveInside, atomicWrite, withFileRollback } from '../util/safe-path.js';
 import { stageMove } from '../util/git.js';
 import { todayUTC } from '../lifecycle/archive.js';
-import { readDelta, markApplied } from './delta.js';
+import { readDelta, markApplied, splitRefs } from './delta.js';
+import { linkedAdrs, planRef } from './plans.js';
+import { checkLive } from './check.js';
 import { parseLive, renderLive, liveIssues, applyDelta, SENTINEL } from './state.js';
 
 /** The house error shape (§27): what was expected, what was found, what changed, what to do. */
@@ -87,30 +90,35 @@ export async function computeLive(ctx, { changes, kind, ref, supersedes = [], la
 const rel = (ctx, file) => path.relative(ctx.projectDir, file).split(path.sep).join('/');
 
 /**
- * `adr live apply <file>`: apply the delta of 1 source. An ADR applies standalone only when it is
+ * `adr live apply <file>`: apply an ADR or plan entrypoint (a directory resolves to index.md).
+ * An ADR applies standalone only when it is
  * active and its delta has no `applied:` — finalize applies it otherwise; `dryRun` takes an ADR of
  * any status and writes nothing. Returns what happened; `skipped` says why nothing could.
  */
 export async function applySource(file, { projectDir = process.cwd(), dryRun = false } = {}) {
   const ctx = await liveContext(projectDir);
-  const abs = resolveInside(projectDir, file);
+  let abs = resolveInside(projectDir, file);
+  if (existsSync(abs) && statSync(abs).isDirectory()) abs = resolveInside(projectDir, path.join(abs, 'index.md'));
   const base = { source: rel(ctx, abs), live: rel(ctx, ctx.livePath), dryRun };
   if (!ctx.exists) return { ...base, skipped: 'no LIVE.md' };
   if (!existsSync(abs)) {
-    throw liveError('Source not found.', { expected: 'an existing ADR file', detected: `${file} is missing`, next: 'check the path' });
+    throw liveError('Source not found.', { expected: 'an existing ADR or plan entrypoint', detected: `${file} is missing`, next: 'check the path' });
   }
 
   const doc = await readDelta(abs);
-  if (doc.carrier !== 'adr') {
-    throw liveError('Not an ADR.', {
-      expected: 'an ADR file (frontmatter `type: adr`)',
-      detected: `${base.source} has type ${JSON.stringify(doc.data.type ?? null)}`,
-      next: 'pass the ADR whose `live:` delta is to be applied',
-    });
-  }
+  const isAdr = doc.carrier === 'adr';
+  const linked = linkedAdrs(doc);
+  if (!isAdr && linked.length) return { ...base, skipped: `linked to ${linked.join(', ')}` };
   const label = String(doc.data.id ?? base.source);
   const problem = gateProblem(doc.delta, doc.problems);
-  if (problem) throw gateError(label, problem);
+  if (problem) {
+    if (isAdr) throw gateError(label, problem);
+    throw liveError('The plan has no usable `adr-live` delta.', {
+      expected: '1 `adr-live` fence with `changes:` or `none:`',
+      detected: doc.problems.length ? doc.problems : `${base.source}: no fence`,
+      next: `write or correct the fence in ${base.source}, then run again`,
+    });
+  }
   if (doc.delta.applied != null) {
     throw liveError(`${label} is already applied on ${doc.delta.applied}.`, {
       expected: 'a delta without `applied:`',
@@ -118,7 +126,7 @@ export async function applySource(file, { projectDir = process.cwd(), dryRun = f
       next: 'nothing to do; a new change to the capability is a new ADR or plan',
     });
   }
-  if (!dryRun && doc.data.status !== 'active') {
+  if (isAdr && !dryRun && doc.data.status !== 'active') {
     throw liveError(`${label} is not active.`, {
       expected: 'an active ADR: `adr finalize` applies the delta of an accepted one',
       detected: `status=${doc.data.status}`,
@@ -127,19 +135,59 @@ export async function applySource(file, { projectDir = process.cwd(), dryRun = f
   }
 
   const changes = doc.delta.changes ?? [];
-  const supersedes = [].concat(doc.data.supersedes ?? []).map(String);
-  const res = await computeLive(ctx, { changes, kind: 'adr', ref: doc.data.id, supersedes, label });
+  const ref = isAdr ? doc.data.id : planRef(abs, ctx);
+  if (!isAdr && ref == null && changes.some((c) => !splitRefs(c.refs).length)) {
+    throw liveError('A fast plan needs durable refs on every change.', {
+      expected: '`refs:` on every record, including modified and removed',
+      detected: base.source,
+      next: 'name repository files or ADRs in refs:, then run again',
+    });
+  }
+  const supersedes = isAdr ? [].concat(doc.data.supersedes ?? []).map(String) : [];
+  const res = await computeLive(ctx, { changes, kind: doc.carrier, ref, supersedes, label });
   const out = { ...base, id: label, ops: res.ops, warnings: res.warnings, changed: res.changed };
   if (!changes.length && !res.changed) return { ...out, skipped: 'nothing changed' };
   if (dryRun) return out;
 
   const date = todayUTC();
   await withFileRollback([abs, ctx.livePath], async () => {
-    if (changes.length) await atomicWrite(abs, markApplied(doc, { date }));
+    if (changes.length) await atomicWrite(abs, markApplied(doc, { date, contradicts: [...new Set([...splitRefs(doc.delta.contradicts), ...res.contradicts])] }));
     if (res.changed) await atomicWrite(ctx.livePath, res.after);
     stageMove(changes.length ? abs : null, res.changed ? ctx.livePath : null);
   });
   return { ...out, applied: changes.length ? date : null };
+}
+
+/** Apply the checker's pending sources in completion order; failures leave successes intact. */
+export async function applyPending({ projectDir = process.cwd() } = {}) {
+  const report = await checkLive({ projectDir });
+  if (!report.exists) return { skipped: 'no LIVE.md', results: [], failures: [] };
+  const sources = [];
+  const additions = new Map();
+  const rank = { removed: 0, added: 1, modified: 2 };
+  for (const issue of report.issues.filter((i) => i.code === 'unapplied-delta')) {
+    const file = resolveInside(projectDir, issue.source);
+    const doc = await readDelta(file);
+    const log = spawnSync('git', ['log', '-1', '--format=%cI', '--', file], { cwd: projectDir, encoding: 'utf8' });
+    const date = Date.parse(log.status === 0 ? log.stdout.trim() : '');
+    sources.push({ file, source: issue.source, date: Number.isFinite(date) ? date : statSync(file).mtimeMs,
+      rank: Math.min(...doc.delta.changes.map((c) => rank[c.change])) });
+    for (const c of doc.delta.changes.filter((c) => c.change === 'added')) {
+      additions.set(c.capability, [...(additions.get(c.capability) ?? []), issue.source]);
+    }
+  }
+  sources.sort((a, b) => a.date - b.date || a.rank - b.rank || a.source.localeCompare(b.source));
+  const results = [], failures = [];
+  for (const { file, source } of sources) {
+    try {
+      const conflicts = [...additions].filter(([, files]) => files.length > 1 && files.includes(source));
+      if (conflicts.length) throw new Error(`Pending added collision: ${conflicts.map(([id, files]) => `${id}: ${files.join(', ')}`).join('; ')}`);
+      results.push(await applySource(file, { projectDir }));
+    } catch (err) {
+      failures.push({ source, error: err.message });
+    }
+  }
+  return { results, failures };
 }
 
 /**

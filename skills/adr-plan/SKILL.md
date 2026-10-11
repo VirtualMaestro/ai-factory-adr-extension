@@ -28,6 +28,7 @@ forbidden_behaviors:
 - do not invoke `aif-plan` as a nested skill: apply its semantics in this run
 - do not fill `evidence:`; `plan:` filled with `evidence:` empty is the pending state, and `adr-finalize` sets `evidence: implemented` later
 - do not put the plan id into `affects`: that list is for genuinely affected artifacts only
+- do not write an `adr-live` fence in a plan with `implements:`: the linked ADR carries the delta
 
 plan_frontmatter:
 ```yaml

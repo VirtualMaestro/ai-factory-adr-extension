@@ -4,13 +4,13 @@ Open items only. The MVP build log (verification spike, epics P0–P4, coverage 
 finished; it described the pre-1.6 body format in places and was history, not guidance, so it
 lives in Git history now and nowhere else.
 
-**Current state:** 4.5.0 · 19 skills · 169 tests green · CNL-P comes from the
+**Current state:** 4.6.0 · 19 skills · 179 tests green · CNL-P comes from the
 [`cnlp-kit`](https://www.npmjs.com/package/cnlp-kit) package. The standard, the checker and the
 generic profiles live there and are upgraded by bumping a dependency; this repository keeps one
 overlay, `profiles/skill.md`, which names the sections its own skills use, and one profile of its
 own, `profiles/live.md`, the shape of `LIVE.md`. `src/artifacts/cnlp.js`
 is the adapter that makes the overlay win over the packaged `skill` profile and passes everything
-else through. All 18 skill bodies and `templates/adr.md` are clean against the current checks, with
+else through. All 19 skill bodies and `templates/adr.md` are clean against the current checks, with
 no skill exempt from its profile. An adopting project reaches the standard and the profiles through
 `ai-factory adr format`, never by path — the files themselves ride in as a bundled dependency,
 since ai-factory installs an extension by `npm pack` and never runs `npm install`.
@@ -20,8 +20,9 @@ since ai-factory installs an extension by `npm pack` and never runs `npm install
 ## In progress — `LIVE.md`
 
 [`proposal-live-state.md`](proposal-live-state.md): phases 1–2 shipped in 4.4.0 and 4.5.0. Phase 3
-(plans without an ADR: injections, plan sources, `--pending`, the plan check codes) is next, and §11
-of the proposal is its handoff. Phase 4, `adr-auto-change`, follows it.
+(plans without an ADR: injections, plan sources, `--pending`, the plan check codes) is implemented
+in the working tree for 4.6.0. See §11 and [validation-live-phase3.md](validation-live-phase3.md).
+Phase 4, `adr-auto-change`, follows after the operator commits phase 3.
 
 ---
 
