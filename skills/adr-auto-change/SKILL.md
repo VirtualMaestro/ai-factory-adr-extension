@@ -25,6 +25,7 @@ forbidden_behaviors:
 - do not skip, disable or weaken a failing test, or rerun it until it passes: a flaky failure is a finding
 - do not fix a behaviour before a test fails on the code without the fix: a fix no harness of the project can test goes to the report and the commit body
 - do not let the exploratory subagent change a file of the repository, or reach a paid or remote service the instructions file does not allow
+- do not report a fresh subagent without its runtime invocation and returned result: a separate check in this context is inline
 - do not write a capability list into `.ai-factory/DESCRIPTION.md`: the capabilities live in `LIVE.md`
 - do not stage files by pattern, such as `git add -A`: stage by name the paths this run changed
 - do not split the change across commits: code, tests, QA, documents, memory, archived plan and `LIVE.md` land together
@@ -55,7 +56,7 @@ workflow:
 22. start 2 fresh read-only subagents in parallel over the change: 1 applies `aif-verify` against the original request and tasks, 1 applies `aif-review`
 23. start a fresh exploratory subagent in the same batch when configured, steps 20 and 21 pass, and exploratory rounds remain
 24. pass it the instructions file, the original request, scenario tasks and relevant active obligations; let it start, drive and stop the product only as that file allows
-25. run the checks of step 22 inline when the runtime offers no subagents, skip exploratory, and state both in the report: a check in the context that wrote the code is weaker
+25. run step 22 inline when the runtime exposes no subagent API or every launch fails; skip exploratory and report the weaker checks in the writing context
 26. fix every failing test by `aif-fix` fix-now semantics: the failing test is the regression test of its fix
 27. write a test for each exploratory anomaly, in the acceptance suite when the project has one, and run it: an anomaly whose test fails is a finding of this round
 28. record an anomaly no test reproduces, with its steps, and do not fix it: the exploratory subagent is not deterministic
