@@ -32,7 +32,7 @@ ai-factory extension add ai-factory-adr-extension        # npm
 The extension requires the valid `.ai-factory.json` marker created by
 `ai-factory init`; a directory named `.ai-factory/` alone is not sufficient.
 
-This installs the 18 skills into each configured runtime (`.claude/skills/`,
+This installs the 19 skills into each configured runtime (`.claude/skills/`,
 `.codex/skills/`) and registers the `adr` command. Then scaffold the ADR
 directories:
 
@@ -71,7 +71,7 @@ To remove the extension:
 ai-factory extension remove ai-factory-adr-extension
 ```
 
-Removal takes the 18 skills out of each runtime's skills directory and deletes
+Removal takes the 19 skills out of each runtime's skills directory and deletes
 the extension's own install directory. It leaves everything the extension wrote
 while running: your ADR root with all its documents, your plans, and
 `.ai-factory/adr-extension.yaml`. Adding the extension again therefore needs no
@@ -103,7 +103,7 @@ proposed    draft     accepted                          active
 
 ## Skills
 
-Eighteen skills, installed into every runtime the project configures — invoked as
+Nineteen skills, installed into every runtime the project configures — invoked as
 `/adr-propose` in Claude Code and `$adr-propose` in Codex. Start with
 **`/adr-overview`**: it maps every stage to its skill and states the
 retrieval/immutability rules, so it is the one name worth remembering.
@@ -132,6 +132,7 @@ Off the linear flow:
 | `adr-reconcile <target>` | adjudicates a second reviewer's proposed improvements, adopting and rejecting each with a reason | never advances status, never implements |
 | `adr-next` | reads the `depends_on` graph and recommends what to implement next | ready means `accepted` with all dependencies `active`; also reports order, blocked ADRs, cycles |
 | `adr-migrate` | brings a project's pre-existing legacy ADRs into this lifecycle | one-time; run it before authoring new ADRs there |
+| `adr-live-seed` | seeds `LIVE.md` with the capabilities the product has today, and backfills `live:` on every active and accepted ADR | one-time; writes nothing before the operator approves the capability list |
 
 Running a whole phase in one call:
 
@@ -221,6 +222,10 @@ The machine state of an ADR lives in frontmatter: `plan:` names the linked plan
 The body stays pure decision content.
 
 ### `LIVE.md` — what the product does now
+
+In a project that already has ADRs, run `/adr-live-seed` (Codex: `$adr-live-seed`)
+instead of the bare command below: it proposes the current capabilities, and after your
+approval writes them and backfills `live:` on every active and accepted ADR.
 
 `ai-factory adr live init` creates `.ai-factory/LIVE.md` (or the path in
 `adr.live` of `.ai-factory/adr-extension.yaml`): 1 record per capability, a

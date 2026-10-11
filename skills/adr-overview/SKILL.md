@@ -52,6 +52,7 @@ off_flow_skills:
 | `adr-reconcile <target>` | adjudicates a second reviewer's proposed improvements, adopting and rejecting each with a reason | never advances status, never implements |
 | `adr-next` | reads the `depends_on` graph and recommends what to implement next | ready means `accepted` with all dependencies `active`; also reports order, blocked ADRs, cycles |
 | `adr-migrate` | brings a project's pre-existing legacy ADRs into this lifecycle | one-time; run it before authoring new ADRs there |
+| `adr-live-seed` | seeds `LIVE.md` with the capabilities the product has today, and backfills `live:` on every active and accepted ADR | one-time; writes nothing before the operator approves the capability list |
 | `adr-auto-plan <topic or adr> ...` | runs propose, improve, accept, plan, docs, commit and push for a batch of ADRs in 1 call | asks only principled questions, and the operator approves each acceptance; a rejection interrupts the run |
 | `adr-auto-implement [adr ...]` | runs implement, tests, verify, review, fix, docs, finalize, commit and push in 1 call | asks nothing, stops on a blocker, and makes 1 commit per ADR on the current branch |
 
@@ -88,6 +89,7 @@ live_events:
 | Event | Effect on `LIVE.md` |
 |---|---|
 | `ai-factory adr live init` | creates the file: the project opts in by having it, and every row below needs it |
+| `adr-live-seed` | writes the approved capabilities once, and backfills `live:` with `applied:` on the active ADRs they name |
 | `adr finalize`, documentation-only or not | applies the ADR's `live:` delta, with the ADR id as the ref |
 | `adr supersede` with an `active` replacement | rewrites every ref to the old id into the new id |
 | `adr supersede` with an `accepted` replacement | nothing: the old code runs until the replacement's finalize, which rewrites the refs |

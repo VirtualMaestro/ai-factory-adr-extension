@@ -295,7 +295,7 @@ export function register(program) {
         if (!res.acceptedWithoutDelta.length) return;
         console.log(`Accepted ADRs without live: (${res.acceptedWithoutDelta.length}); \`adr status --check\` fails on each until it has one:`);
         for (const a of res.acceptedWithoutDelta) console.log(`  ${a.id}  ${a.file}`);
-        console.log('next: add live: by hand, with changes: or none:');
+        console.log('next: add live: by hand, with changes: or none:, or run adr-live-seed');
       });
     }));
 

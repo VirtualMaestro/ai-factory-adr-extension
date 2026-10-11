@@ -4,6 +4,29 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and the project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [4.5.0] — 2026-10-11
+
+### Added
+
+- **`adr-live-seed`, a one-time skill that gives an existing project its `LIVE.md`** (phase 2 of
+  `docs/proposal-live-state.md`). It runs `adr live init`, reads the active ADRs,
+  `DESCRIPTION.md`, the state narrative in `AGENTS.md` and the code, and proposes the capabilities
+  the product has today with their refs. After the operator approves the list, it writes the
+  records and backfills `live:` on every active ADR (`changes:` with `applied: <since>`, or
+  `none:` with the reason) and on every accepted one (without `applied:`, for its finalize to
+  apply). `adr live check` and `adr status --check` are clean afterwards. It also lists the
+  completed plans still in `paths.plans` and the `AGENTS.md` sections that narrate state, and
+  removes neither. 19 skills now.
+- `adr live init` names `adr-live-seed` when accepted ADRs still lack `live:`.
+
+### Fixed
+
+- **A quoted summary in `LIVE.md` is `live-format`.** The checker reads quoted text as data, so
+  `summary: "…"` passed the lexicon unchecked, and the next render kept the quotes as part of the
+  value. `adr live check` reports it, and `finalize` and `adr live apply` refuse to write a file
+  that carries one. Found in a Codex run of `adr-live-seed`, which quoted the records the way it
+  quotes the frontmatter delta.
+
 ## [4.4.0] — 2026-10-11
 
 ### Added

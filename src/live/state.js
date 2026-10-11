@@ -60,11 +60,19 @@ export function renderLive({ prefix, eol = '\n', entries }) {
 export async function liveIssues(content) {
   const offset = (content.match(FM_RE)?.[0] ?? '').split('\n').length - 1;
   const lines = content.split(/\r?\n/);
-  return bodyIssues(content, await loadProfile('live')).map((i) => ({
+  const issues = bodyIssues(content, await loadProfile('live')).map((i) => ({
     line: i.line ? i.line + offset : 0,
     message: i.message,
     text: i.line ? lines[i.line + offset - 1] : '',
   }));
+  // The checker reads quoted text as data and skips it, so a quoted summary passes the lexicon
+  // unchecked, and the next render keeps the quotes as part of the value.
+  lines.forEach((text, i) => {
+    if (/^ {2}summary: (["']).*\1\s*$/.test(text)) {
+      issues.push({ line: i + 1, message: 'the summary is quoted: LIVE.md is not YAML, and the lexicon skips quoted text', text });
+    }
+  });
+  return issues.sort((a, b) => a.line - b.line);
 }
 
 const withRef = (refs, ref) => (ref && !refs.includes(ref) ? [...refs, ref] : refs);

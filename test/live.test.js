@@ -378,6 +378,7 @@ test('adr live check reports every code on a fixture', async () => {
     '- id: f-creep', '  summary: F.', '  refs: adr-live-ok, adr-twice, adr-gone, adr-no-live',
     '- id: g-long', '  summary: One. Two. Three.', '  refs: adr-live-ok',
     '- id: h-format', '  summary: It ensures things.', '  refs: adr-live-ok',
+    '- id: i-quoted', '  summary: "It does things."', '  refs: adr-live-ok',
     '',
   ].join('\n'));
 
@@ -385,6 +386,7 @@ test('adr live check reports every code on a fixture', async () => {
   const has = (code, target) => issues.some((i) => i.code === code && (!target || i.target === target));
 
   assert.ok(has('live-format'), 'live-format');
+  assert.ok(issues.some((i) => i.code === 'live-format' && /quoted/.test(i.message)), 'a quoted summary is live-format');
   assert.ok(has('broken-ref', 'a-broken'));
   assert.ok(has('ambiguous-ref', 'b-ambiguous'));
   assert.ok(has('stale-superseded-ref', 'c-stale'));
