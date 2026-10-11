@@ -17,6 +17,7 @@ import { applyDelta, parseLive, renderLive, SENTINEL } from '../src/live/state.j
 import { applySource, applyPending, initLive, liveContext } from '../src/live/apply.js';
 import { buildDecisions } from '../src/decisions.js';
 import { checkLive } from '../src/live/check.js';
+import { hasOpenTask } from '../src/live/plans.js';
 import { mkProject, writeAdr, writePlan } from './helpers.js';
 
 const git = (dir, ...args) => spawnSync('git', args, { cwd: dir, encoding: 'utf8' });
@@ -567,4 +568,90 @@ test('adr live check without LIVE.md reports nothing', async () => {
   const res = await checkLive({ projectDir: dir });
   assert.equal(res.exists, false);
   assert.deepEqual(res.issues, []);
+});
+
+// --- audit regressions ---
+
+test('a plan with broken frontmatter is a missing-delta issue, not a crash of check, pending or decisions', async () => {
+  const dir = await mkProject();
+  await writeLive(dir);
+  const broken = path.join(dir, '.ai-factory/plans/broken.md');
+  await mkdir(path.dirname(broken), { recursive: true });
+  await writeFile(broken, '---\nid: [unclosed\n---\n# Plan\n', 'utf8');
+  const issue = (await checkLive({ projectDir: dir })).issues.find((i) => i.target.endsWith('broken.md'));
+  assert.equal(issue?.code, 'missing-delta');
+  assert.match(issue.message, /could not be parsed/);
+  assert.deepEqual((await applyPending({ projectDir: dir })).failures, []);
+  await buildDecisions({ projectDir: dir });
+});
+
+test('empty CLI-written keys, comma refs in a list and contradicts: on an ADR are malformed', () => {
+  const change = { capability: 'cap-a', change: 'removed' };
+  assert.match(deltaProblems({ applied: null, changes: [change] }).join(), /`applied:` is empty/);
+  assert.match(deltaProblems({ contradicts: null, changes: [change] }).join(), /`contradicts:` is empty/);
+  assert.match(deltaProblems({ changes: [{ ...change, refs: ['src/a.js, src/b.js'] }] }).join(), /without ","/);
+  assert.deepEqual(deltaProblems({ changes: [{ ...change, refs: ['src/a.js', 'src/b.js'] }] }), []);
+  assert.deepEqual(deltaProblems({ contradicts: ['adr-x'], changes: [change] }), []);
+  assert.match(deltaProblems({ contradicts: ['adr-x'], changes: [change] }, { adr: true }).join(), /belongs to a plan fence/);
+});
+
+test('a LIVE.md that already fails its profile is named as the cause, not the delta', async () => {
+  const dir = await mkProject();
+  await writeLive(dir, [{ id: 'cap-old', summary: 'It ensures things.', refs: ['src/a.js'] }]);
+  const plan = await fencedPlan(dir, '.ai-factory/plans/new.md', added('cap-new'));
+  await assert.rejects(() => applySource(plan, { projectDir: dir }), /LIVE\.md fails its profile before the delta[\s\S]*ensures[\s\S]*fix LIVE\.md by hand/);
+});
+
+test('an indexed active ADR without type: adr applies as an ADR, alone and in a pending batch', async () => {
+  for (const pending of [false, true]) {
+    const dir = await mkProject();
+    await writeLive(dir);
+    const file = await writeAdr(dir, { id: 'adr-legacy', status: 'active', type: 'decision', live: added('cap-legacy') });
+    assert.ok((await checkLive({ projectDir: dir })).issues.some((i) => i.code === 'unapplied-delta' && i.target === 'adr-legacy'));
+    if (pending) assert.deepEqual((await applyPending({ projectDir: dir })).failures, []);
+    else await applySource(file, { projectDir: dir });
+    assert.equal(parseLive(await readFile(LIVE(dir), 'utf8')).entries[0].refs[0], 'adr-legacy');
+  }
+});
+
+test('an applied: written before finalize fails the accepted gate and validate', async () => {
+  const dir = await mkProject();
+  await writeLive(dir);
+  const live = { ...added('cap-early'), applied: '2026-01-01' };
+  const draft = await writeAdr(dir, { id: 'adr-early', status: 'draft', live });
+  assert.match((await validateAdr(draft, { projectDir: dir })).warnings.join(), /`applied:` is written by finalize/);
+  await assert.rejects(() => transition(draft, 'accepted', { projectDir: dir }), /`applied:` is written by finalize/);
+  const accepted = await writeAdr(dir, { id: 'adr-early-acc', status: 'accepted', live });
+  assert.match((await validateAdr(accepted, { projectDir: dir })).errors.join(), /`applied:` is written by finalize/);
+  assert.deepEqual((await initLive({ projectDir: await mkProject() })).acceptedWithoutDelta, []);
+});
+
+test('check reports broken LIVE.md frontmatter and a missing since: without crashing or flagging old plans', async () => {
+  const dir = await mkProject();
+  const body = 'capabilities:\n- id: cap-a\n  summary: Users export a file.\n  refs: src/a.js\n';
+  await writeFile(LIVE(dir), `---\ntype: live\nsince: [bad\n---\n\n${body}`, 'utf8');
+  assert.ok((await checkLive({ projectDir: dir })).issues.some((i) => i.code === 'live-format' && /could not be parsed/.test(i.message)));
+
+  await writeFile(LIVE(dir), `---\ntype: live\ntitle: Live state\n---\n\n${body}`, 'utf8');
+  await fencedPlan(dir, '.ai-factory/archive/plans/old.md', null, { frontmatter: '---\narchived: 2020-01-01\n---\n' });
+  const { issues } = await checkLive({ projectDir: dir });
+  assert.ok(issues.some((i) => i.code === 'live-format' && /`since:`/.test(i.message)));
+  assert.ok(!issues.some((i) => i.code === 'missing-delta'));
+});
+
+test('fences hide their content: an adr-live or a task inside a tilde or backtick example is data', () => {
+  const example = '~~~markdown\n```adr-live\nnone: "example"\n```\n- [ ] example task\n~~~\n';
+  const fence = findFence(`# Plan\n\n\`\`\`adr-live\nnone: "real"\n\`\`\`\n\n${example}`);
+  assert.equal(YAML.parse(fence.yaml).none, 'real');
+  assert.equal(hasOpenTask(`- [x] Done\n\n${example}`), false);
+  assert.equal(hasOpenTask('- [x] Done\n  ```\n  code\n  ```\n- [ ] Open\n'), true);
+});
+
+test('supersede reports the warnings of the ref rewrite', async () => {
+  const dir = await mkProject();
+  await writeLive(dir, [{ id: 'kept', summary: 'The kept behaviour.', refs: ['adr-old'] }]);
+  const old = await writeAdr(dir, { id: 'adr-old', status: 'active', evidence: 'implemented', live: { none: 'seeded' } });
+  const neu = await writeAdr(dir, { id: 'adr-new', status: 'active', evidence: 'implemented', live: { none: 'a constraint only' } });
+  const res = await supersede(old, neu, { projectDir: dir });
+  assert.match(res.live.warnings.join(), /kept ref superseded adr-old.*change: removed/);
 });

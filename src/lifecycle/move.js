@@ -96,7 +96,7 @@ export async function transition(file, toStatus, { projectDir = process.cwd(), m
   // run never reaches implementation with nothing to apply at finalize.
   if (toStatus === 'accepted' && existsSync(await liveFile(projectDir))) {
     const delta = data.live ?? null;
-    const problem = gateProblem(delta, delta == null ? [] : deltaProblems(delta));
+    const problem = gateProblem(delta, delta == null ? [] : deltaProblems(delta, { adr: true }), { unapplied: true });
     if (problem) throw gateError(data.id, problem);
   }
 

@@ -66,6 +66,6 @@ export async function supersede(oldFile, newFile, { projectDir = process.cwd(), 
       stageMove(ctx.livePath);
     }
     const rewritten = live?.ops.find((o) => o.op === 'rewrote')?.ids ?? [];
-    return { oldId: oldAdr.data.id, newId: newAdr.data.id, superseded: moved.target, plan: disposed, live: live && { changed: live.changed, rewritten } };
+    return { oldId: oldAdr.data.id, newId: newAdr.data.id, superseded: moved.target, plan: disposed, live: live && { changed: live.changed, rewritten, warnings: live.warnings } };
   });
 }

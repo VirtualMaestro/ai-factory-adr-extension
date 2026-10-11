@@ -2,7 +2,7 @@
 
 Open items only. The MVP build log and original PRD remain in Git history.
 
-**Current state:** 4.8.0 · 20 skills · 183 tests pass, none skipped.
+**Current state:** 4.8.1 · 20 skills · 191 tests pass, none skipped.
 CNL-P comes from `cnlp-kit`; this repository owns `skill`, `live` and `plan`.
 Adopting projects read them through `ai-factory adr format`.
 

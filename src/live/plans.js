@@ -4,6 +4,19 @@ import { readDelta, splitRefs } from './delta.js';
 
 export const linkedAdrs = (doc) => splitRefs(doc.data.implements);
 
+/** An unchecked `- [ ]` task outside code fences: one inside an example is the example's data. */
+export function hasOpenTask(text) {
+  let fence = null;
+  for (const line of text.split(/\r?\n/)) {
+    const run = line.match(/^\s*(`{3,}|~{3,})(.*)$/);
+    if (fence) {
+      if (run && run[1][0] === fence[0] && run[1].length >= fence.length && !run[2].trim()) fence = null;
+    } else if (run) fence = run[1];
+    else if (/^\s*- \[ \]/.test(line)) return true;
+  }
+  return false;
+}
+
 /** Only entrypoints: full plans and ultra index.md, not the bundle's task files. */
 export async function readPlans(ctx) {
   const plans = [];
@@ -26,7 +39,7 @@ export async function readPlans(ctx) {
         throw err;
       }
       const date = String(doc.data.archived ?? doc.content.match(/<!-- aif:archived:(\d{4}-\d{2}-\d{2}) -->/)?.[1] ?? '');
-      plans.push({ file, doc, archived: archived || Boolean(date), date, completed: !/^\s*- \[ \]/m.test(doc.body) });
+      plans.push({ file, doc, archived: archived || Boolean(date), date, completed: !hasOpenTask(doc.body) });
     }
   }
   return plans.sort((a, b) => a.file.localeCompare(b.file));

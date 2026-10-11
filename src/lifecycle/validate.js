@@ -84,7 +84,8 @@ export async function validateAdr(file, { projectDir = process.cwd() } = {}) {
   // Not for `active`: an ADR finalized before the opt-in is `missing-delta` in `adr live check`,
   // and an error here would turn `adr status --check` red for every existing project.
   if (['proposed', 'draft', 'accepted'].includes(data.status) && existsSync(await liveFile(projectDir))) {
-    const problems = data.live == null ? ['no `live:` delta: write `live:` with `changes:` or `none:`'] : deltaProblems(data.live);
+    const problems = data.live == null ? ['no `live:` delta: write `live:` with `changes:` or `none:`'] : deltaProblems(data.live, { adr: true });
+    if (!problems.length && data.live.applied != null) problems.push('`applied:` is written by finalize: remove it');
     for (const p of problems) (data.status === 'accepted' ? errors : warnings).push(`live: ${p}`);
   }
 

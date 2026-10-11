@@ -5,7 +5,7 @@ the AI Factory core skills and the CNL-P checker, the operator's decisions, and 
 (§9, §10).
 This is a proposal, not a governed artifact. It is prose and deliberately not CNL-P.
 
-**Status: phases 1–2 implemented in 4.4.0 and 4.5.0; phases 3–4 open — §11 is the handoff.** Every decision is settled: with evidence (§5.1) or by the
+**Status: all 4 phases implemented in 4.4.0–4.7.0 — §11 records the result.** Every decision is settled: with evidence (§5.1) or by the
 operator (§5.2, §5.3).
 
 ---
@@ -126,7 +126,7 @@ The parser takes the first ```` ```adr-live ```` fence in the entrypoint and fai
 
 | Event | Trigger | Effect on `LIVE.md` |
 |---|---|---|
-| ADR finalized, documentation-only or not | `adr finalize` (inside `adr-finalize` step 10 and `adr-auto-implement` step 31) | apply the ADR's delta; ref = the ADR id |
+| ADR finalized, documentation-only or not | `adr finalize` (inside `adr-finalize` step 12 and `adr-auto-implement` step 31) | apply the ADR's delta; ref = the ADR id |
 | ADR superseded by an ADR that is already active | `adr supersede <old> <new>` | rewrite refs to the old id (§3.4) |
 | ADR superseded by an ADR not yet finalized | `adr supersede` | nothing: the old code runs until the successor is implemented, so the ref to the old ADR stays correct |
 | Plan without an ADR completed | end of `aif-implement`, injected `ai-factory adr live apply <entrypoint>` | apply the plan's delta; ref = the plan stem |
@@ -268,15 +268,15 @@ Lookup, in this order, and every hit is counted:
   Existing projects keep working.
 - **The gate is in the CLI, at the 2 transitions that matter** (D5), when `LIVE.md` exists:
   - `adr transition <file> accepted` refuses an ADR with an absent or malformed `live:`, in the house error shape with
-    `next: write live: with changes: or none:, see adr-improve`. `adr-accept` reaches that command at step 6
-    (`skills/adr-accept/SKILL.md:55`), before any plan or code exists;
+    `next: write live: with changes: or none:, see adr-improve`. `adr-accept` reaches that command at step 7
+    (`skills/adr-accept/SKILL.md:57`), before any plan or code exists;
   - `adr finalize` refuses the same. Today it never calls `validateAdr` (`src/lifecycle/finalize.js:16-53`), so
     finalize step 1 checks it itself (§3.4).
 - Two paths put a file into `accepted/` without `transition`, and both bypass the CLI refusal:
   - `adr import --status accepted` writes the template directly (`src/artifacts/import.js:63-68`);
   - `adr-migrate` uses `git mv` into the status directory (`skills/adr-migrate/SKILL.md:92`).
 
-  `validateAdr` catches both. `adr-migrate` runs `adr validate --strict` (`:69`), which also fails on the `proposed` and
+  `validateAdr` catches both. `adr-migrate` runs `adr validate --strict` (`:71`), which also fails on the `proposed` and
   `draft` warning. So when `LIVE.md` exists, `adr-migrate` writes `live:` on every file it migrates.
 - **`validateAdr` reports an absent or malformed `live:` only for an ADR in `accepted`,** as an error, and as a warning
   while it is `proposed` or `draft`. **Not for `active`.**
@@ -333,7 +333,7 @@ All are subcommands of `adr`, so `extension.json` keeps 1 command (`test/extensi
 | `ref-creep` | an entry has more than 3 refs | every entry |
 | `summary-too-long` | a summary has more than 2 sentences | every entry except the sentinel |
 | `missing-delta` | no `live:` | every active ADR |
-| `missing-delta` | no `adr-live` fence | plans without `implements:`: archived on or after `since:` (full plan: frontmatter `archived:`; ultra: `<!-- aif:archived:DATE -->`), and completed plans still in `paths.plans` (no `- [ ]` in the entrypoint; ultra keeps progress only in `index.md`, `ULTRA-FORMAT.md:31`) |
+| `missing-delta` | no `adr-live` fence | plans without `implements:`: archived on or after `since:` (full plan: frontmatter `archived:`; ultra: `<!-- aif:archived:DATE -->`), and completed plans still in `paths.plans` (no `- [ ]` outside a code fence in the entrypoint; ultra keeps progress only in `index.md`, `ULTRA-FORMAT.md:31`) |
 | `unapplied-delta` | a `changes:` delta without `applied:` | active ADRs, and completed or archived plans without `implements:` |
 | `delta-on-linked-plan` | a plan with `implements:` carries an `adr-live` fence | plans |
 | `contradicts-active-adr` | a plan's fence lists in `contradicts:` an ADR that is still `active` | completed and archived plans |
@@ -537,7 +537,7 @@ declared in `profiles/skill.md` `custom_sections`. Imperative mood forbids the p
 - `adr-reconcile`: allow a suggestion on `live:` while the ADR is not active. Today it forbids every frontmatter edit
   (`:27`).
 - `adr-migrate`: add `live` to the frontmatter fields its `file_shape` lists (`:94`). When `LIVE.md` exists, every
-  migrated file gets `live:`, because its `validate --strict` step (`:69`) fails on the warning too (§3.6).
+  migrated file gets `live:`, because its `validate --strict` step (`:71`) fails on the warning too (§3.6).
 - `adr-auto-implement`:
   - step 3 stays as it is. A dirty `LIVE.md` at the start comes from an interrupted run and must stop this one. Each
     ADR's commit takes its own `LIVE.md` change, so the file is clean between ADRs;
@@ -1103,5 +1103,7 @@ See [validation-live-phase4.md](validation-live-phase4.md) for evidence and unex
 Deviation from the outline: add explicit staged-diff inspection before commit, including archive
 metadata, because the phase 3 live runs exposed silent staging failures and an unstaged archive date.
 Stop after pass 5 when planning still changes tasks instead of implementing an unsettled plan.
+The opening `git status` and its dirty-`LIVE.md` stop run only when `git.enabled` is true: without Git
+there is no working tree to inspect, and no commit to sweep a leftover `LIVE.md` into.
 
 The four proposal phases are implemented and committed; no push or publication.

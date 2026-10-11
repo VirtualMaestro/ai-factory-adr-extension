@@ -27,14 +27,17 @@ export function splitRefs(refs) {
 /**
  * What is wrong with a delta mapping, as 1 line each; [] when it is well-formed. `null` is
  * absent, not malformed — `live:` with no value parses to it, as `plan:` does — so the caller
- * asks `delta == null` first.
+ * asks `delta == null` first. `adr` marks an ADR carrier, which records no `contradicts:`.
  */
-export function deltaProblems(delta) {
+export function deltaProblems(delta, { adr = false } = {}) {
   if (!isMapping(delta)) return ['the delta is not a mapping: write `changes:` or `none:`'];
   const out = [];
   for (const key of Object.keys(delta)) {
     if (!TOP_KEYS.has(key)) out.push(`unknown key "${key}": the delta holds changes, none, applied, contradicts`);
+    // An empty key survives the apply, and the CLI would then write a second one beside it.
+    else if ((key === 'applied' || key === 'contradicts') && delta[key] == null) out.push(`\`${key}:\` is empty: the CLI writes it, so remove the key`);
   }
+  if (adr && delta.contradicts != null) out.push('`contradicts:` belongs to a plan fence: an ADR that removes a capability of an active ADR supersedes it');
   const hasChanges = delta.changes != null;
   const hasNone = delta.none != null;
   if (hasChanges && hasNone) out.push('`changes:` and `none:` exclude each other');
@@ -69,7 +72,7 @@ export function deltaProblems(delta) {
     if (summaryIssue) out.push(`${at}: ${summaryIssue}`);
     if (c.refs != null) {
       const ok = typeof c.refs === 'string' || (Array.isArray(c.refs) && c.refs.every((r) => typeof r === 'string'));
-      if (!ok || splitRefs(c.refs).some((r) => /\n/.test(r))) out.push(`${at}: refs is 1 line separated by ", ", or a list of strings`);
+      if (!ok || splitRefs(c.refs).some((r) => /[\n,]/.test(r))) out.push(`${at}: refs is 1 line separated by ", ", or a list of strings without ","`);
     }
   });
   return out;
@@ -77,46 +80,53 @@ export function deltaProblems(delta) {
 
 /**
  * The first ```` ```adr-live ```` fence outside any other fence, as line indexes. A fence the
- * author nested inside an example (a ```` ````markdown ```` block) is the example's data.
+ * author nested inside an example (a ```` ````markdown ```` or `~~~` block) is the example's data.
  * Throws on a second `adr-live` fence or one that never closes.
  */
 export function findFence(content) {
   const lines = content.split('\n');
-  let outer = null; // the backtick run of the fence we are inside, if any
+  let outer = null; // the backtick or tilde run of the fence we are inside, if any
   let found = null;
   for (let i = 0; i < lines.length; i += 1) {
     const line = lines[i].replace(/\r$/, '');
-    const open = line.match(/^(`{3,})(.*)$/);
+    const open = line.match(/^(`{3,}|~{3,})(.*)$/);
     if (outer) {
-      if (open && open[1].length >= outer.ticks && !open[2].trim()) {
+      if (open && open[1][0] === outer.run[0] && open[1].length >= outer.run.length && !open[2].trim()) {
         if (outer.live) found.end = i;
         outer = null;
       }
       continue;
     }
     if (!open) continue;
-    const live = open[1].length === 3 && open[2].trim() === 'adr-live';
+    const live = open[1] === '```' && open[2].trim() === 'adr-live';
     if (live && found) {
       throw new Error(`more than 1 \`adr-live\` fence: line ${found.start + 1} and line ${i + 1}`);
     }
     if (live) found = { start: i, end: null };
-    outer = { ticks: open[1].length, live };
+    outer = { run: open[1], live };
   }
   if (found && found.end == null) throw new Error(`the \`adr-live\` fence at line ${found.start + 1} never closes`);
   return found && { ...found, lines, yaml: lines.slice(found.start + 1, found.end).map((line) => line.replace(/\r$/, '')).join('\n') };
 }
 
 /**
- * The delta a source carries, and where. An ADR (frontmatter `type: adr`) carries it in
- * frontmatter `live:`; anything else is a plan and carries it in its first `adr-live` fence.
+ * The delta a source carries, and where. An ADR (frontmatter `type: adr`, or `adr` when the
+ * caller found the file in the ADR index) carries it in frontmatter `live:`; anything else is
+ * a plan and carries it in its first `adr-live` fence. Unparseable frontmatter is a problem,
+ * not a throw: 1 broken plan must not stop a check of all the others.
  * Returns { carrier, content, data, body, fence, delta, problems } — `delta` is null when absent.
  */
-export async function readDelta(file) {
+export async function readDelta(file, { adr = false } = {}) {
   const content = await readFile(file, 'utf8');
-  const { data, body } = parse(content);
-  if (data.type === 'adr') {
+  let data, body;
+  try {
+    ({ data, body } = parse(content));
+  } catch (err) {
+    return { carrier: adr ? 'adr' : 'plan', content, data: {}, body: content, fence: null, delta: null, problems: [err.message.split('\n')[0]] };
+  }
+  if (adr || data.type === 'adr') {
     const delta = data.live ?? null;
-    return { carrier: 'adr', content, data, body, fence: null, delta, problems: delta == null ? [] : deltaProblems(delta) };
+    return { carrier: 'adr', content, data, body, fence: null, delta, problems: delta == null ? [] : deltaProblems(delta, { adr: true }) };
   }
   let fence;
   try {

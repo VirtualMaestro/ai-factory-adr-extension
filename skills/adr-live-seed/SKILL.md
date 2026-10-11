@@ -7,7 +7,7 @@ mode: live_state_seeding
 
 purpose:
 - give an existing project its `LIVE.md` once: the capabilities the product has today, 1–2 sentences each, with refs
-- backfill `live:` on every active and accepted ADR, so `adr live check` reports no `missing-delta` and `adr status --check` passes
+- backfill `live:` on every active and accepted ADR, so `adr live check` reports no `missing-delta` on an ADR and `adr status --check` passes
 - run once per project: after it, finalize keeps `LIVE.md` current
 
 inputs:
@@ -18,7 +18,7 @@ preconditions:
 - the working tree is clean: the seed edits many ADRs, and a clean tree makes `git checkout .` a complete undo
 
 forbidden_behaviors:
-- do not write a record into `LIVE.md`, or `live:` into an ADR, before the operator approves the list of capabilities: `adr live init` at step 2 writes only the sentinel
+- do not write a record into `LIVE.md`, or `live:` into an ADR, before the operator approves the list of capabilities: `adr live init` at step 3 writes only the sentinel
 - do not change a decision: `live:` on an active ADR is a non-material edit (PRD §18.3), and every other line of the ADR stays as it is
 - do not list a capability that only a proposed, draft or accepted ADR describes: the product does not have it yet, and its finalize adds it
 - do not list a capability with no ground: each record cites an active ADR, a plan or a file that shows the behaviour
@@ -27,15 +27,15 @@ forbidden_behaviors:
 - do not run this skill as a step of `adr-migrate`: a project migrated before `LIVE.md` existed needs the seed too
 
 outputs:
-- `LIVE.md` with the approved capabilities, clean in `ai-factory adr live check`
+- `LIVE.md` with the approved capabilities, clean in `ai-factory adr live check` apart from the plans step 22 lists
 - `live:` on every active and accepted ADR
 - the completed plans still in `paths.plans`
 - the sections of `AGENTS.md` that narrate project state
 
 workflow:
 1. run `git status` and stop when the tree is not clean
-2. run `ai-factory adr live init`: it creates `LIVE.md` with the sentinel and lists the accepted ADRs without `live:`
-3. stop when `LIVE.md` already exists and holds a record: the project is already seeded, and `adr live check` is the next step
+2. stop when `LIVE.md` already exists and holds a record: the project is already seeded, and `adr live check` is the next step
+3. run `ai-factory adr live init` when `LIVE.md` is absent: it creates `LIVE.md` with the sentinel and lists the accepted ADRs without `live:`; skip it when `LIVE.md` holds only the sentinel
 4. run `ai-factory adr format --path` and `ai-factory adr format live --path`, and read both: the records follow the `live` profile and the lexicon of the standard
 5. run `ai-factory adr decisions` and `ai-factory adr status --json`, then open every active ADR in full
 6. read `.ai-factory/DESCRIPTION.md`, the state narrative in `AGENTS.md`, and the code the active ADRs name in `code:`
@@ -52,7 +52,7 @@ workflow:
 17. write `live:` on each accepted ADR as its finalize applies it, without `applied:`: `added` for a capability `LIVE.md` lacks, `modified` or `removed` for one it holds
 18. double-quote every `summary` in frontmatter: an unquoted `: ` breaks the YAML, and every `adr` command then fails on the file
 19. run `ai-factory adr live apply <file> --dry-run` on each accepted ADR and correct its delta until it passes
-20. run `ai-factory adr live check` and fix each issue it lists, until it lists none
+20. run `ai-factory adr live check` and fix each issue it lists, until it lists none, except `missing-delta` on a plan: step 22 hands that plan to the operator
 21. run `ai-factory adr status --check` and fix until it exits 0
 22. list the plans in `paths.plans` with no open `- [ ]` task and no `implements:`, for the operator to archive or to give an `adr-live` fence
 23. list the sections of `AGENTS.md` that narrate project state: `LIVE.md` holds that role now, and the operator decides their removal

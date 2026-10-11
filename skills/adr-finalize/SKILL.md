@@ -75,7 +75,7 @@ command_behaviour:
 
 documentation_only_adrs:
 - an ADR with `evidence: documentation-only` or `documentation-only decision` in its frontmatter skips verification and the plan steps entirely
-- set that field, then run `ai-factory adr finalize <adr-file>` directly: with no plan and a documentation-only `evidence:` it activates the ADR without a plan
+- set that field, run steps 10 and 11, then run `ai-factory adr finalize <adr-file>` and steps 13 to 15: with no plan and a documentation-only `evidence:` it activates the ADR without a plan
 - `plan:` stays empty
 
 status_footer:

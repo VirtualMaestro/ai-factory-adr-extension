@@ -33,10 +33,14 @@ export async function liveContext(projectDir = process.cwd()) {
   };
 }
 
-/** Why a delta cannot pass the gate, or null: absent and malformed are both a refusal once `LIVE.md` exists. */
-export function gateProblem(delta, problems) {
+/**
+ * Why a delta cannot pass the gate, or null: absent and malformed are both a refusal once
+ * `LIVE.md` exists. `unapplied` also refuses an `applied:` before finalize, which would refuse it.
+ */
+export function gateProblem(delta, problems, { unapplied = false } = {}) {
+  if (problems.length) return `malformed \`live:\`: ${problems.join('; ')}`;
   if (delta == null) return 'no `live:` delta';
-  return problems.length ? `malformed \`live:\`: ${problems.join('; ')}` : null;
+  return unapplied && delta.applied != null ? '`applied:` is written by finalize: remove it' : null;
 }
 
 /** The gate's refusal (§3.6), shared by `transition … accepted` and `finalize`. */
@@ -77,10 +81,20 @@ export async function computeLive(ctx, { changes, kind, ref, supersedes = [], la
   if (!res.ops.length) return { before, after: before, changed: false, ops: [], warnings: res.warnings, contradicts: [] };
   const after = renderLive({ ...state, entries: res.entries });
   const issues = await liveIssues(after);
+  const lines = (list) => list.map((i) => `LIVE.md line ${i.line}: ${i.message}${i.text ? ` — ${JSON.stringify(i.text)}` : ''}`);
+  // A hand edit that already fails the profile is not the delta's fault: name the file instead.
+  const prior = issues.length ? await liveIssues(before) : [];
+  if (prior.length) {
+    throw liveError('LIVE.md fails its profile before the delta is applied.', {
+      expected: 'every record passes `ai-factory adr format live` and the lexicon of `ai-factory adr format`',
+      detected: lines(prior),
+      next: `fix LIVE.md by hand until \`ai-factory adr live check\` reports no live-format issue, then apply ${label} again`,
+    });
+  }
   if (issues.length) {
     throw liveError(`The delta of ${label} would make LIVE.md fail its profile.`, {
       expected: 'every record passes `ai-factory adr format live` and the lexicon of `ai-factory adr format`',
-      detected: issues.map((i) => `LIVE.md line ${i.line}: ${i.message}${i.text ? ` — ${JSON.stringify(i.text)}` : ''}`),
+      detected: lines(issues),
       next: `rewrite the summary in ${label} as the message says, then run again`,
     });
   }
@@ -88,6 +102,8 @@ export async function computeLive(ctx, { changes, kind, ref, supersedes = [], la
 }
 
 const rel = (ctx, file) => path.relative(ctx.projectDir, file).split(path.sep).join('/');
+// `adr live check` finds active ADRs by the index, so apply reads the same files as ADRs.
+const indexedAdr = (ctx, file) => [...ctx.adrs.values()].some((a) => path.resolve(a.file) === path.resolve(file));
 
 /**
  * `adr live apply <file>`: apply an ADR or plan entrypoint (a directory resolves to index.md).
@@ -105,7 +121,7 @@ export async function applySource(file, { projectDir = process.cwd(), dryRun = f
     throw liveError('Source not found.', { expected: 'an existing ADR or plan entrypoint', detected: `${file} is missing`, next: 'check the path' });
   }
 
-  const doc = await readDelta(abs);
+  const doc = await readDelta(abs, { adr: indexedAdr(ctx, abs) });
   const isAdr = doc.carrier === 'adr';
   const linked = linkedAdrs(doc);
   if (!isAdr && linked.length) return { ...base, skipped: `linked to ${linked.join(', ')}` };
@@ -162,22 +178,28 @@ export async function applySource(file, { projectDir = process.cwd(), dryRun = f
 export async function applyPending({ projectDir = process.cwd() } = {}) {
   const report = await checkLive({ projectDir });
   if (!report.exists) return { skipped: 'no LIVE.md', results: [], failures: [] };
+  const ctx = await liveContext(projectDir);
   const sources = [];
   const additions = new Map();
   const rank = { removed: 0, added: 1, modified: 2 };
+  const results = [], failures = [];
   for (const issue of report.issues.filter((i) => i.code === 'unapplied-delta')) {
-    const file = resolveInside(projectDir, issue.source);
-    const doc = await readDelta(file);
-    const log = spawnSync('git', ['log', '-1', '--format=%cI', '--', file], { cwd: projectDir, encoding: 'utf8' });
-    const date = Date.parse(log.status === 0 ? log.stdout.trim() : '');
-    sources.push({ file, source: issue.source, date: Number.isFinite(date) ? date : statSync(file).mtimeMs,
-      rank: Math.min(...doc.delta.changes.map((c) => rank[c.change])) });
-    for (const c of doc.delta.changes.filter((c) => c.change === 'added')) {
-      additions.set(c.capability, [...(additions.get(c.capability) ?? []), issue.source]);
+    try {
+      const file = resolveInside(projectDir, issue.source);
+      const doc = await readDelta(file, { adr: indexedAdr(ctx, file) });
+      if (!doc.delta?.changes) throw new Error(doc.problems.join('; ') || 'the source no longer carries `changes:`');
+      const log = spawnSync('git', ['log', '-1', '--format=%cI', '--', file], { cwd: projectDir, encoding: 'utf8' });
+      const date = Date.parse(log.status === 0 ? log.stdout.trim() : '');
+      sources.push({ file, source: issue.source, date: Number.isFinite(date) ? date : statSync(file).mtimeMs,
+        rank: Math.min(...doc.delta.changes.map((c) => rank[c.change])) });
+      for (const c of doc.delta.changes.filter((c) => c.change === 'added')) {
+        additions.set(c.capability, [...(additions.get(c.capability) ?? []), issue.source]);
+      }
+    } catch (err) {
+      failures.push({ source: issue.source, error: err.message });
     }
   }
   sources.sort((a, b) => a.date - b.date || a.rank - b.rank || a.source.localeCompare(b.source));
-  const results = [], failures = [];
   for (const { file, source } of sources) {
     try {
       const conflicts = [...additions].filter(([, files]) => files.length > 1 && files.includes(source));
@@ -209,8 +231,8 @@ export async function initLive({ projectDir = process.cwd() } = {}) {
   const pending = [];
   for (const [id, adr] of ctx.adrs) {
     if (adr.status !== 'accepted') continue;
-    const doc = await readDelta(adr.file).catch(() => null);
-    if (doc && gateProblem(doc.delta, doc.problems)) pending.push({ id, file: rel(ctx, adr.file) });
+    const doc = await readDelta(adr.file, { adr: true }).catch(() => null);
+    if (doc && gateProblem(doc.delta, doc.problems, { unapplied: true })) pending.push({ id, file: rel(ctx, adr.file) });
   }
   pending.sort((a, b) => a.id.localeCompare(b.id));
   return { live, since, acceptedWithoutDelta: pending };

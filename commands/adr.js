@@ -160,6 +160,7 @@ export function register(program) {
         console.log(`${res.oldId} superseded by ${res.newId}: ${res.superseded}`);
         if (res.plan) console.log(`Plan ${res.plan.action}.`);
         if (res.live?.rewritten.length) console.log(`LIVE.md: refs to ${res.oldId} now name ${res.newId} in ${res.live.rewritten.join(', ')}`);
+        res.live?.warnings.forEach((w) => console.warn(`  warning: ${w}`));
       });
     }));
 

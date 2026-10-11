@@ -11,6 +11,7 @@ When the project has `LIVE.md` (default `.ai-factory/LIVE.md`, configured by `ad
 - Double-quote each summary. Write its 1–2 sentences with the lexicon of `ai-factory adr format`; the CLI checks the rendered LIVE.md.
 - For a fast plan, give every change durable `refs:` (repository files or ADR ids), including modifications and removals: PLAN.md may disappear after completion.
 - Run `ai-factory adr live apply <entrypoint> --dry-run` to check the delta before implementation; correct any reported issue.
+- When the runtime denies an `ai-factory` command, read `LIVE.md` directly and write the fence by the rules above; the apply at the end of `aif-implement` checks it.
 
 Example carrier (replace the values with the actual change):
 

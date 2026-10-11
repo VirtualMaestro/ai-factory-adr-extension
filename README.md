@@ -2,12 +2,12 @@
 
 Architecture Decision Record (ADR) lifecycle for [AI Factory](https://github.com/lee-to/ai-factory).
 
-Adds an audited, Git-native ADR workflow to an AI Factory project: eight
-lifecycle skills for the agent (`propose → improve → accept → plan → implement →
-finalize`, plus `supersede` and `status`), a `verify` skill that checks an ADR
-against the implemented code on demand, an overview skill that maps the flow,
-and a deterministic `ai-factory adr` command that does the file mechanics
-(status moves, reciprocal links, artifact audit).
+Adds an audited, Git-native ADR workflow to an AI Factory project: 20 skills for
+the agent, built around the lifecycle `propose → improve → accept → plan →
+implement → finalize` plus `supersede`, with verification, consistency,
+automation, `LIVE.md` state and an overview that maps the flow, and a
+deterministic `ai-factory adr` command that does the file mechanics (status
+moves, reciprocal links, artifact audit).
 
 The source of truth is always the Markdown ADR files in Git. Any external index
 is advisory, never authoritative.
@@ -265,6 +265,9 @@ to write, preserve and apply it when every task is complete, before plan cleanup
 Full and ultra plans use their filename or bundle stem as ref, which survives
 archiving. Fast plans require durable `refs:` on every change because PLAN.md may
 be deleted. A plan with `implements:` carries no fence and skips apply.
+Core `aif-plan` and `aif-improve` do not pre-approve `ai-factory` commands in
+Claude Code: an interactive run asks for them, and a headless `claude -p` run
+needs `--allowedTools "Bash(ai-factory *)"`. `aif-implement` already grants `Bash`.
 
 A plan may remove a capability established by an active ADR. Apply warns and writes
 `contradicts:` into its fence; `live check` reports `contradicts-active-adr` and
@@ -413,8 +416,9 @@ directory and the QA directory, so a stray `playwright-report/` blocks it.
 Markdown ADRs in Git are the only source of truth. Decision recall needs no
 external service: structured frontmatter, `adr status`, and grep cover it. The
 optional Cognee memory integration was evaluated and dropped (the
-`adr.memory.provider` config axis stays reserved); the optional
-code-intelligence integration remains deferred post-MVP. No runtime code
+`adr.memory.provider` config axis stays reserved); optional code-intelligence
+is an agent contract with a read-only `codebase-memory-mcp` adapter, and
+`codegraph` stays reserved. No runtime code
 depends on any MCP server — installs without one lose nothing and cannot fail
 because of it.
 

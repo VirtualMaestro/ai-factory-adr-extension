@@ -45,7 +45,7 @@ export async function finalize(file, { projectDir = process.cwd() } = {}) {
   let live = null;
   if (ctx.exists) {
     const delta = data.live ?? null;
-    const problem = gateProblem(delta, delta == null ? [] : deltaProblems(delta));
+    const problem = gateProblem(delta, delta == null ? [] : deltaProblems(delta, { adr: true }));
     if (problem) throw gateError(data.id, problem);
     if (delta.applied != null) {
       throw liveError(`${data.id} is already applied on ${delta.applied}.`, {

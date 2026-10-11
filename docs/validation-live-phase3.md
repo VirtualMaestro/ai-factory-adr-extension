@@ -1,6 +1,6 @@
 # LIVE.md phase 3 validation — 2026-10-11
 
-Implementation for 4.6.0 is complete in the working tree. No repository commit, push or publication.
+Implementation for 4.6.0, later committed as `e2f3230`. No push or publication at the time of this record.
 
 ## Automated checks
 
@@ -50,4 +50,4 @@ archived plan were staged; live check and standard tests passed there too.
 - Codex staging replay: `C:/Users/virtu/AppData/Local/Temp/adr-phase3-replay-oU0Wvr`.
 - Live ultra execution was not run; automated tests cover ultra apply and archive refs.
 - Pending batches intentionally retain successful writes and staging when another source fails.
-- Phase 4 remains deferred until the operator commits phase 3.
+- Phase 4 followed after the phase 3 commit, as `eb1ddce` (4.7.0).

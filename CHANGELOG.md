@@ -4,6 +4,38 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and the project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [4.8.1] — 2026-10-11
+
+Fixes from an independent audit of the 4 `LIVE.md` phases.
+
+### Fixed
+
+- A plan with unparseable frontmatter no longer crashes `adr live check`,
+  `adr live apply --pending` or `adr decisions`; `check` reports it as `missing-delta`.
+- An empty `applied:` or `contradicts:` key in a delta is malformed. Apply used to add
+  a second key beside it and leave the plan fence unparseable.
+- An `applied:` written before finalize fails `transition … accepted`, `validate` and the
+  `adr live init` list, instead of passing the gate and failing at finalize.
+- `contradicts:` in an ADR's `live:` is malformed: it belongs to a plan fence only.
+- A list ref containing `,` is malformed: `LIVE.md` would read it back as 2 refs.
+- When `LIVE.md` already fails its profile, apply, finalize and supersede name the file
+  as the cause instead of blaming the delta.
+- An indexed active ADR without `type: adr` applies as an ADR, alone and in `--pending`;
+  one unreadable source in `--pending` becomes a failure instead of aborting the batch.
+- `adr live check` reports unparseable `LIVE.md` frontmatter and a missing or invalid
+  `since:` as `live-format`, instead of exiting 1 or flagging every archived plan.
+- An `adr-live` fence inside a `~~~` example is the example's data, and a `- [ ]` task
+  inside any example fence, indented too, is not an open task.
+- `adr supersede` prints the warnings of the ref rewrite, such as a capability that
+  needs `change: removed`.
+- `adr-live-seed` checks for an existing `LIVE.md` before `adr live init`, which refuses
+  an existing file, and leaves `missing-delta` on unlinked plans to the operator.
+- `adr-finalize` previews and checks the delta of a documentation-only ADR too;
+  `adr-migrate` runs `adr live check` for migrated active ADRs.
+- The `aif-plan` and `aif-improve` injections fall back to reading `LIVE.md` when the
+  runtime denies `ai-factory`; the README names the `claude -p` permission.
+- Stale status lines in the README, the proposal and the phase 3 validation record.
+
 ## [4.8.0] — 2026-10-11
 
 ### Added
