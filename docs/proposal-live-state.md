@@ -5,7 +5,7 @@ the AI Factory core skills and the CNL-P checker, the operator's decisions, and 
 (§9, §10).
 This is a proposal, not a governed artifact. It is prose and deliberately not CNL-P.
 
-**Status: phase 1 implemented in 4.4.0; phases 2–4 open.** Every decision is settled: with evidence (§5.1) or by the
+**Status: phases 1–2 implemented in 4.4.0 and 4.5.0; phases 3–4 open — §11 is the handoff.** Every decision is settled: with evidence (§5.1) or by the
 operator (§5.2, §5.3).
 
 ---
@@ -973,3 +973,87 @@ injection now warn instead of stopping.
 
 After revision 4, the worktree path and `aif-verify --strict` were probed and held. For the flat-file runtimes, only
 injection placement was verified: their models could not be run (§9).
+
+---
+
+## 11. Implementation status and handoff (2026-10-11)
+
+### Done
+
+| Phase | Version | Commit | Notes |
+|---|---|---|---|
+| 1 — the ADR path | 4.4.0 | `ecee5f7` | as §6 phase 1, with the deviations below |
+| 2 — `adr-live-seed` | 4.5.0 | the commit after `ecee5f7` | probed live in Claude Code and Codex, see below |
+
+Code map of what exists:
+
+- `src/live/delta.js`: `deltaProblems`, `splitRefs`, `findFence`, `readDelta` (both carriers: an ADR is
+  frontmatter `type: adr`, anything else is a plan read through its first `adr-live` fence), `markApplied`
+  (the ADR through `serialize`; a plan by inserting `applied:` and `contradicts:` lines before the fence
+  close, every authored byte kept).
+- `src/live/refs.js`: `normaliseRef`, `resolveRef` (ADR id, plan stem in plans or archive as `<stem>.md` or
+  `<stem>/index.md`, repository path; exact case per segment through `readdirSync`).
+- `src/live/state.js`: `parseLive` (throws on any line after `capabilities:` that a render would drop),
+  `renderLive`, `liveIssues` (the profile, plus a quoted `summary:`), `rewriteSuperseded`, `applyDelta`
+  (pure; already implements `kind: 'plan'`, the active-ADR guard and `contradicts`).
+- `src/live/apply.js`: `liveContext` (`livePath`, `exists`, `adrs`, `plansDir`, `archivePlansDir`,
+  `fastPlan`), `computeLive` (no op → returns the file unchanged, no render), `applySource` (ADR sources
+  only), `initLive`, `gateProblem`, `gateError`, `liveError`.
+- `src/live/check.js`: `checkLive`, the ADR and ref codes of §3.7.
+- `src/config/paths.js`: `liveFile`, and `readAifPaths` returns `plan` (`paths.plan`).
+- Lifecycle: the gate in `move.js` (`transition … accepted`) and `validate.js`; finalize steps in
+  `finalize.js`; the finalize-first rewrite in `supersede.js`.
+- Tests: `test/live.test.js`.
+
+### Deviations from the text above
+
+- The superseded-ref rewrite (§3.4) also rewrites entries the delta names; it warns only about the unnamed
+  ones. Otherwise a `modified` entry kept a stale ref to the superseded ADR.
+- `adr-auto-implement` step 29 and `adr-auto-plan` step 19 did not gain a line; both got a
+  `forbidden_behaviors` line instead, so no step was renumbered.
+- A `summary:` in `LIVE.md` is unquoted; a quoted one is `live-format`, because the checker treats quoted
+  text as data and skips the lexicon. In ADR frontmatter and plan fences it stays double-quoted (§3.1).
+- A no-op apply never renders: rendering sorted a hand-edited file and staged it.
+
+### Probe results of phase 2
+
+- Claude Code (`claude -p --permission-mode acceptEdits --allowedTools "Bash(ai-factory *)" "Bash(git *)"`,
+  then `--continue "approve"`): stopped for approval, wrote 2 records and 3 deltas, both checks clean.
+- Codex 0.162.1 (`codex exec -s workspace-write '$adr-live-seed' < /dev/null`, then
+  `codex exec resume --last "approve" < /dev/null`; without `< /dev/null` it hangs on stdin). 3 runs found
+  3 defects, all fixed: a forbidden line that contradicted `live init`, the list written to a file instead
+  of the reply, and quoted summaries in `LIVE.md`. The last run was clean.
+- Not probed: the accepted-ADR steps of the seed (the fixture had no accepted ADR).
+
+### Next: phase 3 — plans without an ADR
+
+Read §3.2–§3.7 and §6 phase 3 first. What is left, in the order it builds:
+
+1. `applySource` accepts plans (today it throws `Not an ADR.`):
+   - a full plan file, an ultra bundle directory or its `index.md`, the fast plan (`ctx.fastPlan`), a plan
+     file anywhere;
+   - frontmatter `implements:` → `{ skipped: 'linked to <adr-id>' }`, exit 0;
+   - the source ref: the stem for a file in `plansDir` or `archivePlansDir` (bundle: the directory name),
+     the repository path for a plan elsewhere, `null` for the fast plan (its records then need `refs:`,
+     which `applyDelta` already refuses without);
+   - write `markApplied(doc, { date, contradicts })` into the plan, write `LIVE.md`, `stageMove` both.
+2. `adr live apply --pending`: every source `unapplied-delta` reports, ordered by
+   `git log -1 --format=%cI -- <file>` then mtime, same date ordered `removed`, `added`, `modified`;
+   continue past a failure, exit 1 if any failed. `commands/adr.js`: `apply [file]` and `--pending`.
+3. `check.js`: `missing-delta` and `unapplied-delta` for plans, `delta-on-linked-plan`,
+   `contradicts-active-adr` (scopes in §3.7); `adr-status` already reports every code by count.
+4. `src/decisions.js`: issue `contradicted-by-plan` on an active ADR that a completed or archived plan
+   lists in `contradicts:`.
+5. `injections/aif-plan.md`, `injections/aif-improve.md`, `injections/aif-implement.md` (texts: §6 phase 3);
+   `extension.json` gets `"injections": [{ "target": "aif-plan", "position": "append", "file":
+   "injections/aif-plan.md" }, …]` (schema: `ExtensionInjection` in ai-factory's
+   `schemas/extension.schema.json`: `target`, `position` = `append` | `prepend`, `file`); add `injections`
+   to `package.json` `files`, or the packed install skips them silently.
+6. `skills/adr-plan`: a plan with `implements:` carries no fence (§5.1 Q5). `adr-overview` `live_events`:
+   the plan rows of §3.3.
+7. Tests of §6 phase 3, including: every `manifest.injections[].file` exists and lies under a `files` entry.
+8. Acceptance (§6 phase 3): one `aif-plan full` → `aif-improve` → `aif-implement` → `aif-archive` and one
+   `aif-plan fast` → `aif-implement` on a scratch project, in Claude Code and in Codex.
+9. Version 4.6.0, CHANGELOG, `docs/BACKLOG.md` state line, this section.
+
+Phase 4 (`adr-auto-change`) follows only after phase 3 is committed.
