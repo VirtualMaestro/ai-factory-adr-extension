@@ -28,6 +28,7 @@ forbidden_behaviors:
 - do not edit the code
 - do not reshape a Decision to make a pair agree
 - do not assign a verdict from the digest alone: it carries no `out_of_scope`, no `alternatives`, and no grounds
+- do not count a rationale or citation mismatch as a contradiction when the binding obligations can both hold in their stated scopes
 - do not recommend `depends_on` for an overlap: it orders implementation, and a spurious edge blocks `ai-factory adr order` with a cycle
 - do not call other skills as nested calls: apply their semantics inline in this run
 
@@ -53,14 +54,14 @@ quality_rules:
 - disagreement alone is not new information
 
 workflow:
-1. run `ai-factory adr decisions`
+1. run `ai-factory adr decisions`; apply `code_intelligence` from `adr-overview` for advisory shared-code evidence without filtering the digest
 2. stop and report the `issues:` lines when it prints any: a sweep over a corpus with a hole gives a verdict nobody can act on
 3. report that there is nothing to check and stop when the digest holds fewer than 2 ADRs
 4. read the whole digest in 1 pass and name every pair whose obligations look like they touch the same subject; judge by what each pair obliges, never by the words it obliges it in, because 2 ADRs collide through their subject and name it differently
 5. open both ADRs in full for every pair you named
-6. assign 1 verdict per pair from the full documents, and drop the pair from the report when the reading clears it
+6. assign 1 verdict per pair from the full documents; for contradiction, name a concrete case in the same scope that cannot meet both obligations; drop a cleared pair
 7. aggregate 1 table, sorted worst-first: contradiction, then redundant, then shared-area
-8. state each verdict with the block of each ADR it rests on, quoted
+8. state each verdict with each ADR's quoted block; record rationale gaps and uncertain scope as notes rather than invent a conflicting obligation
 9. report the status footer
 
 report_format:
