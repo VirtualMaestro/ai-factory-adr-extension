@@ -4,6 +4,21 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and the project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [4.7.0] — 2026-10-11
+
+### Added
+
+- **`adr-auto-change` automates changes without an ADR** (phase 4 of
+  `docs/proposal-live-state.md`). A topic creates a full plan; an existing unlinked full
+  plan or ultra bundle continues in place. The skill improves, implements, writes tests,
+  verifies and reviews, fixes reproduced findings, updates documents and memory, applies
+  LIVE.md once after checks, archives and commits the change in one commit. It uses the
+  existing optional acceptance and exploratory settings and configured push behavior.
+  Fast plans and linked plans are refused. The injected `aif-implement` apply is suppressed
+  so the final delta remains editable until verification completes. 20 skills now.
+- The new automation checks staging before committing, including archive metadata, and
+  reports skipped stages, untested cases, active-ADR removal debt and the actual stop step.
+
 ## [4.6.0] — 2026-10-11
 
 ### Added

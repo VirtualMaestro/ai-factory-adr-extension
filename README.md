@@ -32,7 +32,7 @@ ai-factory extension add ai-factory-adr-extension        # npm
 The extension requires the valid `.ai-factory.json` marker created by
 `ai-factory init`; a directory named `.ai-factory/` alone is not sufficient.
 
-This installs the 19 skills into each configured runtime (`.claude/skills/`,
+This installs the 20 skills into each configured runtime (`.claude/skills/`,
 `.codex/skills/`) and registers the `adr` command. Then scaffold the ADR
 directories:
 
@@ -71,7 +71,7 @@ To remove the extension:
 ai-factory extension remove ai-factory-adr-extension
 ```
 
-Removal takes the 19 skills out of each runtime's skills directory and deletes
+Removal takes the 20 skills out of each runtime's skills directory and deletes
 the extension's own install directory. It leaves everything the extension wrote
 while running: your ADR root with all its documents, your plans, and
 `.ai-factory/adr-extension.yaml`. Adding the extension again therefore needs no
@@ -103,7 +103,7 @@ proposed    draft     accepted                          active
 
 ## Skills
 
-Nineteen skills, installed into every runtime the project configures — invoked as
+Twenty skills, installed into every runtime the project configures — invoked as
 `/adr-propose` in Claude Code and `$adr-propose` in Codex. Start with
 **`/adr-overview`**: it maps every stage to its skill and states the
 retrieval/immutability rules, so it is the one name worth remembering.
@@ -140,6 +140,15 @@ Running a whole phase in one call:
 |---|---|---|
 | `adr-auto-plan <topic or adr> ...` | propose, improve, accept and plan for a batch of ADRs, update the docs, commit and push | stops only for principled questions and the acceptance decision; a rejected draft interrupts it until the operator says how to proceed |
 | `adr-auto-implement [adr ...]` | implement, write tests, run the optional acceptance step, verify and review in fresh subagents, fix each finding after a test that fails on it, update the docs, finalize, commit and push | asks nothing and stops on a blocker; 1 commit per ADR on the current branch, with a body line per untested case |
+| `adr-auto-change <topic or plan>` | plan, improve, implement, test, verify, review, apply LIVE.md, archive and commit a change without an ADR | accepts full plans and ultra bundles; rejects fast and linked plans; no questions, 1 commit, configured push |
+
+`adr-auto-change` accepts a topic, `@<full-plan>` or `@<ultra-bundle>` for a change
+that creates no standing decision. It reads active obligations first, makes no ADR,
+and refuses the configured fast plan or a plan with `implements:`. The run suppresses
+the injected implementation apply, checks the final delta after verification, then
+applies LIVE.md and archives the plan before its single commit. Active-ADR removal
+debt goes into the report with `adr-auto-plan` as the next step. A dirty LIVE.md,
+failing baseline, unresolved finding or failed staging stops the run without a commit.
 
 The two phases stay separate on purpose. Planning often covers several ADRs at once, and one
 decision can wait on another's answer, so a batch rarely reaches implementation in the same
@@ -330,23 +339,23 @@ once to generate it), set `adr.root`, then run `init`.
 Commands and `adr status --check` resolve this setting automatically, including
 when the root is outside AI Factory's default audit paths.
 
-**The acceptance step of `adr-auto-implement` is optional.** Without the block
+**The acceptance step of `adr-auto-implement` and `adr-auto-change` is optional.** Without the block
 below, the run skips it and says so in its report:
 
 ```yaml
 adr:
   acceptance:
-    command: npm run test:browser:mock       # once before the first ADR, then every round
+    command: npm run test:browser:mock       # baseline, then every review round
     exploratory:
       instructions: docs/testing/exploratory-acceptance.md
-      rounds: 1                              # rounds per ADR that may start the agent
+      rounds: 1                              # exploratory rounds per ADR or change
 ```
 
 - `command` is a deterministic project command, such as a browser suite against
-  mock executors. A failure before the first ADR stops the run, because the run
+  mock executors. A baseline failure stops the run, because the run
   did not cause it. A failure in a round is a failing test of that round.
 - `exploratory` starts a fresh agent that drives the running product through the
-  ADR's scenarios, in the first round where the tests and `command` pass. An
+  ADR's or plan's scenarios, in the first round where the tests and `command` pass. An
   anomaly it reports becomes a finding only when a test reproduces it.
 - The instructions file tells the agent how to start, check and stop the app,
   which tools to use, and what it must not touch or pay for. The run stops when

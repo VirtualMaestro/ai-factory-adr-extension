@@ -984,8 +984,10 @@ injection placement was verified: their models could not be run (§9).
 |---|---|---|---|
 | 1 — the ADR path | 4.4.0 | `ecee5f7` | as §6 phase 1, with the deviations below |
 | 2 — `adr-live-seed` | 4.5.0 | the commit after `ecee5f7` | probed live in Claude Code and Codex, see below |
+| 3 — plans without an ADR | 4.6.0 | `e2f3230` | full and fast consumer runs in both runtimes; see phase 3 results |
+| 4 — `adr-auto-change` | 4.7.0 | the commit after `e2f3230` | full consumer runs and stop-condition probes; see phase 4 results |
 
-Code map of what exists:
+Code map at the end of phase 2 (the phase 3 handoff below extends it):
 
 - `src/live/delta.js`: `deltaProblems`, `splitRefs`, `findFence`, `readDelta` (both carriers: an ADR is
   frontmatter `type: adr`, anything else is a plan read through its first `adr-live` fence), `markApplied`
@@ -1060,7 +1062,7 @@ Phase 4 (`adr-auto-change`) follows only after phase 3 is committed.
 
 ### Phase 3 results (2026-10-11)
 
-Implemented in the working tree for 4.6.0; no commit, push or publication.
+Committed as `e2f3230` for 4.6.0; no push or publication.
 The carriers, pending batch, plan diagnostics, contradiction obligations and all 3 packaged
 injections are complete. Both touched skills and the README describe plan events and linked skips.
 `npm test` passed 179/179 with no skips; the packed-install integration checks the injections.
@@ -1077,4 +1079,29 @@ and inheriting the parent `live --json` option into all 3 subcommands.
 For pending ties, a source with several change kinds uses its earliest kind in the
 removed → added → modified order; each source remains one atomic apply.
 
-Next: the operator reviews and commits phase 3, then phase 4 starts from §6 above.
+Phase 3's commit opened phase 4, whose results follow.
+
+### Phase 4 results (2026-10-11)
+
+`adr-auto-change` is implemented in its own commit for 4.7.0, with 20 skills and
+the manifest, rubric group, README and installation/removal counts updated.
+It takes a topic or unlinked full/ultra plan, improves and implements inline, keeps the
+acceptance baseline, regression-first fixes, fresh reviews and exploratory configuration,
+then updates docs/memory, applies the final delta once, archives and commits in one unit.
+Its own report and footer name the plan, capability operations, untested cases and stop step.
+
+`npm test` passed 179/179 with no skips. Claude Code and Codex completed full live runs,
+with fresh verify/review agents and local implementation commits `0db5710` and `ae6a18d`.
+Each commit holds exactly seven run files, including LIVE.md and archive metadata.
+Both final live checks are clean; no ADR or remote push was produced.
+
+Codex stopped correctly when `workspace-write` denied Git staging. Resuming the same scratch
+session with a writable index completed the commit without a second apply.
+Claude also refused fast and linked plans and stopped on dirty LIVE.md and failing baseline.
+See [validation-live-phase4.md](validation-live-phase4.md) for evidence and unexercised branches.
+
+Deviation from the outline: add explicit staged-diff inspection before commit, including archive
+metadata, because the phase 3 live runs exposed silent staging failures and an unstaged archive date.
+Stop after pass 5 when planning still changes tasks instead of implementing an unsettled plan.
+
+The four proposal phases are implemented and committed; no push or publication.

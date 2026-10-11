@@ -58,13 +58,14 @@ const adrSkills = async (dir, runtime) =>
     ? (await readdir(skillsDir(dir, runtime))).filter((n) => n.startsWith('adr-'))
     : [];
 
-test('add installs all 19 skills for each configured runtime and registers `adr` (Acc 2,3,4,6)', opts, async () => {
+test('add installs all 20 skills for each configured runtime and registers `adr` (Acc 2,3,4,6)', opts, async () => {
   const dir = await newProject('claude,codex');
   aif(['extension', 'add', EXT_ROOT], dir);
 
-  assert.equal((await adrSkills(dir, 'claude')).length, 19, 'claude skills');
-  assert.equal((await adrSkills(dir, 'codex')).length, 19, 'codex skills');
+  assert.equal((await adrSkills(dir, 'claude')).length, 20, 'claude skills');
+  assert.equal((await adrSkills(dir, 'codex')).length, 20, 'codex skills');
   assert.ok((await adrSkills(dir, 'claude')).includes('adr-migrate'), 'migration skill installed');
+  assert.ok((await adrSkills(dir, 'claude')).includes('adr-auto-change'), 'plan automation installed');
   for (const runtime of ['claude', 'codex']) {
     for (const skill of ['aif-plan', 'aif-improve', 'aif-implement']) {
       assert.match(await readFile(path.join(skillsDir(dir, runtime), skill, 'SKILL.md'), 'utf8'), /ADR extension/);
@@ -164,8 +165,8 @@ test('wave-1 lifecycle: propose → refine (draft) → accept, driven by the rea
   aif(['adr', 'init'], dir);
 
   // Skills authored (no longer placeholders) and installed for both runtimes.
-  assert.equal((await adrSkills(dir, 'claude')).length, 19, 'claude skills');
-  assert.equal((await adrSkills(dir, 'codex')).length, 19, 'codex skills');
+  assert.equal((await adrSkills(dir, 'claude')).length, 20, 'claude skills');
+  assert.equal((await adrSkills(dir, 'codex')).length, 20, 'codex skills');
   const acceptSkill = await readFile(
     path.join(skillsDir(dir, 'claude'), 'adr-accept', 'SKILL.md'),
     'utf8',
@@ -458,7 +459,7 @@ test('re-adding does not duplicate skills or extension entries (Acc 7)', opts, a
   aif(['extension', 'add', EXT_ROOT], dir);
   aif(['extension', 'add', EXT_ROOT], dir); // second add
 
-  assert.equal((await adrSkills(dir, 'claude')).length, 19);
+  assert.equal((await adrSkills(dir, 'claude')).length, 20);
   const cfg = JSON.parse(await readFile(path.join(dir, '.ai-factory.json'), 'utf8'));
   const entries = (cfg.extensions ?? []).filter((e) => e.name === 'ai-factory-adr-extension');
   assert.equal(entries.length, 1, 'exactly one extension entry');
