@@ -1,97 +1,56 @@
 # Backlog — `ai-factory-adr-extension`
 
-Open items only. The MVP build log (verification spike, epics P0–P4, coverage check) is
-finished; it described the pre-1.6 body format in places and was history, not guidance, so it
-lives in Git history now and nowhere else.
+Open items only. The MVP build log and original PRD remain in Git history.
 
-**Current state:** 4.7.0 · 20 skills · 179 tests green · CNL-P comes from the
-[`cnlp-kit`](https://www.npmjs.com/package/cnlp-kit) package. The standard, the checker and the
-generic profiles live there and are upgraded by bumping a dependency; this repository keeps one
-overlay, `profiles/skill.md`, which names the sections its own skills use, and one profile of its
-own, `profiles/live.md`, the shape of `LIVE.md`. `src/artifacts/cnlp.js`
-is the adapter that makes the overlay win over the packaged `skill` profile and passes everything
-else through. All 20 skill bodies and `templates/adr.md` are clean against the current checks, with
-no skill exempt from its profile. An adopting project reaches the standard and the profiles through
-`ai-factory adr format`, never by path — the files themselves ride in as a bundled dependency,
-since ai-factory installs an extension by `npm pack` and never runs `npm install`.
+**Current state:** 4.8.0 · 20 skills · 183 tests pass, none skipped.
+CNL-P comes from `cnlp-kit`; this repository owns `skill`, `live` and `plan`.
+Adopting projects read them through `ai-factory adr format`.
 
----
+All four LIVE proposal phases are committed. Follow-up live probes cover ultra input,
+inline fallback, configured exploratory acceptance and a reproduced fix round.
+The other-runtime consistency smoke run, plan profile and optional code-intelligence
+adapter are implemented and checked. See
+[validation-backlog-2026-10-11.md](validation-backlog-2026-10-11.md) for evidence and limits.
+The real 40-ADR corpus now has a complete 780-pair sweep and an independently checked
+targeted regression. One revision-id persistence contradiction remains a source-project
+decision to reconcile; this extension's tests do not authorize changing its active ADRs.
 
-## In progress — `LIVE.md`
+## Open — real-corpus scoring and semantic limits
 
-[`proposal-live-state.md`](proposal-live-state.md): phases 1–3 are committed (4.4.0–4.6.0,
-phase 3: `e2f3230`). Phase 4, `adr-auto-change`, is implemented in its own commit for 4.7.0.
-Both runtimes completed live runs through local implementation commits, and stop-condition
-probes passed. See §11, [validation-live-phase3.md](validation-live-phase3.md) and
-[validation-live-phase4.md](validation-live-phase4.md). All four proposal phases are complete.
+- Independently label all pairs in the real corpus, including pairs the checker rejected
+  as non-candidates, then score a fresh blind run. Reviewing only reported pairs cannot
+  measure missed contradictions. This is a quality measurement task, not unfinished runtime code.
+- Automate behavioral regressions for false contradiction judgments and unsupported
+  fresh-reviewer claims when a repeatable agent-evaluation runner exists. Current evidence
+  is fresh live runs; format and rubric tests do not test agent behavior.
+- An obligation outside `decision`, `constraints`, `scope` or `rules` does not enter the
+  decision digest. The real corpus has 40 conformant ADRs, so it does not establish how
+  reliably a reader discovers an obligation hidden in prose elsewhere.
+- The real digest has 2150 lines, above the former unexercised 800-line threshold.
+  Repeat scale checks when a materially larger or multi-repository corpus exists.
 
----
+`npm run corpus` still prepares the 14-ADR labelled fixture; its README specifies the
+blind-run protocol. Both supported runtimes now have successful runs on that fixture.
 
-## Open — one smoke run, and the ceilings
+## Watch on real use
 
-Cross-ADR consistency is built and measured: `ai-factory adr decisions` prints what every
-accepted and active ADR obliges, the four authoring skills read it before they write, and
-`adr-check-consistency` sweeps the corpus for contradictions. Three cold runs against the labelled corpus, by agents kept away from the labels,
-scored 3/3 on the contradictions with no false positive on either same-area pair and no extra
-pair; the tables and footers matched each other exactly, and only the evidence wording varied.
-All 3 ran on 1 runtime, so that number measures how steady the skill's wording is, not how it
-travels between executors.
+- Whether lexicon comparatives reject legitimate quoted or explanatory evidence.
+- Whether the draft-warning and accepted-error gate matches author expectations.
+- Whether a legitimate verbatim line outside a fence needs more than 250 characters.
 
-`npm run corpus` builds a throwaway project pointed at the corpus and prints what to do next;
-`npm run corpus -- --key` prints the answer sheet. Protocol:
-[`test/fixtures/consistency-corpus/README.md`](../test/fixtures/consistency-corpus/README.md).
+Checker changes belong in `cnlp-kit`; this repository maintains its profile vocabulary
+and lifecycle severity gates. Do not copy the checker into the extension.
 
-- 1 smoke run on Codex, the other supported runtime.
-- The plan's §7 ceilings stay open until a real corpus exists: an obligation left in prose is
-  invisible to the digest, and the 800-line threshold has never been approached.
-- The corpus is 14 hand-written ADRs by one author. A second, held-out corpus would test
-  whether the skill generalizes past this one's habits; worth building when the first real
-  project corpus exists to draw from.
+## Optional follow-up
 
----
-
-## Next — the plan profile
-
-Plan documents (`.ai-factory/plans/*.md`, written by `adr-plan`) are the third kind of
-technical document this extension owns and the only one still in prose.
-
-- Adding it is one file, `profiles/plan.md`, plus whatever enforcement it earns. If it needs
-  a change to the standard or the checker, both now live in `cnlp-kit` and the change belongs
-  there — which is also the real test of the generalization. Check first whether the packaged
-  `task` profile already covers what a plan document is; if it does, this item is a mapping,
-  not a new profile.
-- The block vocabulary starts from `adr-plan`'s `plan_frontmatter:` and the steps the
-  skill already dictates.
-- A plan has no lifecycle status of its own to gate severity on, unlike an ADR, so the
-  profile has to say what `enforcement:` means for it before any check is written.
-
----
-
-## Watch on first real use
-
-- whether the comparative list nags on legitimate prose in `rejected_because`
-- whether the warning-at-draft, error-at-accepted gate lands where authors expect it
-- whether the 250-character limit, now covering scalars and record sub-keys, hits a
-  legitimate verbatim line that is not inside a fence
-
-Each is one list or one line in `src/artifacts/cnlp.js`.
-
----
-
-## Deferred
-
-**Phase 6 — optional code-intelligence.** A provider interface plus a `codegraph` or
-`codebase-memory-mcp` adapter (two alternatives for the same enrichment), for impact
-analysis and verification enrichment. Must not own ADR data and must not change lifecycle
-state. PRD §25.
-
----
+`codegraph` is reserved. The shared code-intelligence contract already has a validated
+read-only `codebase-memory-mcp` adapter; add the alternative only when its real tool
+contract and an operator project require it. No graph owns ADRs or lifecycle status.
 
 ## Decided, kept for the record
 
-**Phase 5 — optional memory (Cognee): dropped 2026-07-14.** Cognee needs an LLM at
-ingestion plus an embedding model — a service, its cost, and egress — while the agent
-baseline of frontmatter, `adr status` and grep covers decision recall at this corpus size
-for free. A companion spike found `codebase-memory-mcp` indexes code symbols only and does
-not serve decision recall either. The `adr.memory.provider` config axis stays reserved at
-`none`; revisit at hundreds of ADRs or a multi-repo setup.
+**Phase 5 — optional memory (Cognee): dropped 2026-07-14.** Ingestion needs an LLM,
+embedding model and service cost; the frontmatter and file baseline covers recall at
+the current size. `codebase-memory-mcp` indexes code symbols, not decision recall.
+`adr.memory.provider` stays reserved at `none`; revisit at hundreds of ADRs or a
+multi-repository setup.

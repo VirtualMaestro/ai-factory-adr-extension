@@ -209,7 +209,7 @@ beforehand if you want the migration isolated.
 | `status [file]` | Overview / diagnostics; JSON detail includes `replacedBy`; `--check` exits non-zero on blocking errors (CI) |
 | `order` | Dependency-ordered plan: what is ready to implement next, the topological order, blocked ADRs, and cycles (non-zero exit on a cycle) |
 | `decisions` | What every accepted and active ADR obliges — `decision:`, `constraints:`, `scope:`, `rules:` — so a new decision can be written against the whole corpus; reports per-file `issues` and always exits 0 |
-| `format [name]` | Print the CNL-P standard, or a profile such as `adr`; `--path` prints where it resolved instead |
+| `format [name]` | Print the CNL-P standard or a profile; `--path` prints its location; `format plan --check <file>` checks a plan body and fails on any issue |
 | `live` | Print `LIVE.md`, what the product does now |
 | `live init` | Create `LIVE.md` and list the accepted ADRs that still need a `live:` delta |
 | `live apply <file> [--dry-run]` | Apply an active ADR or a full, ultra or fast plan delta; `--dry-run` previews any ADR status or plan without writing |
@@ -303,6 +303,8 @@ command, never by path — the files live under
 ```bash
 ai-factory adr format          # the standard itself
 ai-factory adr format adr      # the profile an ADR body is held to
+ai-factory adr format plan     # the profile of new ADR implementation plans
+ai-factory adr format plan --check .ai-factory/plans/example.md
 ai-factory adr format --path   # where it resolved, if you want to open it
 ```
 
@@ -314,9 +316,11 @@ repository that checks its own documents with the `cnlp` CLI; here the checker i
 embedded in `adr validate`, which the CLI cannot replace because it alone knows
 an ADR's lifecycle status.
 
-Of the profiles the package carries, this extension uses two: `adr`, taken from
-the package as-is, and `skill`, which it maintains itself because its skills use
-sections a generic skill profile does not declare.
+The extension takes `adr` from the package as-is and owns `skill`, `live` and
+`plan`. New ADR implementation plans carry `format: cnlp-plan`; the plan
+profile retains core checkbox tasks and adds files, acceptance criteria and
+verification per task. Every format issue fails the explicit check, regardless
+of task progress. Existing unmarked plans keep their format and lifecycle behavior.
 
 ## Configuration
 
@@ -338,6 +342,25 @@ once to generate it), set `adr.root`, then run `init`.
 
 Commands and `adr status --check` resolve this setting automatically, including
 when the root is outside AI Factory's default audit paths.
+
+Optional code-intelligence is an agent workflow, rather than an MCP client in
+the CLI. Enable the read-only `codebase-memory-mcp` adapter with an existing
+indexed project id:
+
+```yaml
+adr:
+  codeIntelligence:
+    provider: codebase-memory-mcp
+    project: my-indexed-project
+```
+
+`adr-overview` defines the shared `code_intelligence` contract used by authoring,
+planning, verification and replacement skills. The default `none` makes no graph
+calls. Unavailable tools, stale results, a missing project id or an unsupported
+provider fall back to the existing source-file checks with a reported reason.
+Only one provider may be selected. The adapter checks graph evidence against
+current files and does not index, write graph ADRs, approve decisions or change
+lifecycle gates. `codegraph` is reserved for a later adapter.
 
 **The acceptance step of `adr-auto-implement` and `adr-auto-change` is optional.** Without the block
 below, the run skips it and says so in its report:

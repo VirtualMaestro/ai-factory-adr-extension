@@ -4,6 +4,29 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and the project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [4.8.0] — 2026-10-11
+
+### Added
+
+- An implementation-plan CNL-P profile and `adr format <profile> --check <file>`.
+  New `adr-plan` output keeps core task checkboxes and reciprocal ADR metadata, with
+  explicit task files, changes, acceptance criteria and verification. Plan improvement
+  and implementation preserve and check marked plans. Existing unmarked plans keep
+  their original format; this does not change lifecycle gates or migrate stored plans.
+- Optional code-intelligence has a shared agent contract and a read-only
+  `codebase-memory-mcp` adapter for proposal, refinement, planning, verification,
+  consistency and replacement impact. It requires an explicit indexed project id,
+  bounds discovery, checks current source files, and falls back to file checks.
+  Graph data does not own ADRs or alter lifecycle gates. `codegraph` remains reserved.
+
+### Fixed
+
+- LIVE deltas with summaries longer than 2 sentences now fail before writing or staging,
+  using the same rule as `live check`. A live run exposed the previous mismatch.
+- Consistency judgments now require a concrete incompatible case in the same scope;
+  a rationale or citation mismatch alone is recorded as a gap. Independent real-corpus
+  reviewers exposed the distinction.
+
 ## [4.7.0] — 2026-10-11
 
 ### Added

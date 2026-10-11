@@ -1,13 +1,13 @@
 # AGENTS.md — working on `ai-factory-adr-extension`
 
-An AI Factory extension: the ADR lifecycle (`skills/adr-*`, 19 skills) and the `ai-factory adr`
+An AI Factory extension: the ADR lifecycle (`skills/adr-*`, 20 skills) and the `ai-factory adr`
 command group (`commands/adr.js`, `src/`). Node >= 22.14, ESM, no build step, `npm test` runs
 everything (`node --test`), including an integration suite against the global `ai-factory` CLI.
 
 ## Work in progress
 
-`LIVE.md` — `docs/proposal-live-state.md`. Phases 1–2 are done; **§11 is the handoff for phase 3**:
-what exists, the deviations, and the ordered list of what is left.
+All 4 phases of `docs/proposal-live-state.md` are complete. `docs/BACKLOG.md` tracks open work;
+`docs/validation-backlog-2026-10-11.md` records follow-up live runs, the plan profile and code context.
 
 ## Rules of this repository
 
@@ -21,7 +21,7 @@ what exists, the deviations, and the ordered list of what is left.
 - CNL-P (the format of every skill body, ADR body and `LIVE.md`) comes from the `cnlp-kit` dependency.
   Read it by command before editing a skill: `ai-factory adr format` (the standard) and
   `ai-factory adr format skill` (the profile). Never cite it by path: `test/skill-format.test.js`
-  fails. The only local profiles are `profiles/skill.md` and `profiles/live.md`.
+  fails. The local profiles are `profiles/skill.md`, `profiles/live.md` and `profiles/plan.md`.
 - Skill bodies are imperative: the checker rejects the agentless passive (`is stated`), `ensure`,
   `faster`, `never` as a bullet opener, and lines over 250 characters. A new section name goes into
   `custom_sections` of `profiles/skill.md`.

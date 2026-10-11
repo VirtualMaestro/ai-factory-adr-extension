@@ -59,7 +59,8 @@ They are separate from its one implementation commit.
 
 - Logs: `C:/workspace/projects/AI/adr-phase4-probe-claude/probe-*.log` and
   `C:/workspace/projects/AI/adr-phase4-probe-codex/probe-*.log`.
-- Both positive runs used fresh read-only reviewers. Inline fallback, live ultra input and
-  configured exploratory execution were not exercised. No behavioural finding required a fix round.
+- These initial positive runs used fresh read-only reviewers. The follow-up in
+  [validation-backlog-2026-10-11.md](validation-backlog-2026-10-11.md) covers live ultra
+  input, inline fallback, configured exploratory execution and a reproduced fix round.
 - Codex needs a writable Git index to complete the commit; sandbox staging failure stops the skill.
 - Phase 4 has its own repository commit after Phase 3; no push or publication.
