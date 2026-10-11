@@ -70,6 +70,7 @@ sections:
 
 custom_sections:
 - command_behaviour
+- document_roles
 - documentation_only_adrs
 - documentation_only_overlay
 - expected_warnings
@@ -80,6 +81,8 @@ custom_sections:
 - lenses
 - lifecycle_flow
 - linear_flow_skills
+- live_delta
+- live_events
 - off_flow_skills
 - order_fields
 - plan_disposition

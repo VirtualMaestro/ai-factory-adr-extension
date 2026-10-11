@@ -11,6 +11,7 @@ issue:
 plan:
 evidence:
 replaced_by:
+live:
 ---
 
 # Short decision title

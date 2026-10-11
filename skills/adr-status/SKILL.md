@@ -23,6 +23,7 @@ workflow:
 4. run `ai-factory adr status <file>` for a single ADR
 5. report from it: id; status; lifecycle location; linked active plan; archived plan references; implementation evidence; dependencies; affected artifacts; superseding and replacement relationships; validation errors and warnings
 6. run `ai-factory adr status --check` for duplicate ids, broken artifact references, and other cross-artifact diagnostics; it also runs the strict artifact audit and exits non-zero on blocking errors
+7. run `ai-factory adr live check` and report the count of each issue code it lists: output that opens with `No ` means the project keeps no `LIVE.md`
 
 invocation:
 - Claude Code: `/adr-status [@adr-file]`

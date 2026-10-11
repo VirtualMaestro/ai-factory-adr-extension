@@ -66,11 +66,33 @@ rules_that_always_hold:
 - source of truth is the Markdown ADR files in Git; any external index is advisory, never authoritative
 - retrieval order (PRD §23): read active ADRs first, treat accepted ones as pending decisions, use superseded ones only for historical reasoning, and never treat proposals or drafts as active rules
 - always open the source Markdown after any semantic lookup, and resolve contradictions in favor of the authoritative file and its lifecycle status
-- PRD §18.3 protects active decisions: edit an active ADR in place only for non-material changes such as code links, evidence, paths, and formatting
+- PRD §18.3 protects active decisions: edit an active ADR in place only for non-material changes such as code links, evidence, `live:`, paths, and formatting
 - a material change to the Decision, constraints, scope, or consequences requires a new ADR that supersedes, which is what `adr-supersede` is for
 - skills own judgment, the CLI owns file mechanics: `ai-factory adr …` performs deterministic moves, links, and audits, and the skills decide whether a transition is due
 - read `ai-factory adr decisions` before writing, refining, planning or accepting a decision: it states what every accepted and active ADR obliges, which is the corpus a new decision cannot contradict
 - an ADR records a decision that binds work beyond the change that prompts it: when a `git revert` undoes the change and binds nothing else, the fact belongs in the guide or the code, and `adr-propose` writes no ADR
+- a change that alters what the product does goes through an ADR or a plan, never `aif-implement` without a plan: a change with no plan file has no carrier for its `LIVE.md` delta
+
+document_roles:
+| Document | Role | Who keeps it current |
+|---|---|---|
+| `LIVE.md` | what the product does now: 1 record per capability, 1–2 sentences, with refs | the CLI, when a change is done |
+| `ai-factory adr decisions` | what every accepted and active ADR obliges | computed on read |
+| active ADRs | why each obligation exists | nobody: a new ADR supersedes one |
+| archived plans | how a change was made | history |
+| `.ai-factory/DESCRIPTION.md` | purpose and stack, which rarely change | `aif-docs` |
+| `AGENTS.md` | the code map only | `aif-docs` |
+| `.ai-factory/ROADMAP.md` | the future only | `aif-roadmap` |
+
+live_events:
+| Event | Effect on `LIVE.md` |
+|---|---|
+| `ai-factory adr live init` | creates the file: the project opts in by having it, and every row below needs it |
+| `adr finalize`, documentation-only or not | applies the ADR's `live:` delta, with the ADR id as the ref |
+| `adr supersede` with an `active` replacement | rewrites every ref to the old id into the new id |
+| `adr supersede` with an `accepted` replacement | nothing: the old code runs until the replacement's finalize, which rewrites the refs |
+| `adr import --status active`, from `adr-migrate` | nothing at import: `adr live check` reports `missing-delta`, and `adr live apply <adr>` applies the delta once it is written |
+| a bug fix, or a delta of `none:` | nothing |
 
 workflow:
 - none: this skill is reference material, read before invoking a stage skill, and runs no steps of its own

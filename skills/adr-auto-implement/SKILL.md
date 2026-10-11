@@ -17,7 +17,8 @@ forbidden_behaviors:
 - do not ask the operator anything, including whether to commit at a checkpoint or whether to push
 - do not create or switch branches: the operator picks the branch before the run
 - do not commit an ADR's code before its tests pass and its review finds nothing left to fix
-- do not split an ADR across commits: its code, tests, documents, ADR move and plan archive land in 1 commit
+- do not split an ADR across commits: its code, tests, documents, ADR move, plan archive and `LIVE.md` change land in 1 commit
+- do not write a capability list into `.ai-factory/DESCRIPTION.md`: the capabilities live in `LIVE.md`, which the finalize of each ADR updates
 - do not stage files by pattern, such as `git add -A`: stage by name the paths this ADR changed
 - do not call other skills as nested calls: read each named skill and apply its workflow inline, or in a subagent where a step says so
 - do not change the plan or the ADR decision to make a finding pass: a finding the plan cannot meet stops the run
@@ -61,7 +62,7 @@ workflow:
 32. write `evidence:` without a commit id: the ADR lands in the commit it would cite, and `git log -- <adr-file>` finds that commit
 33. stage by name the code, tests, QA artifacts and documents of this ADR, with the memory file when it lives in the repository
 34. write the commit body with 1 line `Untested: <case> — <needs harness or manual>` per record of steps 10 and 26 for this ADR
-35. commit them with the ADR move and plan archive that `adr-finalize` staged, in 1 commit with that body, by applying `aif-commit` without its push step
+35. commit them with the ADR move, plan archive and `LIVE.md` change that `adr-finalize` staged, in 1 commit with that body, by applying `aif-commit` without its push step
 36. push the current branch: `git push`, or `git push -u origin <branch>` when the branch has no upstream
 37. skip step 36 when `git.skip_push_after_commit` is true in `.ai-factory/config.yaml`, and skip steps 33 to 36 when `git.enabled` is false
 38. continue with the next ADR from step 6
@@ -90,7 +91,7 @@ report_format:
 | `<adr-id>` | untested | — | <k>: <case> — needs <harness> or manual; or none |
 | `<adr-id>` | docs | — | `README.md`, or none |
 | `<adr-id>` | memory | — | 1 fact, or none |
-| `<adr-id>` | finalize | — | `active` |
+| `<adr-id>` | finalize | — | `active`; `LIVE.md`: <op> <capability-id>, or skipped: <reason> |
 | `<adr-id>` | commit | — | `<sha>` |
 | `<adr-id>` | push | — | `<branch>`, or skipped: <reason> |
 ```

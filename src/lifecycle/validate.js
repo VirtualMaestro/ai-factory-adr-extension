@@ -7,6 +7,8 @@ import { findPlaceholders } from '../artifacts/placeholders.js';
 import { bodyIssues, loadProfile } from '../artifacts/cnlp.js';
 import { resolveActivePlan, resolvePlans } from '../artifacts/plan.js';
 import { resolveInside } from '../util/safe-path.js';
+import { liveFile } from '../config/paths.js';
+import { deltaProblems } from '../live/delta.js';
 
 /**
  * ADR-specific invariant checks (§21). Deliberately does NOT re-check what `audit-artifacts` owns
@@ -76,6 +78,14 @@ export async function validateAdr(file, { projectDir = process.cwd() } = {}) {
     (!Array.isArray(data.code) || data.code.length === 0)
   ) {
     warnings.push('active ADR has empty code anchors (list primary entry points in `code:` or mark documentation-only)');
+  }
+
+  // §3.6: a warning while the ADR is written, an error once it is a rule waiting for finalize.
+  // Not for `active`: an ADR finalized before the opt-in is `missing-delta` in `adr live check`,
+  // and an error here would turn `adr status --check` red for every existing project.
+  if (['proposed', 'draft', 'accepted'].includes(data.status) && existsSync(await liveFile(projectDir))) {
+    const problems = data.live == null ? ['no `live:` delta: write `live:` with `changes:` or `none:`'] : deltaProblems(data.live);
+    for (const p of problems) (data.status === 'accepted' ? errors : warnings).push(`live: ${p}`);
   }
 
   if (data.status === 'superseded' && !String(data.replaced_by ?? '').trim()) {

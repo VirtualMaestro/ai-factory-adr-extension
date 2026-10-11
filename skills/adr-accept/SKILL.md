@@ -23,6 +23,7 @@ preconditions:
 - no blocking questions remain
 - the ADR resolves or explicitly addresses every conflict with an active ADR
 - artifact metadata is valid
+- when the project keeps `LIVE.md`, frontmatter `live:` holds `changes:` or `none:`, which `adr-improve` writes
 
 forbidden_behaviors:
 - do not accept when any precondition fails: stop and recommend `adr-improve`
@@ -52,9 +53,10 @@ workflow:
 3. resolve any audit failures before continuing
 4. run `ai-factory adr decisions` and read every line: this is the step that checks the precondition "the ADR resolves every conflict with an active ADR" against the corpus rather than assuming it
 5. open in full every ADR whose `decision:`, `constraints:`, `scope:` or `rules:` overlap this draft, and stop when one of them contradicts it
-6. run `ai-factory adr transition <file> accepted`: a single atomic move of the status edit plus `drafts/` to `accepted/`, staged in Git as a rename
-7. report any warnings
-8. report the status footer
+6. run `ai-factory adr live apply <file> --dry-run`, and present the delta and that output to the operator with the decision: output that opens with `skipped:` means there is nothing to apply
+7. run `ai-factory adr transition <file> accepted`: a single atomic move of the status edit plus `drafts/` to `accepted/`, staged in Git as a rename
+8. report any warnings
+9. report the status footer
 
 status_footer:
   format: "✔ adr-accept · ADR: <adr-id> [accepted] · Plan: <plan-id or none>"

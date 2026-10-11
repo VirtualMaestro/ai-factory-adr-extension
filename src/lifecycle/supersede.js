@@ -4,8 +4,9 @@ import { resolveActivePlan } from '../artifacts/plan.js';
 import { supersedeLink } from '../artifacts/links.js';
 import { transition, transitionTarget } from './move.js';
 import { archivePlan, archivePlanTarget } from './archive.js';
-import { resolveInside, withFileRollback } from '../util/safe-path.js';
+import { resolveInside, atomicWrite, withFileRollback } from '../util/safe-path.js';
 import { stageMove } from '../util/git.js';
+import { liveContext, computeLive } from '../live/apply.js';
 
 const REPLACEABLE = ['accepted', 'active'];
 
@@ -32,8 +33,17 @@ export async function supersede(oldFile, newFile, { projectDir = process.cwd(), 
     fail('Superseding an ADR with a non-archived plan needs an explicit disposition.', `plan ${plan.id} is active; pass --archive-plan or --delete-plan`);
   }
 
+  // Finalize-first order (§3.4): the successor is already active, so its finalize could not see
+  // `supersedes:` yet, and the refs to the old id are rewritten here instead. In the other order
+  // the successor's own finalize does it, and the old ADR's code still runs until then.
+  const ctx = await liveContext(projectDir);
+  const live = ctx.exists && newAdr.data.status === 'active'
+    ? await computeLive(ctx, { changes: [], kind: 'adr', ref: newAdr.data.id, supersedes: [oldAdr.data.id], label: newAdr.data.id })
+    : null;
+
   const supersededTarget = transitionTarget(oldAbs, 'superseded', { projectDir });
   const files = [oldAbs, newAbs, supersededTarget];
+  if (live) files.push(ctx.livePath);
   if (plan) files.push(plan.file);
   if (plan && planDisposition === 'archive') files.push(await archivePlanTarget(plan.file, { projectDir }));
 
@@ -51,6 +61,11 @@ export async function supersede(oldFile, newFile, { projectDir = process.cwd(), 
     }
 
     const moved = await transition(oldAbs, 'superseded', { projectDir, managed: true });
-    return { oldId: oldAdr.data.id, newId: newAdr.data.id, superseded: moved.target, plan: disposed };
+    if (live?.changed) {
+      await atomicWrite(ctx.livePath, live.after);
+      stageMove(ctx.livePath);
+    }
+    const rewritten = live?.ops.find((o) => o.op === 'rewrote')?.ids ?? [];
+    return { oldId: oldAdr.data.id, newId: newAdr.data.id, superseded: moved.target, plan: disposed, live: live && { changed: live.changed, rewritten } };
   });
 }

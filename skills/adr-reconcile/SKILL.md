@@ -24,7 +24,7 @@ forbidden_behaviors:
 - do not write or modify production code
 - do not create or advance a plan
 - do not change the ADR's or the plan's status: reconciling never advances the lifecycle
-- do not touch frontmatter or the reciprocal `implements` / `depends_on` / `plan:` links
+- do not touch frontmatter or the reciprocal `implements` / `depends_on` / `plan:` links, except `live:` on an ADR that is not `active`
 - do not adopt a suggestion that materially changes the Decision, scope, or consequences of an active ADR: reject it and note that it needs a superseding ADR (PRD §18.3)
 - do not rubber-stamp: default to REJECT when a suggestion does not clear the bar
 - do not end with an offer such as "shall I implement this now?"

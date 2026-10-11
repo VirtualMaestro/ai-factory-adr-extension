@@ -7,6 +7,9 @@ import { isLegal, legalTargets } from './transitions.js';
 import { resolveActivePlan } from '../artifacts/plan.js';
 import { resolveInside, atomicWrite } from '../util/safe-path.js';
 import { stageMove } from '../util/git.js';
+import { liveFile } from '../config/paths.js';
+import { deltaProblems } from '../live/delta.js';
+import { gateProblem, gateError } from '../live/apply.js';
 
 class TransitionError extends Error {}
 
@@ -87,6 +90,14 @@ export async function transition(file, toStatus, { projectDir = process.cwd(), m
           '  next:     archive or remove the plan explicitly, then retry',
       );
     }
+  }
+
+  // D5: once a project keeps LIVE.md, an ADR states its delta before it becomes a rule, so a
+  // run never reaches implementation with nothing to apply at finalize.
+  if (toStatus === 'accepted' && existsSync(await liveFile(projectDir))) {
+    const delta = data.live ?? null;
+    const problem = gateProblem(delta, delta == null ? [] : deltaProblems(delta));
+    if (problem) throw gateError(data.id, problem);
   }
 
   const target = transitionTarget(source, toStatus, { projectDir });

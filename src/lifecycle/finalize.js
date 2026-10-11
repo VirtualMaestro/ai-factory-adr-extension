@@ -1,8 +1,11 @@
 import { read as readDoc, serialize } from '../artifacts/frontmatter.js';
 import { resolveActivePlan } from '../artifacts/plan.js';
 import { transition, transitionTarget } from './move.js';
-import { archivePlan, archivePlanTarget } from './archive.js';
+import { archivePlan, archivePlanTarget, todayUTC } from './archive.js';
 import { resolveInside, atomicWrite, withFileRollback } from '../util/safe-path.js';
+import { stageMove } from '../util/git.js';
+import { deltaProblems } from '../live/delta.js';
+import { liveContext, computeLive, gateProblem, gateError, liveError } from '../live/apply.js';
 
 export function isDocumentationOnly(data) {
   return /^documentation-only(?: decision)?$/i.test(String(data.evidence ?? '').trim());
@@ -12,6 +15,7 @@ export function isDocumentationOnly(data) {
  * Deterministic finalize core (§19.6): activate an accepted ADR and archive its plan.
  * Strict `aif-verify` is the P3 skill's job — this assumes the caller verified.
  * All touched files are restored if any write, move, or archive step fails.
+ * When the project keeps `LIVE.md`, the ADR's `live:` delta is applied in the same rollback.
  */
 export async function finalize(file, { projectDir = process.cwd() } = {}) {
   const abs = resolveInside(projectDir, file);
@@ -36,18 +40,49 @@ export async function finalize(file, { projectDir = process.cwd() } = {}) {
     );
   }
 
+  // LIVE.md (§3.4 step 1): the delta is parsed, applied and the result checked before any write.
+  const ctx = await liveContext(projectDir);
+  let live = null;
+  if (ctx.exists) {
+    const delta = data.live ?? null;
+    const problem = gateProblem(delta, delta == null ? [] : deltaProblems(delta));
+    if (problem) throw gateError(data.id, problem);
+    if (delta.applied != null) {
+      throw liveError(`${data.id} is already applied on ${delta.applied}.`, {
+        expected: 'an accepted ADR whose delta has no `applied:`',
+        detected: `live.applied: ${delta.applied}`,
+        next: 'remove `applied:` only if LIVE.md does not hold the change yet',
+      });
+    }
+    const changes = delta.changes ?? [];
+    const supersedes = [].concat(data.supersedes ?? []).map(String);
+    live = { changes, ...(await computeLive(ctx, { changes, kind: 'adr', ref: data.id, supersedes, label: data.id })) };
+    if (changes.length) data.live = { ...delta, applied: todayUTC() };
+  }
+
   // Never clobber authored evidence (§19.6) — only fill it when empty.
   const evidenceChanged = plan && !String(data.evidence ?? '').trim();
   if (evidenceChanged) data.evidence = 'implemented';
 
   const activeTarget = transitionTarget(abs, 'active', { projectDir });
   const files = [abs, activeTarget];
+  if (live) files.push(ctx.livePath);
   if (plan) files.push(plan.file, await archivePlanTarget(plan.file, { projectDir }));
 
   return withFileRollback(files, async () => {
-    if (evidenceChanged) await atomicWrite(abs, serialize(data, body));
+    // `transition` re-reads the ADR from disk, so `live.applied` has to be there before it moves.
+    if (evidenceChanged || live?.changes.length) await atomicWrite(abs, serialize(data, body));
+    // Written before the moves, so an archive collision is a real rollback of LIVE.md too.
+    if (live?.changed) await atomicWrite(ctx.livePath, live.after);
     const moved = await transition(abs, 'active', { projectDir, managed: true });
     const archived = plan ? await archivePlan(plan.file, { projectDir }) : null;
-    return { id: data.id, active: moved.target, plan: plan?.id ?? null, archivedPlan: archived?.target ?? null };
+    if (live?.changed) stageMove(ctx.livePath);
+    return {
+      id: data.id,
+      active: moved.target,
+      plan: plan?.id ?? null,
+      archivedPlan: archived?.target ?? null,
+      live: live && { changed: live.changed, ops: live.ops, warnings: live.warnings },
+    };
   });
 }

@@ -7,18 +7,21 @@ import { fileURLToPath } from 'node:url';
 import { bodyIssues, loadProfile, profileNames, resolveDoc, FORMS } from '../src/artifacts/cnlp.js';
 
 // The checker, the standard and the generic profiles are `cnlp-kit`'s and are tested there. What
-// this file asserts is the seam: that `profiles/skill.md` — this repository's own section
-// vocabulary — is a profile the packaged checker can read, and that the 2 profiles this extension
-// consumes resolve to the right side of that seam.
+// this file asserts is the seam: that `profiles/skill.md` and `profiles/live.md` — this
+// repository's own vocabulary — are profiles the packaged checker can read, and that the 3
+// profiles this extension consumes resolve to the right side of that seam.
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const USED = ['adr', 'skill']; // `adr` comes from the package, `skill` is the local overlay
+const USED = ['adr', 'skill', 'live']; // `adr` comes from the package, `skill` and `live` are local
+const OWNED = ['skill', 'live'];
 
-test('profiles/skill.md conforms to the packaged profiles/profile.md', async () => {
-  const meta = await loadProfile('profile');
-  const raw = await readFile(path.join(repoRoot, 'profiles', 'skill.md'), 'utf8');
-  assert.deepEqual(bodyIssues(raw, meta).map((i) => `skill:${i.line}: ${i.message}`), []);
-});
+for (const name of OWNED) {
+  test(`profiles/${name}.md conforms to the packaged profiles/profile.md`, async () => {
+    const meta = await loadProfile('profile');
+    const raw = await readFile(path.join(repoRoot, 'profiles', `${name}.md`), 'utf8');
+    assert.deepEqual(bodyIssues(raw, meta).map((i) => `${name}:${i.line}: ${i.message}`), []);
+  });
+}
 
 for (const name of USED) {
   test(`profiles/${name}.md declares a usable profile`, async () => {
@@ -60,7 +63,7 @@ test('every profile can be satisfied — block order agrees with heading order',
 // package supplies everything else. Reversed, the 16 skills get checked against a profile that
 // declares none of their sections.
 test('the local overlay shadows the package, and only the local overlay', () => {
-  assert.equal(resolveDoc('skill'), path.join(repoRoot, 'profiles', 'skill.md'));
+  for (const name of OWNED) assert.equal(resolveDoc(name), path.join(repoRoot, 'profiles', `${name}.md`));
   for (const name of ['format', 'adr', 'profile']) {
     assert.ok(resolveDoc(name).includes(`node_modules${path.sep}cnlp-kit`), `${name} did not come from the package`);
   }

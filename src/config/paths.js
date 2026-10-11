@@ -6,6 +6,8 @@ export const STATUS_DIRS = ['proposals', 'drafts', 'accepted', 'active', 'supers
 export const DEFAULT_ADR_ROOT = 'docs/adr';
 export const DEFAULT_PLANS = '.ai-factory/plans';
 export const DEFAULT_ARCHIVE_PLANS = '.ai-factory/archive/plans';
+export const DEFAULT_LIVE = '.ai-factory/LIVE.md';
+export const DEFAULT_PLAN = '.ai-factory/PLAN.md';
 
 async function readYaml(file) {
   try {
@@ -15,11 +17,23 @@ async function readYaml(file) {
   }
 }
 
+const extensionConfig = (projectDir) => readYaml(path.join(projectDir, '.ai-factory', 'adr-extension.yaml'));
+
 /** ADR root from the extension config (`adr.root`), defaulting to docs/adr (§26). */
 export async function adrRoot(projectDir = process.cwd()) {
-  const cfg = await readYaml(path.join(projectDir, '.ai-factory', 'adr-extension.yaml'));
+  const cfg = await extensionConfig(projectDir);
   const root = cfg?.adr?.root || DEFAULT_ADR_ROOT;
   return path.resolve(projectDir, root);
+}
+
+/**
+ * `LIVE.md` from the extension config (`adr.live`). The default lives here, not in the config
+ * file: `ensureConfig` never rewrites an existing config, so a default written there would never
+ * reach a project that already has one.
+ */
+export async function liveFile(projectDir = process.cwd()) {
+  const cfg = await extensionConfig(projectDir);
+  return path.resolve(projectDir, cfg?.adr?.live || DEFAULT_LIVE);
 }
 
 /**
@@ -30,10 +44,12 @@ export async function adrRoot(projectDir = process.cwd()) {
 export async function readAifPaths(projectDir = process.cwd()) {
   const cfg = await readYaml(path.join(projectDir, '.ai-factory', 'config.yaml'));
   const plans = cfg?.paths?.plans || DEFAULT_PLANS;
+  const plan = cfg?.paths?.plan || DEFAULT_PLAN;
   const archiveBase = cfg?.paths?.archive;
   const archivePlans = archiveBase ? path.posix.join(archiveBase.replace(/\/$/, ''), 'plans') : DEFAULT_ARCHIVE_PLANS;
   return {
     plans: path.resolve(projectDir, plans),
     archivePlans: path.resolve(projectDir, archivePlans),
+    plan: path.resolve(projectDir, plan),
   };
 }

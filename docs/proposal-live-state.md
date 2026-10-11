@@ -5,8 +5,8 @@ the AI Factory core skills and the CNL-P checker, the operator's decisions, and 
 (§9, §10).
 This is a proposal, not a governed artifact. It is prose and deliberately not CNL-P.
 
-**Status: ready for implementation.** Every decision is settled: with evidence (§5.1) or by the operator (§5.2, §5.3).
-Nothing below is implemented.
+**Status: phase 1 implemented in 4.4.0; phases 2–4 open.** Every decision is settled: with evidence (§5.1) or by the
+operator (§5.2, §5.3).
 
 ---
 

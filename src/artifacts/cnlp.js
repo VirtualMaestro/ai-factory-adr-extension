@@ -1,28 +1,31 @@
 // CNL-P itself — the standard, the checker and the generic profiles — lives in `cnlp-kit`. This
 // adapter exists for one reason: it names this repository as a profile root, so `profiles/skill.md`
-// (the 25 sections the 18 ADR skills actually use) shadows the generic profile the package ships.
-// Everything else passes through untouched.
+// (the sections the 18 ADR skills actually use) shadows the generic profile the package ships,
+// and `profiles/live.md` (the shape of `LIVE.md`) resolves at all. Everything else passes through
+// untouched.
 export * from 'cnlp-kit';
 
 import { readdir } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { PACKAGE_ROOT, loadProfile as pkgLoadProfile, resolveDoc as pkgResolveDoc } from 'cnlp-kit';
 
-/** This repository's root, where `profiles/skill.md` sits. */
+/** This repository's root, where `profiles/skill.md` and `profiles/live.md` sit. */
 export const PROFILE_ROOTS = [new URL('../../', import.meta.url)];
 
-// The one profile this repository owns. Every other name resolves inside the package and nowhere
-// else — ai-factory updates an extension by copying over the install directory without emptying
-// it first, so a `profiles/adr.md` from a version that still shipped one lingers there forever.
-// Searching this root for every name would let that orphan outrank the package indefinitely.
-const OWNED = new Set(['skill']);
+// The 2 profiles this repository owns: `skill`, which overlays the packaged one, and `live`, which
+// is project vocabulary — its refs are ADR ids and plan stems. Every other name resolves inside
+// the package and nowhere else — ai-factory updates an extension by copying over the install
+// directory without emptying it first, so a `profiles/adr.md` from a version that still shipped
+// one lingers there forever. Searching this root for every name would let that orphan outrank the
+// package indefinitely.
+const OWNED = new Set(['skill', 'live']);
 
 const rootsFor = (name) => (OWNED.has(name) ? PROFILE_ROOTS : []);
 
-/** Absolute path of a CNL-P document: the `skill` overlay if it is asked for, else the package. */
+/** Absolute path of a CNL-P document: a profile owned here if it is asked for, else the package. */
 export const resolveDoc = (name = 'format') => pkgResolveDoc(name, { roots: rootsFor(name) });
 
-/** Load a profile by name, the `skill` overlay first and the package for everything else. */
+/** Load a profile by name: one owned here from this repository, everything else from the package. */
 export const loadProfile = (name) => pkgLoadProfile(name, { roots: rootsFor(name) });
 
 /**

@@ -1,4 +1,5 @@
 import { readFile } from 'node:fs/promises';
+import { existsSync } from 'node:fs';
 import { detectAif, AifError } from '../src/aif/detect.js';
 import { profileNames, resolveDoc } from '../src/artifacts/cnlp.js';
 import { init } from '../src/init.js';
@@ -15,6 +16,9 @@ import { buildOrder } from '../src/order.js';
 import { runAudit } from '../src/audit.js';
 import { createProposal } from '../src/artifacts/create.js';
 import { importAdr } from '../src/artifacts/import.js';
+import { liveFile } from '../src/config/paths.js';
+import { applySource, initLive, liveError } from '../src/live/apply.js';
+import { checkLive } from '../src/live/check.js';
 
 /**
  * Registered by AI Factory via the `commands` manifest entry: `mod.register(program)` where
@@ -139,6 +143,7 @@ export function register(program) {
       out(opts, { command: 'finalize', ...res }, () => {
         console.log(`Activated ${res.id}: ${res.active}`);
         if (res.archivedPlan) console.log(`Archived plan: ${res.archivedPlan}`);
+        if (res.live) printLive(res.live);
       });
     }));
 
@@ -154,6 +159,7 @@ export function register(program) {
       out(opts, { command: 'supersede', ...res }, () => {
         console.log(`${res.oldId} superseded by ${res.newId}: ${res.superseded}`);
         if (res.plan) console.log(`Plan ${res.plan.action}.`);
+        if (res.live?.rewritten.length) console.log(`LIVE.md: refs to ${res.oldId} now name ${res.newId} in ${res.live.rewritten.join(', ')}`);
       });
     }));
 
@@ -265,7 +271,71 @@ export function register(program) {
       });
     }));
 
+  const live = adr
+    .command('live')
+    .description('Print LIVE.md, what the product does now; subcommands init, apply, check')
+    .option('--json', 'Machine-readable output')
+    .action((opts) => guard(opts, async () => {
+      const file = await liveFile(process.cwd());
+      if (!existsSync(file)) {
+        throw liveError('LIVE.md not found.', { expected: 'a LIVE.md in this project', detected: `${file} is missing`, next: 'run `ai-factory adr live init`' });
+      }
+      const content = await readFile(file, 'utf8');
+      out(opts, { command: 'live', path: file, content }, () => process.stdout.write(content));
+    }));
+
+  live
+    .command('init')
+    .description('Create LIVE.md with no capability recorded yet; the project opts in by having it')
+    .option('--json', 'Machine-readable output')
+    .action((opts) => guard(opts, async () => {
+      const res = await initLive({ projectDir: process.cwd() });
+      out(opts, { command: 'live init', ...res }, () => {
+        console.log(`Created ${res.live} (since ${res.since}).`);
+        if (!res.acceptedWithoutDelta.length) return;
+        console.log(`Accepted ADRs without live: (${res.acceptedWithoutDelta.length}); \`adr status --check\` fails on each until it has one:`);
+        for (const a of res.acceptedWithoutDelta) console.log(`  ${a.id}  ${a.file}`);
+        console.log('next: add live: by hand, with changes: or none:');
+      });
+    }));
+
+  live
+    .command('apply <file>')
+    .description('Apply the live: delta of an active ADR to LIVE.md (finalize does this for an accepted one)')
+    .option('--dry-run', 'Print the effect, the warnings and the guard; write nothing (any ADR status)')
+    .option('--json', 'Machine-readable output')
+    .action((file, opts) => guard(opts, async () => {
+      const res = await applySource(file, { projectDir: process.cwd(), dryRun: Boolean(opts.dryRun) });
+      out(opts, { command: 'live apply', ...res }, () => {
+        if (res.skipped) return console.log(`skipped: ${res.skipped}`);
+        printLive(res);
+        console.log(res.dryRun
+          ? `Dry run: LIVE.md ${res.changed ? 'would change' : 'would not change'}; nothing was written.`
+          : `Applied ${res.id} to ${res.live}${res.applied ? ` (applied: ${res.applied})` : ''}.`);
+      });
+    }));
+
+  live
+    .command('check')
+    .description('Broken, ambiguous and stale refs in LIVE.md, and every delta that never reached it (exit 0)')
+    .option('--json', 'Machine-readable output')
+    .action((opts) => guard(opts, async () => {
+      const res = await checkLive({ projectDir: process.cwd() });
+      out(opts, { command: 'live check', ...res }, () => {
+        if (!res.exists) return console.log(`No ${res.live}: this project does not keep LIVE.md.`);
+        res.issues.forEach((i) => console.error(`  ${i.code}  ${i.target}: ${i.message}`));
+        console.log(res.issues.length ? `${res.issues.length} issue(s).` : 'LIVE.md is consistent.');
+      });
+      // Like `adr decisions`: the skills read the codes and decide; a gap is not a failed run.
+    }));
+
   return adr;
+}
+
+/** What an apply did to LIVE.md, as finalize and `adr live apply` print it. */
+function printLive(res) {
+  for (const o of res.ops) console.log(`  LIVE.md ${o.op.padEnd(8)} ${o.id ?? o.ids.join(', ')}`);
+  res.warnings.forEach((w) => console.warn(`  warning: ${w}`));
 }
 
 /** Run the AIF project/version gate (§7, §29) then the action; convert failures to the §27 error contract. */

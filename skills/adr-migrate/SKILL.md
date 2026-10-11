@@ -66,11 +66,13 @@ workflow:
 19. migrate both sides of a replace pair at their live status before superseding: `ai-factory adr supersede` requires the old ADR to be `accepted` or `active`
 20. run `ai-factory adr supersede <old-file> <new-file> [--archive-plan | --delete-plan]` for each pair, in preference to hand-linking
 21. place any legacy plan doc under the configured `paths.plans` and link it: `ai-factory adr link-plan <adr-file> <plan-file>`
-22. run `ai-factory adr validate <file> --strict` on each migrated ADR and fix until it exits 0: a warning is work left undone here, whatever the status says
-23. run `ai-factory adr status --check` and fix until it exits 0
-24. replace each stale ADR-process block in `AGENTS.md`, `CLAUDE.md`, `CONTRIBUTING.md`, and `README.md` with the `instruction_pointer` below
-25. substitute the configured `adr.root` for "the configured ADR root" in that pointer
-26. emit the mapping, the reconciliation, then the status footer
+22. run `ai-factory adr live`, and when it prints `LIVE.md`, write frontmatter `live:` on each migrated ADR as `live_delta` states: the strict run below fails on its warning
+23. run `ai-factory adr live apply <file>` on each migrated `active` ADR whose `live:` holds `changes:`: an imported active ADR has no finalize to apply it
+24. run `ai-factory adr validate <file> --strict` on each migrated ADR and fix until it exits 0: a warning is work left undone here, whatever the status says
+25. run `ai-factory adr status --check` and fix until it exits 0
+26. replace each stale ADR-process block in `AGENTS.md`, `CLAUDE.md`, `CONTRIBUTING.md`, and `README.md` with the `instruction_pointer` below
+27. substitute the configured `adr.root` for "the configured ADR root" in that pointer
+28. emit the mapping, the reconciliation, then the status footer
 
 status_mapping:
 - the overlays below are independent of this list: a file gets exactly 1 status here
@@ -91,7 +93,7 @@ file_shape:
 - one legacy file becomes one ADR, the common case:
   - preserve history with a rename: `git mv <legacy-file> <root>/<status-dir>/<id>.md`
   - edit the moved file to match `templates/adr.md`
-  - fill the frontmatter: `id`, `type: adr`, `status`, `owners`, `depends_on`, `affects`, `supersedes`, `code`, `issue`, `plan`, `evidence`, `replaced_by`
+  - fill the frontmatter: `id`, `type: adr`, `status`, `owners`, `depends_on`, `affects`, `supersedes`, `code`, `issue`, `plan`, `evidence`, `replaced_by`, `live`
   - fill the 4 `##` headings with the required CNL-P blocks, as the ADR profile declares them
   - add `blast_radius:` when the decision changes code
   - port the old prose into those blocks, one idea per bullet
@@ -132,6 +134,24 @@ documentation_only_overlay:
 - applies in addition to the file-shape case, never instead of it
 - set `evidence: documentation-only` in the frontmatter
 - leave `plan:` empty
+
+live_delta:
+- the delta applies only when the project keeps `LIVE.md`: `ai-factory adr live` prints it, and exits 1 when there is none
+- `live:` holds `changes:`, 1 record per capability the decision adds, modifies or removes: `capability`, `change`, `summary`
+- `change` is `added`, `modified` or `removed`; a rename is a `removed` plus an `added`
+- `capability` is a kebab-case id: reuse the id `LIVE.md` already carries for it rather than name a second one
+- `summary` states what the product does once the change lands, in 1–2 sentences, by the lexicon of `ai-factory adr format`
+- double-quote every `summary`: an unquoted `: ` breaks the frontmatter YAML, and every `adr` command then fails on the file
+- a decision that only constrains how code is written carries `none:` with the reason instead: `ai-factory adr decisions` covers it
+- keys stay in English, and `summary` is in the artifact language
+- do not write `applied:`: the CLI writes it when it applies the delta
+```yaml
+live:
+  changes:
+    - capability: plan-archive-on-finalize
+      change: added
+      summary: "Finalizing an ADR archives its plan in the same atomic step, with rollback on failure."
+```
 
 instruction_pointer:
 ```text

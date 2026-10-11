@@ -27,7 +27,7 @@ forbidden_behaviors:
 - do not attempt optional memory synchronization: it is post-MVP and not provided by this skill
 
 when_to_supersede_instead_of_editing:
-- edit an active ADR directly only for non-material changes: code links, commit and PR references, implementation evidence, file paths, spelling, formatting
+- edit an active ADR directly only for non-material changes: code links, commit and PR references, implementation evidence, `live:`, file paths, spelling, formatting
 - a rewrite of the body into CNL-P is a non-material change: it restates the same decision, so `adr-migrate` does it in place
 - a material change to the Decision, constraints, scope, or consequences is not an in-place edit: it requires a new ADR that supersedes the current one (PRD §18.3)
 - that is the reason to reach for this skill instead of rewriting an active decision
@@ -41,15 +41,19 @@ workflow:
 2. verify every precondition; stop and accept the replacement via `adr-accept` first when it is still `proposed` or `draft`
 3. ask the user to choose the plan disposition when the old ADR still has a non-archived plan
 4. run `ai-factory adr supersede <old-file> <new-file> [--archive-plan | --delete-plan]`
-5. run `ai-factory adr status --check` and resolve any failures
-6. verify the old ADR appears under `superseded` and the reciprocal links validate
-7. report the status footer
+5. report the `LIVE.md` entries whose refs the command rewrote
+6. run `ai-factory adr status --check` and resolve any failures
+7. verify the old ADR appears under `superseded` and the reciprocal links validate
+8. run `ai-factory adr live check` and report the issues it lists
+9. report the status footer
 
 command_behaviour:
 - adds `supersedes: [<old-id>]` to the new ADR
 - sets `replaced_by: <new-id>` in the old ADR's frontmatter
 - atomically moves the old ADR to `superseded/`, staged in Git as a rename
 - disposes the plan per the flag
+- rewrites every `LIVE.md` ref to the old id into the new id and stages `LIVE.md`, when the project keeps one and the replacement is already `active`
+- leaves `LIVE.md` alone while the replacement is `accepted`: its finalize rewrites the refs, and until then the old code still runs
 - changes nothing if a precondition fails (PRD §27): fix the cause and retry
 
 retrieval_order_afterwards:

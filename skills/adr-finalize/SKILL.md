@@ -34,6 +34,7 @@ outputs:
 - verification result
 - `evidence:` and `code:` recorded in the ADR frontmatter
 - activated ADR and archived plan
+- `LIVE.md` with the ADR's `live:` delta applied, when the project keeps one
 
 quality_rules:
 - the architectural decision is already made: do not re-litigate it
@@ -57,15 +58,20 @@ workflow:
 7. write each anchor as a repo-root path with POSIX `/` separators and an optional `#symbol` suffix, such as `src/status.js#validateDirStatus`
 8. verify each anchor exists before writing it, so the ADR transitions with its anchors in place
 9. run `ai-factory adr validate <adr-file>` and fix what it reports: `finalize` moves the ADR to `active`, where a body issue becomes an error, so this checks the file while fixing it is still cheap
-10. run `ai-factory adr finalize <adr-file>`
-11. run `ai-factory adr status --check` and resolve any failures
-12. report the status footer
+10. run `ai-factory adr live apply <adr-file> --dry-run`: output that opens with `skipped:` means there is nothing to apply
+11. correct frontmatter `live:` when the implementation diverged from it, or when the dry run prints a warning: a capability the successor of a superseded ADR dropped needs `change: removed`
+12. run `ai-factory adr finalize <adr-file>`
+13. run `ai-factory adr status --check` and resolve any failures
+14. run `ai-factory adr live check` and report the issues it lists
+15. report the status footer
 
 command_behaviour:
 - `ai-factory adr finalize` sets `evidence: implemented` only when the frontmatter `evidence:` field is still empty, so it keeps an authored value with commit refs or verification notes
 - it then atomically moves the ADR to `active/`
 - it archives the plan following `aif-archive` semantics: to `paths.archive/plans/`, `status: done`, `archived: YYYY-MM-DD`, filename preserved
 - it stages both the ADR move and the plan archival in Git, so each one lands as a rename
+- when the project keeps `LIVE.md`, it applies the `live:` delta in the same rollback, writes `live.applied` into the ADR, and stages `LIVE.md`
+- it refuses an ADR without a `live:` that holds `changes:` or `none:` once `LIVE.md` exists, and changes nothing
 
 documentation_only_adrs:
 - an ADR with `evidence: documentation-only` or `documentation-only decision` in its frontmatter skips verification and the plan steps entirely

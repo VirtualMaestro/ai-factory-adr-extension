@@ -30,6 +30,7 @@ forbidden_behaviors:
 - do not commit or push before the operator approves every draft of the batch: a rejected draft interrupts the phase
 - do not stage files by pattern, such as `git add -A`: stage by name the paths this run changed
 - do not push with `--force`
+- do not write a capability list into `.ai-factory/DESCRIPTION.md`: the capabilities live in `LIVE.md`, which the finalize of each ADR updates
 
 workflow:
 1. run `ai-factory adr status <file>` for each input file, and read its status and its `plan:` field

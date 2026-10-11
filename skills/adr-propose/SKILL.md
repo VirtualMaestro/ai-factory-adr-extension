@@ -66,8 +66,28 @@ workflow:
 10. fill `problem:`, `constraints:` and `decision_drivers:` under `## Context` in the created file
 11. state a numeric limit in canonical form, `open connections per client <= 2`, per the lexicon in `ai-factory adr format`
 12. record unresolved assumptions as placeholders in the body
-13. leave `status: proposed`; acceptance happens later via `adr-improve` then `adr-accept`
-14. report the status footer
+13. run `ai-factory adr live`, and when it prints `LIVE.md`, write frontmatter `live:` as `live_delta` states
+14. run `ai-factory adr live apply <file> --dry-run` and rewrite the delta until it passes: output that opens with `skipped:` means there is nothing to apply
+15. leave `status: proposed`; acceptance happens later via `adr-improve` then `adr-accept`
+16. report the status footer
+
+live_delta:
+- the delta applies only when the project keeps `LIVE.md`: `ai-factory adr live` prints it, and exits 1 when there is none
+- `live:` holds `changes:`, 1 record per capability the decision adds, modifies or removes: `capability`, `change`, `summary`
+- `change` is `added`, `modified` or `removed`; a rename is a `removed` plus an `added`
+- `capability` is a kebab-case id: reuse the id `LIVE.md` already carries for it rather than name a second one
+- `summary` states what the product does once the change lands, in 1–2 sentences, by the lexicon of `ai-factory adr format`
+- double-quote every `summary`: an unquoted `: ` breaks the frontmatter YAML, and every `adr` command then fails on the file
+- a decision that only constrains how code is written carries `none:` with the reason instead: `ai-factory adr decisions` covers it
+- keys stay in English, and `summary` is in the artifact language
+- do not write `applied:`: the CLI writes it when it applies the delta
+```yaml
+live:
+  changes:
+    - capability: plan-archive-on-finalize
+      change: added
+      summary: "Finalizing an ADR archives its plan in the same atomic step, with rollback on failure."
+```
 
 status_footer:
   format: "✔ adr-propose · ADR: <adr-id> [proposed] · Plan: none"

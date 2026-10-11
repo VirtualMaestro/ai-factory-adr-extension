@@ -4,6 +4,41 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and the project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [4.4.0] — 2026-10-11
+
+### Added
+
+- **`LIVE.md`, what the product does now, for the ADR path** (phase 1 of
+  `docs/proposal-live-state.md`). A project opts in with `ai-factory adr live init`, which
+  creates `.ai-factory/LIVE.md` (or the path in `adr.live`): 1 record per capability, a 1–2
+  sentence summary, and refs to the ADRs, plans or files that describe it. A project without the
+  file behaves exactly as before.
+- **An ADR states its delta in frontmatter `live:`**, with `changes:` (`capability`, `change:
+  added | modified | removed`, `summary`) or `none:` with the reason. `templates/adr.md` carries
+  an empty `live:`. `adr-propose`, `adr-improve` and `adr-migrate` write it, and `adr-accept`
+  shows it to the operator with the decision.
+- **`adr finalize` applies the delta** inside its existing rollback: it checks the rendered
+  `LIVE.md` against the new local `live` profile before any write, writes `live.applied` into the
+  ADR, and stages `LIVE.md`, so the entry lands in the commit of the code. An apply that changes
+  nothing leaves the file byte-identical and unstaged.
+- **`adr supersede` rewrites refs to the old ADR** when the replacement is already active. In the
+  other order the replacement's own finalize rewrites them.
+- **`ai-factory adr live`, `live init`, `live apply <adr> [--dry-run]` and `live check`.** `check`
+  reports `live-format`, `broken-ref`, `ambiguous-ref`, `stale-superseded-ref`,
+  `ref-to-unfinished`, `no-refs`, `ref-creep`, `summary-too-long`, `missing-delta` and
+  `unapplied-delta`, and always exits 0. `adr-finalize`, `adr-supersede` and `adr-status` run it.
+
+### Changed
+
+- **Once `LIVE.md` exists, an ADR without a usable `live:` cannot be accepted or finalized.**
+  `adr transition <file> accepted` and `adr finalize` refuse it and change nothing.
+  `adr validate` warns while the ADR is `proposed` or `draft` and errors while it is `accepted`;
+  an `active` ADR without `live:` is `missing-delta` in `adr live check`, never a status error.
+  Accepted ADRs already in flight at opt-in turn `adr status --check` red until they get one:
+  `adr live init` lists them.
+- `adr-auto-implement` and `adr-auto-plan` write no capability list into
+  `.ai-factory/DESCRIPTION.md`, and commit the `LIVE.md` change with the ADR.
+
 ## [4.3.1] — 2026-10-07
 
 ### Changed

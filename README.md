@@ -200,6 +200,10 @@ beforehand if you want the migration isolated.
 | `order` | Dependency-ordered plan: what is ready to implement next, the topological order, blocked ADRs, and cycles (non-zero exit on a cycle) |
 | `decisions` | What every accepted and active ADR obliges — `decision:`, `constraints:`, `scope:`, `rules:` — so a new decision can be written against the whole corpus; reports per-file `issues` and always exits 0 |
 | `format [name]` | Print the CNL-P standard, or a profile such as `adr`; `--path` prints where it resolved instead |
+| `live` | Print `LIVE.md`, what the product does now |
+| `live init` | Create `LIVE.md` and list the accepted ADRs that still need a `live:` delta |
+| `live apply <adr> [--dry-run]` | Apply the `live:` delta of an active ADR (finalize applies an accepted one); `--dry-run` previews any ADR and writes nothing |
+| `live check` | Broken, ambiguous and stale refs in `LIVE.md`, and every delta that never reached it; always exits 0 |
 
 The lifecycle skills wrap these commands — prefer the skills for authoring work
 and reserve raw commands for scripting and CI.
@@ -215,6 +219,30 @@ The machine state of an ADR lives in frontmatter: `plan:` names the linked plan
 (empty = no plan yet), `evidence:` holds a short implementation-evidence string
 (empty = not implemented), and `replaced_by:` names the superseding ADR id.
 The body stays pure decision content.
+
+### `LIVE.md` — what the product does now
+
+`ai-factory adr live init` creates `.ai-factory/LIVE.md` (or the path in
+`adr.live` of `.ai-factory/adr-extension.yaml`): 1 record per capability, a
+1–2 sentence summary, and refs to the ADRs, plans or files that describe it.
+A project opts in by having the file; without it nothing below happens.
+
+Each ADR states its delta up front, in frontmatter:
+
+```yaml
+live:
+  changes:
+    - capability: plan-archive-on-finalize
+      change: added            # added | modified | removed
+      summary: "Finalizing an ADR archives its plan in the same atomic step, with rollback on failure."
+```
+
+or `live: { none: "<reason>" }` for a decision that only constrains how code is
+written. Once `LIVE.md` exists, `transition … accepted` and `finalize` refuse an
+ADR without one. `finalize` applies the delta inside its rollback, checks the
+result against the `live` profile before writing, and stages `LIVE.md`, so the
+entry lands in the same commit as the code. `supersede` rewrites refs to the old
+ADR once its replacement is active.
 
 ### `code` source anchors
 

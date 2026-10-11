@@ -84,7 +84,7 @@ test('packed extension bundles its dependencies and loads in a clean initialized
   // The skills send the agent to `adr format`, which reads these out of the installed package:
   // dropping them from package.json `files` is invisible to every test that installs the checkout.
   // The standard and the generic profiles ride in with cnlp-kit; `profiles/skill.md` is ours.
-  for (const shipped of ['profiles/skill.md', 'node_modules/cnlp-kit/cnlp-format.md', 'node_modules/cnlp-kit/profiles/adr.md']) {
+  for (const shipped of ['profiles/skill.md', 'profiles/live.md', 'node_modules/cnlp-kit/cnlp-format.md', 'node_modules/cnlp-kit/profiles/adr.md']) {
     assert.ok(packed.files.some((f) => f.path === shipped), `${shipped} is missing from the tarball`);
   }
 

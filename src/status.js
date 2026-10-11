@@ -20,12 +20,14 @@ export async function listAdrs(root) {
   return out;
 }
 
-async function indexAdrsById(root) {
+/** Every readable ADR by id: { status (from its directory), file, replaced_by }. */
+export async function indexAdrsById(root) {
   const index = new Map();
   for (const { dir, file } of await listAdrs(root)) {
     try {
       const { data } = await read(file);
-      if (data.id != null) index.set(data.id, { status: STATUS_BY_DIR[dir], file });
+      const replacedBy = String(data.replaced_by ?? '').trim() || null;
+      if (data.id != null) index.set(data.id, { status: STATUS_BY_DIR[dir], file, replaced_by: replacedBy });
     } catch {
       /* malformed ADRs are reported by status --check / audit-artifacts */
     }
