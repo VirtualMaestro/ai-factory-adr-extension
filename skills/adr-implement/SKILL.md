@@ -45,7 +45,7 @@ workflow:
 3. run `ai-factory adr status <adr-file>` to check dependency readiness
 4. state every dependency warning it reports to the operator and confirm they want to continue before implementing
 5. run `ai-factory adr status --check`, which covers the ADR invariants and runs the artifact audit against the configured ADR root
-6. implement the resolved plan by applying `aif-implement` semantics in this run
+6. implement the resolved plan by `aif-implement` semantics; for `format: cnlp-plan`, preserve its blocks and run `ai-factory adr format plan --check <plan-file>` before and after
 7. keep the ADR `accepted`
 8. report the status footer
 

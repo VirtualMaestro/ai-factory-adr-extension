@@ -59,8 +59,8 @@ workflow:
 1. run `ai-factory adr resolve-plan <adr-file>`, which resolves via the plan's `implements` frontmatter; add `--json` for the plan's `file`
 2. stop and recommend `adr-plan` first when there is no active plan: there is nothing to improve yet
 3. report the error and stop when more than 1 active plan exists: the command exits non-zero, and the author clears that before improving
-4. improve the resolved plan by applying `aif-improve` semantics in this run against that plan file
-5. re-verify: `ai-factory adr resolve-plan <adr-file>` still resolves to exactly 1 plan, and `ai-factory adr status --check` is clean
+4. improve the resolved plan by applying `aif-improve` semantics; for `format: cnlp-plan`, read `ai-factory adr format plan` and preserve its body blocks and core checkboxes
+5. run `ai-factory adr format plan --check <plan-file>` for `format: cnlp-plan`; re-verify exactly 1 resolved plan and clean `ai-factory adr status --check`
 6. leave the ADR `accepted`
 7. report the status footer
 

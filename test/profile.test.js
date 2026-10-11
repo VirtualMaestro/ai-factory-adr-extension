@@ -12,8 +12,8 @@ import { bodyIssues, loadProfile, profileNames, resolveDoc, FORMS } from '../src
 // profiles this extension consumes resolve to the right side of that seam.
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const USED = ['adr', 'skill', 'live']; // `adr` comes from the package, `skill` and `live` are local
-const OWNED = ['skill', 'live'];
+const USED = ['adr', 'skill', 'live', 'plan']; // `adr` comes from the package
+const OWNED = ['skill', 'live', 'plan'];
 
 for (const name of OWNED) {
   test(`profiles/${name}.md conforms to the packaged profiles/profile.md`, async () => {

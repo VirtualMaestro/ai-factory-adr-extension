@@ -1,7 +1,7 @@
 // CNL-P itself — the standard, the checker and the generic profiles — lives in `cnlp-kit`. This
 // adapter exists for one reason: it names this repository as a profile root, so `profiles/skill.md`
-// (the sections the 19 ADR skills actually use) shadows the generic profile the package ships,
-// and `profiles/live.md` (the shape of `LIVE.md`) resolves at all. Everything else passes through
+// (the sections the ADR skills use) shadows the generic profile the package ships,
+// and the live and plan profiles resolve at all. Everything else passes through
 // untouched.
 export * from 'cnlp-kit';
 
@@ -9,16 +9,15 @@ import { readdir } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { PACKAGE_ROOT, loadProfile as pkgLoadProfile, resolveDoc as pkgResolveDoc } from 'cnlp-kit';
 
-/** This repository's root, where `profiles/skill.md` and `profiles/live.md` sit. */
+/** This repository's root, where its own profiles sit. */
 export const PROFILE_ROOTS = [new URL('../../', import.meta.url)];
 
-// The 2 profiles this repository owns: `skill`, which overlays the packaged one, and `live`, which
-// is project vocabulary — its refs are ADR ids and plan stems. Every other name resolves inside
+// The profiles this repository owns: `skill`, `live` and `plan`. Every other name resolves inside
 // the package and nowhere else — ai-factory updates an extension by copying over the install
 // directory without emptying it first, so a `profiles/adr.md` from a version that still shipped
 // one lingers there forever. Searching this root for every name would let that orphan outrank the
 // package indefinitely.
-const OWNED = new Set(['skill', 'live']);
+const OWNED = new Set(['skill', 'live', 'plan']);
 
 const rootsFor = (name) => (OWNED.has(name) ? PROFILE_ROOTS : []);
 

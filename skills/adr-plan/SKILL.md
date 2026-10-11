@@ -37,6 +37,7 @@ type: plan
 status: in_progress
 depends_on: [<adr-short-stable-name>]
 implements: [<adr-short-stable-name>]
+format: cnlp-plan
 ```
 
 quality_rules:
@@ -69,11 +70,11 @@ workflow:
 4. name any `issues:` entry for another ADR to the operator, then continue
 5. open in full the ADRs whose `decision:`, `constraints:`, `scope:` or `rules:` touch the work this plan will do
 6. state every dependency warning it reports to the operator and confirm they want to continue before creating the plan
-7. create the plan by applying `aif-plan full` planning semantics in this run, with the frontmatter above and 1 test task per user-visible scenario the decision adds
-8. name in each test task the failure it prevents: a plan-improve pass drops an obligation that names no failure
+7. read `ai-factory adr format` and `ai-factory adr format plan`; apply `aif-plan full` semantics with the frontmatter above and 1 test task per user-visible scenario
+8. write the body in that profile, preserving core task ids and checkboxes; name in each test task the failure it prevents
 9. run `ai-factory adr link-plan <adr-file> <plan-file>`: it sets the ADR's `plan:` field to the plan id and adds `implements` and `depends_on` to the plan, leaving the ADR body untouched
 10. leave `evidence:` empty
-11. run `ai-factory adr status --check` and resolve any failures; it honors the configured ADR root
+11. run `ai-factory adr format plan --check <plan-file>` and `ai-factory adr status --check`; resolve any failures
 12. leave the ADR `accepted`
 13. report the status footer
 

@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { detectAif, AifError } from '../src/aif/detect.js';
-import { profileNames, resolveDoc } from '../src/artifacts/cnlp.js';
+import { bodyIssues, loadProfile, profileNames, resolveDoc } from '../src/artifacts/cnlp.js';
 import { init } from '../src/init.js';
 import { validateAdr } from '../src/lifecycle/validate.js';
 import { verifyAnchors } from '../src/lifecycle/verify.js';
@@ -248,9 +248,21 @@ export function register(program) {
     .command('format [name]')
     .description('Print the CNL-P standard, or one of the profiles it ships with (§7)')
     .option('--path', 'Print the resolved file path instead of the content')
+    .option('--check <file>', 'Check a document body against the named profile; any issue fails')
     .option('--json', 'Machine-readable output')
     .action((name, opts) => guard(opts, async () => {
       const doc = name ?? 'format';
+      if (opts.check) {
+        if (!name || name === 'format' || opts.path) throw new AifError('Use `adr format <profile> --check <file>` without --path.');
+        const profile = await loadProfile(name);
+        const issues = bodyIssues(await readFile(opts.check, 'utf8'), profile);
+        out(opts, { command: 'format check', name, file: opts.check, issues }, () => {
+          issues.forEach((i) => console.error(`  error: ${opts.check}:${i.line}: ${i.message}`));
+          console.log(issues.length ? `${issues.length} format issue(s).` : 'Body conforms to the profile.');
+        });
+        if (issues.length) process.exitCode = 1;
+        return;
+      }
       let file;
       let content;
       try {

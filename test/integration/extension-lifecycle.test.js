@@ -115,7 +115,7 @@ test('packed extension bundles its dependencies and loads in a clean initialized
   // The skills send the agent to `adr format`, which reads these out of the installed package:
   // dropping them from package.json `files` is invisible to every test that installs the checkout.
   // The standard and the generic profiles ride in with cnlp-kit; `profiles/skill.md` is ours.
-  for (const shipped of ['injections/aif-plan.md', 'injections/aif-improve.md', 'injections/aif-implement.md', 'profiles/skill.md', 'profiles/live.md', 'node_modules/cnlp-kit/cnlp-format.md', 'node_modules/cnlp-kit/profiles/adr.md']) {
+  for (const shipped of ['injections/aif-plan.md', 'injections/aif-improve.md', 'injections/aif-implement.md', 'profiles/skill.md', 'profiles/live.md', 'profiles/plan.md', 'node_modules/cnlp-kit/cnlp-format.md', 'node_modules/cnlp-kit/profiles/adr.md']) {
     assert.ok(packed.files.some((f) => f.path === shipped), `${shipped} is missing from the tarball`);
   }
 
@@ -270,6 +270,19 @@ test('adr format serves the standard and the profiles from an installed extensio
   assert.match(aif(['adr', 'format'], dir), /# CNL-P format — the standard/);
   assert.match(aif(['adr', 'format', 'adr'], dir), /^name: adr$/m);
   assert.match(aif(['adr', 'format', 'skill'], dir), /^mood: imperative$/m);
+  assert.match(aif(['adr', 'format', 'plan'], dir), /^name: plan$/m);
+
+  const plan = path.join(dir, 'plan with spaces.md');
+  const raw = await readFile(path.join(EXT_ROOT, 'test', 'fixtures', 'cnlp-plan.md'), 'utf8');
+  await writeFile(plan, raw);
+  assert.deepEqual(JSON.parse(aif(['adr', 'format', 'plan', '--check', plan, '--json'], dir)).issues, []);
+  assert.equal(await readFile(plan, 'utf8'), raw, 'checking writes nothing');
+  await writeFile(plan, '# Legacy plan\n\n- [ ] Add the example\n');
+  const invalid = aifResult(['adr', 'format', 'plan', '--check', plan, '--json'], dir);
+  assert.equal(invalid.status, 1);
+  assert.ok(JSON.parse(invalid.stdout).issues.length > 0);
+  assert.equal(aifResult(['adr', 'format', '--check', plan], dir).status, 1, 'a profile name is required');
+  assert.equal(aifResult(['adr', 'format', 'plan', '--check', plan, '--path'], dir).status, 1);
 
   const resolved = aif(['adr', 'format', 'adr', '--path'], dir).trim();
   assert.ok(existsSync(resolved), `--path must resolve: ${resolved}`);
