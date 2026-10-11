@@ -64,7 +64,7 @@ quality_rules:
 - disagreement alone is not new information: a flip with no new grounds means the original was ungrounded
 
 workflow:
-1. run `ai-factory adr status <adr-file>` and inspect the accepted ADR and any relevant active decisions
+1. run `ai-factory adr status <adr-file>` and inspect the accepted and relevant active ADRs; apply `code_intelligence` from `adr-overview` for affected code
 2. run `ai-factory adr decisions` and read every line: the plan implements 1 decision and breaks none of the others
 3. stop when that command reports an `issues:` entry for this ADR, and recommend `adr-improve`: a plan built on a decision that failed to parse rests on nothing
 4. name any `issues:` entry for another ADR to the operator, then continue

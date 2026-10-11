@@ -37,7 +37,7 @@ plan_disposition:
 - `--delete-plan`: delete it
 
 workflow:
-1. search accepted, active, and superseded ADRs for context
+1. search accepted, active, and superseded ADRs for context; apply `code_intelligence` from `adr-overview` for replacement impact
 2. verify every precondition; stop and accept the replacement via `adr-accept` first when it is still `proposed` or `draft`
 3. ask the user to choose the plan disposition when the old ADR still has a non-archived plan
 4. run `ai-factory adr supersede <old-file> <new-file> [--archive-plan | --delete-plan]`

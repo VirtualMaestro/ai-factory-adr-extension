@@ -47,7 +47,7 @@ quality_rules:
 - disagreement alone is not new information
 
 workflow:
-1. run `ai-factory adr verify-anchors <file>`: a deterministic check that every `code:` anchor and any `#symbol` exists on disk
+1. run `ai-factory adr verify-anchors <file>` for every `code:` anchor and `#symbol`; apply `code_intelligence` from `adr-overview` for advisory implementation evidence
 2. note missing anchors: the ADR points at moved or deleted code, which is drift or a stale anchor
 3. run `ai-factory adr resolve-plan <file>` for the linked and archived plan
 4. run `ai-factory adr status <file>` for status and frontmatter `evidence:`

@@ -102,6 +102,23 @@ live_events:
 | a plan with `implements:` completed | nothing: the linked ADR carries the delta; apply exits with `skipped: linked to <adr-id>` |
 | a plan removes an active ADR's capability | apply writes `contradicts:`; read `contradicts-active-adr` in the live check and `contradicted-by-plan` in decisions |
 
+code_intelligence:
+- apply this shared agent contract for optional code context; the CLI keeps file mechanics and does not execute MCP calls
+- read `adr.codeIntelligence` in `.ai-factory/adr-extension.yaml`; an absent provider means `none`
+- select exactly 1 string provider: `none` or `codebase-memory-mcp`; report an unknown provider or a list and continue using source files
+- use inputs from the current stage: the topic or ADR clauses, `code:` anchors, and the repository root
+- for `none`, call no code-intelligence tool and perform the stage's existing source-file checks
+- for `codebase-memory-mcp`, use `adr.codeIntelligence.project` as the indexed project id; report a missing id and continue using source files
+- use only the selected provider's read-only `search_graph`, `trace_path`, `get_code_snippet`, `get_file_outline` and `check_index_coverage` tools
+- search symbols by topic or anchor, trace callers or dependencies for a matched symbol, and read the specific source for each candidate finding
+- limit discovery to 3 focused queries with results per query <= 20; paginate or use source files when the result reports truncation
+- verify every cited path and symbol against the current repository files; discard a missing, stale or foreign-project result
+- return advisory evidence as path, symbol, relationship and the current source clause, with unavailable tools and coverage gaps stated
+- continue by source-file checks when the provider is unavailable, fails or returns no usable evidence; report the reason without changing the lifecycle gate
+- do not use graph ADR CRUD, `manage_adr`, indexing, write queries or a second provider; do not let graph evidence approve or supersede a decision
+- keep Markdown ADRs authoritative; code relations enrich impact and verification and do not prove that code satisfies a prose obligation
+- reserve `codegraph` for a later adapter: report it unsupported and use source files rather than invent tool names
+
 workflow:
 - none: this skill is reference material, read before invoking a stage skill, and runs no steps of its own
 

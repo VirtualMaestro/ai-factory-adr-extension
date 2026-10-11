@@ -52,7 +52,7 @@ quality_rules:
 - disagreement alone is not new information
 
 workflow:
-1. run `ai-factory adr status`: its `active` list is the target set
+1. run `ai-factory adr status`: its `active` list is the target set; apply `code_intelligence` from `adr-overview` to the target set's anchors
 2. list `active/*.md` under the ADR root (`adr.root` in `.ai-factory/adr-extension.yaml`, default `docs/adr`) to get the files to check
 3. report that there is nothing to verify and stop when no ADR is active
 4. per active ADR, run `ai-factory adr verify-anchors <file>`: a deterministic check that every `code:` anchor and any `#symbol` resolves on disk

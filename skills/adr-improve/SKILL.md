@@ -62,7 +62,7 @@ quality_rules:
 - disagreement alone is not new information: a flip with no new grounds means the original was ungrounded
 
 workflow:
-1. run `ai-factory adr validate <file>`
+1. run `ai-factory adr validate <file>` and apply `code_intelligence` from `adr-overview` for refinement and impact evidence
 2. fix the validation errors it reports, and its CNL-P warnings: they become errors at `accepted`
 3. run `ai-factory adr decisions` and read every line: it states what each accepted and active ADR obliges
 4. name any `issues:` that command reports to the operator, then continue: the digest covers the corpus minus those files

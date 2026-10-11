@@ -69,6 +69,7 @@ sections:
   required: yes
 
 custom_sections:
+- code_intelligence
 - command_behaviour
 - document_roles
 - documentation_only_adrs

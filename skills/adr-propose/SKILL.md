@@ -54,7 +54,7 @@ quality_rules:
 - disagreement alone is not new information: a flip with no new grounds means the original was ungrounded
 
 workflow:
-1. test the topic against the preconditions and stop when 1 of them fails: report which, and name where the fact belongs instead of an ADR
+1. test the topic against the preconditions; stop on a failure and name where it belongs; otherwise apply `code_intelligence` from `adr-overview` for proposal context
 2. run `ai-factory adr status --json` to inventory accepted, active, and superseded ADRs
 3. run `ai-factory adr decisions` and read every line: it states what each accepted and active ADR obliges, which is the corpus this proposal cannot contradict
 4. name any `issues:` that command reports to the operator, then continue: the digest covers the corpus minus those files
