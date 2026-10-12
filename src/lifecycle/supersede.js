@@ -6,7 +6,7 @@ import { transition, transitionTarget } from './move.js';
 import { archivePlan, archivePlanTarget } from './archive.js';
 import { resolveInside, atomicWrite, withFileRollback } from '../util/safe-path.js';
 import { stageMove } from '../util/git.js';
-import { liveContext, computeLive } from '../live/apply.js';
+import { liveContext, computeLive, withLiveLock, ignoredWarnings } from '../live/apply.js';
 
 const REPLACEABLE = ['accepted', 'active'];
 
@@ -37,35 +37,41 @@ export async function supersede(oldFile, newFile, { projectDir = process.cwd(), 
   // `supersedes:` yet, and the refs to the old id are rewritten here instead. In the other order
   // the successor's own finalize does it, and the old ADR's code still runs until then.
   const ctx = await liveContext(projectDir);
-  const live = ctx.exists && newAdr.data.status === 'active'
-    ? await computeLive(ctx, { changes: [], kind: 'adr', ref: newAdr.data.id, supersedes: [oldAdr.data.id], label: newAdr.data.id })
-    : null;
+  const rewrites = ctx.exists && newAdr.data.status === 'active';
+  const replace = async () => {
+    const live = rewrites
+      ? await computeLive(ctx, { changes: [], kind: 'adr', ref: newAdr.data.id, supersedes: [oldAdr.data.id], label: newAdr.data.id })
+      : null;
 
-  const supersededTarget = transitionTarget(oldAbs, 'superseded', { projectDir });
-  const files = [oldAbs, newAbs, supersededTarget];
-  if (live) files.push(ctx.livePath);
-  if (plan) files.push(plan.file);
-  if (plan && planDisposition === 'archive') files.push(await archivePlanTarget(plan.file, { projectDir }));
+    const supersededTarget = transitionTarget(oldAbs, 'superseded', { projectDir });
+    const files = [oldAbs, newAbs, supersededTarget];
+    if (live) files.push(ctx.livePath);
+    if (plan) files.push(plan.file);
+    if (plan && planDisposition === 'archive') files.push(await archivePlanTarget(plan.file, { projectDir }));
 
-  return withFileRollback(files, async () => {
-    await supersedeLink(oldAbs, newAbs, { projectDir });
+    return withFileRollback(files, async () => {
+      await supersedeLink(oldAbs, newAbs, { projectDir });
 
-    let disposed = null;
-    if (plan) {
-      if (planDisposition === 'archive') disposed = { action: 'archived', ...(await archivePlan(plan.file, { projectDir, note: `superseded by ${newAdr.data.id}` })) };
-      else if (planDisposition === 'delete') {
-        await unlink(plan.file);
-        stageMove(plan.file); // stage the deletion, as `git rm` would
-        disposed = { action: 'deleted', file: plan.file };
+      let disposed = null;
+      if (plan) {
+        if (planDisposition === 'archive') disposed = { action: 'archived', ...(await archivePlan(plan.file, { projectDir, note: `superseded by ${newAdr.data.id}` })) };
+        else if (planDisposition === 'delete') {
+          await unlink(plan.file);
+          stageMove(plan.file); // stage the deletion, as `git rm` would
+          disposed = { action: 'deleted', file: plan.file };
+        }
       }
-    }
 
-    const moved = await transition(oldAbs, 'superseded', { projectDir, managed: true });
-    if (live?.changed) {
-      await atomicWrite(ctx.livePath, live.after);
-      stageMove(ctx.livePath);
-    }
-    const rewritten = live?.ops.find((o) => o.op === 'rewrote')?.ids ?? [];
-    return { oldId: oldAdr.data.id, newId: newAdr.data.id, superseded: moved.target, plan: disposed, live: live && { changed: live.changed, rewritten, warnings: live.warnings } };
-  });
+      const moved = await transition(oldAbs, 'superseded', { projectDir, managed: true });
+      if (live?.changed) {
+        await atomicWrite(ctx.livePath, live.after);
+        stageMove(ctx.livePath);
+      }
+      const rewritten = live?.ops.find((o) => o.op === 'rewrote')?.ids ?? [];
+      const warnings = live ? [...live.warnings, ...ignoredWarnings(ctx, [live.changed ? ctx.livePath : null])] : [];
+      return { oldId: oldAdr.data.id, newId: newAdr.data.id, superseded: moved.target, plan: disposed, live: live && { changed: live.changed, rewritten, warnings } };
+    });
+  };
+  // The lock spans the read of LIVE.md to its write: see withLiveLock.
+  return rewrites ? withLiveLock(ctx, replace) : replace();
 }

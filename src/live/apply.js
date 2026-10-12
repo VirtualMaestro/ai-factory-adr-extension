@@ -1,21 +1,52 @@
 import { existsSync, statSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
-import { readFile } from 'node:fs/promises';
+import { open, readFile, unlink } from 'node:fs/promises';
 import path from 'node:path';
 import { adrRoot, liveFile, readAifPaths } from '../config/paths.js';
 import { indexAdrsById } from '../status.js';
 import { resolveInside, atomicWrite, withFileRollback } from '../util/safe-path.js';
-import { stageMove } from '../util/git.js';
+import { stageMove, gitIgnored } from '../util/git.js';
 import { todayUTC } from '../lifecycle/archive.js';
 import { readDelta, markApplied, splitRefs } from './delta.js';
 import { linkedAdrs, planRef } from './plans.js';
 import { checkLive } from './check.js';
 import { parseLive, renderLive, liveIssues, applyDelta, SENTINEL } from './state.js';
 
-/** The house error shape (§27): what was expected, what was found, what changed, what to do. */
-export function liveError(title, { expected, detected, next, files = 'nothing was changed' }) {
+/** The house error shape (§27): what was expected, what was found, what to do. Every refusal changes nothing. */
+export function liveError(title, { expected, detected, next }) {
   const list = (v) => (Array.isArray(v) ? v.join('\n            ') : v);
-  return new Error(`${title}\n  expected: ${expected}\n  detected: ${list(detected)}\n  files:    ${files}\n  next:     ${next}`);
+  return new Error(`${title}\n  expected: ${expected}\n  detected: ${list(detected)}\n  files:    nothing was changed\n  next:     ${next}`);
+}
+
+/**
+ * Run `action` holding `LIVE.md.lock`. 2 writers that read the same LIVE.md would otherwise both
+ * succeed: the later write, or the rollback of a failed one, drops the other's records while its
+ * source already reads as applied. A second writer fails at once instead of waiting.
+ */
+export async function withLiveLock(ctx, action) {
+  const lock = `${ctx.livePath}.lock`;
+  let handle;
+  try {
+    handle = await open(lock, 'wx');
+  } catch (err) {
+    if (err.code !== 'EEXIST') throw err;
+    throw liveError('Another command is writing LIVE.md.', {
+      expected: `no ${rel(ctx, lock)}`,
+      detected: `${rel(ctx, lock)} exists`,
+      next: `run the command again; delete ${rel(ctx, lock)} only when no \`ai-factory adr\` command is running`,
+    });
+  }
+  try {
+    return await action();
+  } finally {
+    await handle.close();
+    await unlink(lock).catch(() => {});
+  }
+}
+
+/** A warning per written file that git ignores: `stageMove` skips it, and no commit carries it. */
+export function ignoredWarnings(ctx, files) {
+  return files.filter((f) => f && gitIgnored(f)).map((f) => `${rel(ctx, f)} is ignored by git: it is written but not staged, so no commit carries it`);
 }
 
 /** Everything an apply or a check reads once: where `LIVE.md` is, whether it exists, the ADR index, the plan dirs. */
@@ -160,18 +191,22 @@ export async function applySource(file, { projectDir = process.cwd(), dryRun = f
     });
   }
   const supersedes = isAdr ? [].concat(doc.data.supersedes ?? []).map(String) : [];
-  const res = await computeLive(ctx, { changes, kind: doc.carrier, ref, supersedes, label });
-  const out = { ...base, id: label, ops: res.ops, warnings: res.warnings, changed: res.changed };
-  if (!changes.length && !res.changed) return { ...out, skipped: 'nothing changed' };
-  if (dryRun) return out;
+  const apply = async () => {
+    const res = await computeLive(ctx, { changes, kind: doc.carrier, ref, supersedes, label });
+    const out = { ...base, id: label, ops: res.ops, warnings: res.warnings, changed: res.changed };
+    if (!changes.length && !res.changed) return { ...out, skipped: 'nothing changed' };
+    if (dryRun) return out;
 
-  const date = todayUTC();
-  await withFileRollback([abs, ctx.livePath], async () => {
-    if (changes.length) await atomicWrite(abs, markApplied(doc, { date, contradicts: [...new Set([...splitRefs(doc.delta.contradicts), ...res.contradicts])] }));
-    if (res.changed) await atomicWrite(ctx.livePath, res.after);
-    stageMove(changes.length ? abs : null, res.changed ? ctx.livePath : null);
-  });
-  return { ...out, applied: changes.length ? date : null };
+    const date = todayUTC();
+    const written = [changes.length ? abs : null, res.changed ? ctx.livePath : null];
+    await withFileRollback([abs, ctx.livePath], async () => {
+      if (changes.length) await atomicWrite(abs, markApplied(doc, { date, contradicts: [...new Set([...splitRefs(doc.delta.contradicts), ...res.contradicts])] }));
+      if (res.changed) await atomicWrite(ctx.livePath, res.after);
+      stageMove(...written);
+    });
+    return { ...out, warnings: [...out.warnings, ...ignoredWarnings(ctx, written)], applied: changes.length ? date : null };
+  };
+  return dryRun ? apply() : withLiveLock(ctx, apply);
 }
 
 /** Apply the checker's pending sources in completion order; failures leave successes intact. */

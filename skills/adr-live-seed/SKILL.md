@@ -34,8 +34,8 @@ outputs:
 
 workflow:
 1. run `git status` and stop when the tree is not clean
-2. stop when `LIVE.md` already exists and holds a record: the project is already seeded, and `adr live check` is the next step
-3. run `ai-factory adr live init` when `LIVE.md` is absent: it creates `LIVE.md` with the sentinel and lists the accepted ADRs without `live:`; skip it when `LIVE.md` holds only the sentinel
+2. run `ai-factory adr live`, and stop when it prints a record: the project is already seeded, and `adr live check` is the next step
+3. run `ai-factory adr live init` when step 2 reports `LIVE.md not found`: it creates the file at the configured path with the sentinel, and lists the accepted ADRs without `live:`; skip it when step 2 prints only the sentinel
 4. run `ai-factory adr format --path` and `ai-factory adr format live --path`, and read both: the records follow the `live` profile and the lexicon of the standard
 5. run `ai-factory adr decisions` and `ai-factory adr status --json`, then open every active ADR in full
 6. read `.ai-factory/DESCRIPTION.md`, the state narrative in `AGENTS.md`, and the code the active ADRs name in `code:`

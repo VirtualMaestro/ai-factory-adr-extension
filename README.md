@@ -278,6 +278,12 @@ debt rather than restoring behavior the completed plan removed.
 Successful applies stay written and staged even when another source fails; correct
 the listed failures and rerun. It exits 1 if any failed.
 
+Apply, finalize and supersede hold `LIVE.md.lock` next to `LIVE.md` while they write
+it. A second writer fails at once and changes nothing; rerun it when the first one ends.
+Delete a lock left by a killed process only when no `ai-factory adr` command is running.
+When git ignores `LIVE.md` or the plan, the CLI still writes them and warns that no
+commit carries them.
+
 ### `code` source anchors
 
 Each ADR carries an optional `code: []` frontmatter array — the primary

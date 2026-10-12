@@ -14,7 +14,7 @@ import { buildStatus } from '../src/status.js';
 import { deltaProblems, findFence, readDelta, markApplied } from '../src/live/delta.js';
 import { normaliseRef, resolveRef } from '../src/live/refs.js';
 import { applyDelta, parseLive, renderLive, SENTINEL } from '../src/live/state.js';
-import { applySource, applyPending, initLive, liveContext } from '../src/live/apply.js';
+import { applySource, applyPending, initLive, liveContext, withLiveLock } from '../src/live/apply.js';
 import { buildDecisions } from '../src/decisions.js';
 import { checkLive } from '../src/live/check.js';
 import { hasOpenTask } from '../src/live/plans.js';
@@ -251,7 +251,6 @@ test('applyDelta adds, modifies and removes, and the sentinel swaps in both dire
   const ctx = { kind: 'adr', ref: 'adr-one' };
   const start = parseLive(`${HEAD}capabilities:\n${SENTINEL}\n`);
   assert.equal(start.entries.length, 0);
-  assert.ok(start.sentinel);
 
   const one = applyDelta(start.entries, added('cap-a').changes, ctx);
   assert.deepEqual(one.refusals, []);
@@ -654,4 +653,47 @@ test('supersede reports the warnings of the ref rewrite', async () => {
   const neu = await writeAdr(dir, { id: 'adr-new', status: 'active', evidence: 'implemented', live: { none: 'a constraint only' } });
   const res = await supersede(old, neu, { projectDir: dir });
   assert.match(res.live.warnings.join(), /kept ref superseded adr-old.*change: removed/);
+});
+
+test('a writer holding LIVE.md.lock makes apply and finalize fail without writes; the lock goes away', async () => {
+  const dir = await mkProject();
+  await writeLive(dir);
+  const plan = await fencedPlan(dir, '.ai-factory/plans/locked.md', added('cap-locked'));
+  const adr = await writeAdr(dir, { id: 'adr-locked', status: 'accepted', evidence: 'documentation-only', live: added('cap-adr') });
+  const [planBefore, liveBefore] = [await readFile(plan, 'utf8'), await readFile(LIVE(dir), 'utf8')];
+  await withLiveLock(await liveContext(dir), async () => {
+    await assert.rejects(() => applySource(plan, { projectDir: dir }), /Another command is writing LIVE\.md[\s\S]*LIVE\.md\.lock/);
+    await assert.rejects(() => finalize(adr, { projectDir: dir }), /Another command is writing LIVE\.md/);
+  });
+  assert.equal(await readFile(plan, 'utf8'), planBefore);
+  assert.equal(await readFile(LIVE(dir), 'utf8'), liveBefore);
+  assert.ok(existsSync(adr), 'the ADR did not move');
+  assert.equal(existsSync(`${LIVE(dir)}.lock`), false);
+  await applySource(plan, { projectDir: dir });
+});
+
+test('concurrent applies never lose a record: each source reads as applied only when LIVE.md holds it', async () => {
+  const dir = await mkProject();
+  await writeLive(dir);
+  const plans = [await fencedPlan(dir, '.ai-factory/plans/a.md', added('cap-a')), await fencedPlan(dir, '.ai-factory/plans/b.md', added('cap-b'))];
+  const settled = await Promise.allSettled(plans.map((p) => applySource(p, { projectDir: dir })));
+  const ids = parseLive(await readFile(LIVE(dir), 'utf8')).entries.map((e) => e.id);
+  for (const [i, cap] of ['cap-a', 'cap-b'].entries()) {
+    const applied = (await readDelta(plans[i])).delta.applied != null;
+    assert.equal(applied, settled[i].status === 'fulfilled');
+    assert.equal(ids.includes(cap), applied, `${cap}: in LIVE.md exactly when its plan reads as applied`);
+  }
+});
+
+test('a git-ignored LIVE.md and plan are written with a warning that no commit carries them', async () => {
+  const dir = await gitProject();
+  await writeFile(path.join(dir, '.gitignore'), '.ai-factory/\n', 'utf8');
+  await writeLive(dir);
+  const plan = await fencedPlan(dir, '.ai-factory/plans/ignored.md', added('cap-ignored'));
+  const res = await applySource(plan, { projectDir: dir });
+  assert.equal(res.warnings.filter((w) => /is ignored by git/.test(w)).length, 2);
+  const adr = await writeAdr(dir, { id: 'adr-ignored', status: 'accepted', evidence: 'documentation-only', live: added('cap-adr-ignored') });
+  const fin = await finalize(adr, { projectDir: dir });
+  assert.match(fin.live.warnings.join(), /\.ai-factory\/LIVE\.md is ignored by git/);
+  assert.deepEqual(staged(dir).filter((f) => f.startsWith('.ai-factory/')), []);
 });

@@ -4,6 +4,22 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and the project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Fixed
+
+- Concurrent writers of `LIVE.md` no longer lose records. Apply, finalize and supersede
+  hold `LIVE.md.lock` from the read of `LIVE.md` to its write; a second writer fails at
+  once and changes nothing. Before, both succeeded, and the earlier source read as applied
+  while `LIVE.md` lacked its record.
+- Apply, finalize and supersede warn when git ignores the `LIVE.md` or plan they wrote:
+  staging skips those files, so no commit carries them.
+- `adr-live-seed` finds `LIVE.md` with `ai-factory adr live` instead of guessing its path.
+  A live run looked for it at the repository root and ran `adr live init` against an
+  existing file.
+- Removed the unused `sentinel` field of the parsed `LIVE.md` and the unused `files`
+  option of the LIVE error shape.
+
 ## [4.8.1] — 2026-10-11
 
 Fixes from an independent audit of the 4 `LIVE.md` phases.

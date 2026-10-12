@@ -25,7 +25,6 @@ export function parseLive(content) {
     .map((text, i) => ({ text, line: startLine + i }))
     .filter((i) => i.text.trim() !== '');
 
-  const sentinel = items.filter((i) => /^- none\b/.test(i.text));
   const { records, stray, repeated } = readRecords(items.filter((i) => !/^- none\b/.test(i.text)));
   const bad = stray[0] ?? repeated[0];
   if (bad) throw new Error(`LIVE.md line ${bad.line} is not a capability record, and the CLI rewrites every line after \`capabilities:\``);
@@ -39,7 +38,7 @@ export function parseLive(content) {
     ids.add(id);
     return { id, summary: r.values.summary ?? '', refs: splitRefs(r.values.refs).map(normaliseRef) };
   });
-  return { prefix, eol, entries, sentinel: sentinel.length > 0 };
+  return { prefix, eol, entries };
 }
 
 /** The file again: `prefix` untouched, then the records sorted by id, or the sentinel when there are none. */

@@ -19,3 +19,8 @@ export function stageMove(...files) {
   }
   return staged;
 }
+
+/** True when git ignores an untracked `file`: `stageMove` cannot stage it, so no commit carries it. */
+export function gitIgnored(file) {
+  return spawnSync('git', ['check-ignore', '-q', '--', file], { cwd: path.dirname(file), stdio: 'ignore' }).status === 0;
+}
