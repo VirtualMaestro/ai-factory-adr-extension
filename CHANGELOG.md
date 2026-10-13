@@ -4,6 +4,14 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and the project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+
+- **`ai-factory adr version` prints the installed extension version.** `ai-factory adr --version`
+  cannot: the AI Factory CLI answers that flag on every subcommand with its own version.
+  `ai-factory extension list` shows the same version with its install source.
+
 ## [4.9.0] — 2026-10-13
 
 ### Added

@@ -1,5 +1,5 @@
 import { readFile } from 'node:fs/promises';
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { detectAif, AifError } from '../src/aif/detect.js';
 import { bodyIssues, loadProfile, profileNames, resolveDoc } from '../src/artifacts/cnlp.js';
 import { init } from '../src/init.js';
@@ -27,6 +27,12 @@ import { checkLive } from '../src/live/check.js';
 export function register(program) {
   const adr = program.command('adr').description('Architecture Decision Record lifecycle');
   const out = (opts, obj, human) => (opts.json ? console.log(JSON.stringify(obj, null, 2)) : human());
+
+  // not `--version`: the AIF root program answers that flag on every subcommand with its own version
+  adr
+    .command('version')
+    .description('Print the installed ai-factory-adr-extension version')
+    .action(() => console.log(JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')).version));
 
   adr
     .command('init')

@@ -258,6 +258,7 @@ beforehand if you want the migration isolated.
 
 | Command | Purpose |
 |---|---|
+| `version` | Print the installed extension version (`ai-factory adr --version` prints the AI Factory CLI version instead) |
 | `init` | Scaffold the ADR directory structure (idempotent) |
 | `new <topic>` | Scaffold a `proposed` ADR from the template |
 | `import <topic> --status <s> [--id <id>]` | Scaffold a conformant ADR skeleton at any status (used by migration) |

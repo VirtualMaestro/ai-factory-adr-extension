@@ -72,6 +72,8 @@ test('add installs all 20 skills for each configured runtime and registers `adr`
     }
   }
   assert.match(aif(['adr', '--help'], dir), /init/);
+  const { version } = JSON.parse(await readFile(path.join(EXT_ROOT, 'package.json'), 'utf8'));
+  assert.equal(aif(['adr', 'version'], dir).trim(), version, 'adr version prints the installed extension version');
 
   aif(['adr', 'init'], dir);
   assert.ok(existsSync(path.join(dir, 'docs/adr/active')), 'adr init created the structure');
