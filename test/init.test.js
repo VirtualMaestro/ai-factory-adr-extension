@@ -9,26 +9,31 @@ import { STATUS_DIRS } from '../src/config/paths.js';
 
 const tmp = () => mkdtemp(path.join(os.tmpdir(), 'adr-init-'));
 
-test('init creates the five status dirs and the config, reporting created', async () => {
+test('init creates the five status dirs, the config and an empty LIVE.md, reporting created', async () => {
   const dir = await tmp();
   const { items } = await init(dir);
 
   for (const d of STATUS_DIRS) assert.ok(existsSync(path.join(dir, 'docs/adr', d)), `missing ${d}`);
   assert.ok(existsSync(path.join(dir, '.ai-factory/adr-extension.yaml')));
-  assert.equal(items.filter((i) => i.status === 'created').length, STATUS_DIRS.length + 1);
+  assert.match(await readFile(path.join(dir, '.ai-factory/LIVE.md'), 'utf8'), /^type: live$[\s\S]*^- none: no capability recorded yet$/m);
+  assert.equal(items.filter((i) => i.status === 'created').length, STATUS_DIRS.length + 2);
 });
 
-test('init is idempotent — second run reports present and does not overwrite config', async () => {
+test('init is idempotent — second run reports present and overwrites neither config nor LIVE.md', async () => {
   const dir = await tmp();
   await init(dir);
   const cfgFile = path.join(dir, '.ai-factory/adr-extension.yaml');
   await writeFile(cfgFile, 'version: 1\n# user edit\n', 'utf8'); // simulate user customization
   const before = await readFile(cfgFile, 'utf8');
+  const liveFile = path.join(dir, '.ai-factory/LIVE.md');
+  await writeFile(liveFile, (await readFile(liveFile, 'utf8')).replace('- none: no capability recorded yet', '- id: a\n  summary: A.\n  refs: x'), 'utf8');
+  const liveBefore = await readFile(liveFile, 'utf8');
 
   const { items } = await init(dir);
 
   assert.ok(items.every((i) => i.status === 'present'), 'expected all present on re-run');
   assert.equal(await readFile(cfgFile, 'utf8'), before, 'config must not be overwritten');
+  assert.equal(await readFile(liveFile, 'utf8'), liveBefore, 'LIVE.md must not be overwritten');
 });
 
 test('init honors a relocated adr.root from the config', async () => {

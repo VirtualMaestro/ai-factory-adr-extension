@@ -18,6 +18,18 @@ export function liveError(title, { expected, detected, next }) {
   return new Error(`${title}\n  expected: ${expected}\n  detected: ${list(detected)}\n  files:    nothing was changed\n  next:     ${next}`);
 }
 
+/** Every project keeps LIVE.md (5.0): a command that needs it refuses without it. `where` is { projectDir, livePath }. */
+export function liveMissing(where) {
+  return liveError('LIVE.md not found.', {
+    expected: `${rel(where, where.livePath)}: every project keeps LIVE.md`,
+    detected: 'it is missing',
+    next: 'run adr-live-seed when the project has an active ADR; otherwise run `ai-factory adr live init`',
+  });
+}
+
+/** The content of a new LIVE.md: no capability recorded yet. */
+export const liveTemplate = (since) => `---\ntype: live\ntitle: Live state\nsince: ${since}\n---\n\ncapabilities:\n${SENTINEL}\n`;
+
 /**
  * Run `action` holding `LIVE.md.lock`. 2 writers that read the same LIVE.md would otherwise both
  * succeed: the later write, or the rollback of a failed one, drops the other's records while its
@@ -66,7 +78,7 @@ export async function liveContext(projectDir = process.cwd()) {
 
 /**
  * Why a delta cannot pass the gate, or null: absent and malformed are both a refusal once
- * `LIVE.md` exists. `unapplied` also refuses an `applied:` before finalize, which would refuse it.
+ * every project keeps `LIVE.md`. `unapplied` also refuses an `applied:` before finalize, which would refuse it.
  */
 export function gateProblem(delta, problems, { unapplied = false } = {}) {
   if (problems.length) return `malformed \`live:\`: ${problems.join('; ')}`;
@@ -76,7 +88,7 @@ export function gateProblem(delta, problems, { unapplied = false } = {}) {
 
 /** The gate's refusal (§3.6), shared by `transition … accepted` and `finalize`. */
 export function gateError(label, problem) {
-  return liveError('The ADR has no usable `live:` delta, and this project keeps LIVE.md.', {
+  return liveError('The ADR has no usable `live:` delta.', {
     expected: '`live:` with `changes:` or `none:` in frontmatter',
     detected: `${label}: ${problem}`,
     next: 'write live: with changes: or none:, see adr-improve',
@@ -147,10 +159,12 @@ export async function applySource(file, { projectDir = process.cwd(), dryRun = f
   let abs = resolveInside(projectDir, file);
   if (existsSync(abs) && statSync(abs).isDirectory()) abs = resolveInside(projectDir, path.join(abs, 'index.md'));
   const base = { source: rel(ctx, abs), live: rel(ctx, ctx.livePath), dryRun };
-  if (!ctx.exists) return { ...base, skipped: 'no LIVE.md' };
   if (!existsSync(abs)) {
     throw liveError('Source not found.', { expected: 'an existing ADR or plan entrypoint', detected: `${file} is missing`, next: 'check the path' });
   }
+  // Still a skip, not a refusal: the aif-implement injection runs this in a project not yet seeded,
+  // and `adr status --check` is what reports the missing file.
+  if (!ctx.exists) return { ...base, skipped: 'no LIVE.md' };
 
   const doc = await readDelta(abs, { adr: indexedAdr(ctx, abs) });
   const isAdr = doc.carrier === 'adr';
@@ -262,7 +276,7 @@ export async function initLive({ projectDir = process.cwd() } = {}) {
     });
   }
   const since = todayUTC();
-  await atomicWrite(ctx.livePath, `---\ntype: live\ntitle: Live state\nsince: ${since}\n---\n\ncapabilities:\n${SENTINEL}\n`);
+  await atomicWrite(ctx.livePath, liveTemplate(since));
   const pending = [];
   for (const [id, adr] of ctx.adrs) {
     if (adr.status !== 'accepted') continue;

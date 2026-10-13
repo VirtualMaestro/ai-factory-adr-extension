@@ -66,13 +66,13 @@ workflow:
 10. fill `problem:`, `constraints:` and `decision_drivers:` under `## Context` in the created file
 11. state a numeric limit in canonical form, `open connections per client <= 2`, per the lexicon in `ai-factory adr format`
 12. record unresolved assumptions as placeholders in the body
-13. run `ai-factory adr live`, and when it prints `LIVE.md`, write frontmatter `live:` as `live_delta` states
+13. run `ai-factory adr live`, stop and report its `next:` line when it exits 1, and write frontmatter `live:` as `live_delta` states
 14. run `ai-factory adr live apply <file> --dry-run` and rewrite the delta until it passes: output that opens with `skipped:` means there is nothing to apply
 15. leave `status: proposed`; acceptance happens later via `adr-improve` then `adr-accept`
 16. report the status footer
 
 live_delta:
-- the delta applies only when the project keeps `LIVE.md`: `ai-factory adr live` prints it, and exits 1 when there is none
+- every project keeps `LIVE.md`: `ai-factory adr live` prints it, and its exit 1 routes the project to `adr-live-seed`
 - `live:` holds `changes:`, 1 record per capability the decision adds, modifies or removes: `capability`, `change`, `summary`
 - `change` is `added`, `modified` or `removed`; a rename is a `removed` plus an `added`
 - `capability` is a kebab-case id: reuse the id `LIVE.md` already carries for it rather than name a second one

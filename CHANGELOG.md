@@ -4,13 +4,41 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and the project adheres to
 [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [5.0.0] — 2026-10-13
+
+### Breaking
+
+- **`LIVE.md` is mandatory.** It is part of the flow, not an opt-in. A project updated from
+  4.x without it fails `ai-factory adr status --check`, with `next: run adr-live-seed`, and
+  so does every skill that runs that check. Run `/adr-live-seed` once per project; see
+  "Upgrading from 4.x to 5.0" in the README.
+- **An active ADR without `live:` is an error** in `adr validate` and `adr status --check`.
+  It marks a project the seed has not reached. Finalize and the seed write `live:`.
+- The `live:` checks on proposed, draft and accepted ADRs run whether or not `LIVE.md`
+  exists: a warning before acceptance, an error on an accepted ADR.
+- **`transition … accepted`, `finalize`, `supersede` and `adr live check` refuse without
+  `LIVE.md`** and change nothing. Before, they skipped it. `adr live apply` still skips,
+  because the `aif-implement` injection runs it in every project.
 
 ### Added
 
+- `ai-factory adr init` creates an empty `LIVE.md`, so a new project starts with one.
+- `adr-live-seed` commits its result in 1 commit after the operator approves the list, and
+  pushes by `git.skip_push_after_commit`. Before, it left the seed uncommitted.
+- `adr-migrate` ends with the seed when `LIVE.md` holds no record, and then commits the
+  migration and the seed together.
 - **`ai-factory adr version` prints the installed extension version.** `ai-factory adr --version`
   cannot: the AI Factory CLI answers that flag on every subcommand with its own version.
   `ai-factory extension list` shows the same version with its install source.
+
+### Changed
+
+- A `LIVE.md` record names every active ADR that shapes its capability. `ref-creep` in
+  `adr live check` counts only the refs that name no active ADR, still with a limit of 3.
+- `adr-live-seed` continues in a project that is seeded only in part: it keeps the records
+  `LIVE.md` holds and backfills `live:` on the ADRs without one.
+- The skills and the `aif-plan` and `aif-improve` injections no longer treat a missing
+  `LIVE.md` as an opt-out: they name `adr-live-seed` as the next step.
 
 ## [4.9.0] — 2026-10-13
 

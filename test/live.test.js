@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
-import { mkdir, readFile, writeFile, utimes } from 'node:fs/promises';
+import { mkdir, readFile, writeFile, utimes, unlink } from 'node:fs/promises';
 import YAML from 'yaml';
 import path from 'node:path';
 import { read } from '../src/artifacts/frontmatter.js';
@@ -364,11 +364,12 @@ test('an archive collision after the LIVE.md write restores LIVE.md and the ADR'
   assert.equal(await readFile(LIVE(dir), 'utf8'), before[1]);
 });
 
-test('finalize without LIVE.md changes nothing and creates no file', async () => {
+test('finalize without LIVE.md refuses, changes nothing and creates no file', async () => {
   const dir = await mkProject();
-  const adr = await writeAdr(dir, { id: 'adr-optout', status: 'accepted', evidence: 'documentation-only' });
-  const res = await finalize(adr, { projectDir: dir });
-  assert.equal(res.live, null);
+  await unlink(LIVE(dir));
+  const adr = await writeAdr(dir, { id: 'adr-unseeded', status: 'accepted', evidence: 'documentation-only' });
+  await assert.rejects(() => finalize(adr, { projectDir: dir }), /LIVE\.md not found[\s\S]*nothing was changed[\s\S]*run adr-live-seed/);
+  assert.ok(existsSync(adr), 'the ADR did not move');
   assert.ok(!existsSync(LIVE(dir)));
 });
 
@@ -391,18 +392,22 @@ test('a delta that fails the lexicon or the line limit is refused, and nothing i
 
 // --- the gate ---
 
-test('with LIVE.md present, a missing live: warns at draft, errors at accepted, and is silent at active', async () => {
+test('a missing live: warns at draft and errors at accepted and at active, where it routes to the seed', async () => {
   const dir = await mkProject();
   await writeLive(dir);
   const draft = await writeAdr(dir, { id: 'adr-g-draft', status: 'draft' });
-  const accepted = await writeAdr(dir, { id: 'adr-g-acc', status: 'accepted' });
-  const active = await writeAdr(dir, { id: 'adr-g-act', status: 'active', evidence: 'implemented', code: ['x'] });
+  const accepted = await writeAdr(dir, { id: 'adr-g-acc', status: 'accepted', live: undefined });
+  const active = await writeAdr(dir, { id: 'adr-g-act', status: 'active', evidence: 'implemented', code: ['x'], live: undefined });
+  const seeded = await writeAdr(dir, { id: 'adr-g-seeded', status: 'active', evidence: 'implemented', code: ['x'], live: { none: 'seeded' } });
 
   assert.ok((await validateAdr(draft, { projectDir: dir })).warnings.some((w) => /^live:/.test(w)));
   assert.ok((await validateAdr(accepted, { projectDir: dir })).errors.some((e) => /^live:/.test(e)));
-  const act = await validateAdr(active, { projectDir: dir });
-  assert.ok(![...act.errors, ...act.warnings].some((m) => /live/.test(m)));
-  assert.ok(!(await buildStatus(dir)).issues.some((i) => i.includes('adr-g-act')), 'an active ADR keeps --check green');
+  assert.ok((await validateAdr(active, { projectDir: dir })).errors.some((e) => /^live:.*adr-live-seed/.test(e)));
+  const ok = await validateAdr(seeded, { projectDir: dir });
+  assert.ok(![...ok.errors, ...ok.warnings].some((m) => /live/.test(m)), 'a seeded active ADR is clean');
+  const { issues } = await buildStatus(dir);
+  assert.ok(issues.some((i) => i.includes('adr-g-act')), 'an unseeded active ADR turns --check red');
+  assert.ok(!issues.some((i) => i.includes('adr-g-seeded')));
 });
 
 test('with LIVE.md present, transition to accepted and finalize refuse an ADR without live:', async () => {
@@ -412,7 +417,7 @@ test('with LIVE.md present, transition to accepted and finalize refuse an ADR wi
   await assert.rejects(() => transition(draft, 'accepted', { projectDir: dir }), /write live: with changes: or none:, see adr-improve/);
   assert.ok(existsSync(draft));
 
-  const accepted = await writeAdr(dir, { id: 'adr-nolive-acc', status: 'accepted', evidence: 'documentation-only' });
+  const accepted = await writeAdr(dir, { id: 'adr-nolive-acc', status: 'accepted', evidence: 'documentation-only', live: undefined });
   const before = await readFile(LIVE(dir), 'utf8');
   await assert.rejects(() => finalize(accepted, { projectDir: dir }), /no `live:` delta/);
   assert.ok(existsSync(accepted));
@@ -422,12 +427,35 @@ test('with LIVE.md present, transition to accepted and finalize refuse an ADR wi
   assert.match((await transition(ok, 'accepted', { projectDir: dir })).target, /accepted/);
 });
 
-test('without LIVE.md, adr live apply skips and the gate is off', async () => {
+test('without LIVE.md, live apply skips, transition to accepted and supersede refuse, and status names the file', async () => {
   const dir = await mkProject();
+  await unlink(LIVE(dir));
   const active = await writeAdr(dir, { id: 'adr-skip', status: 'active', evidence: 'implemented', live: added('skip-cap') });
   assert.equal((await applySource(active, { projectDir: dir })).skipped, 'no LIVE.md');
-  const draft = await writeAdr(dir, { id: 'adr-free', status: 'draft' });
-  await transition(draft, 'accepted', { projectDir: dir });
+  await assert.rejects(() => applySource(path.join(dir, 'missing.md'), { projectDir: dir }), /Source not found/);
+
+  const draft = await writeAdr(dir, { id: 'adr-unseeded', status: 'draft', live: { none: 'a constraint' } });
+  await assert.rejects(() => transition(draft, 'accepted', { projectDir: dir }), /LIVE\.md not found[\s\S]*run adr-live-seed/);
+  assert.ok(existsSync(draft), 'the draft did not move');
+
+  const neu = await writeAdr(dir, { id: 'adr-skip-2', status: 'active', evidence: 'implemented', live: { none: 'seeded' } });
+  await assert.rejects(() => supersede(active, neu, { projectDir: dir }), /LIVE\.md not found/);
+  assert.ok(existsSync(active), 'the old ADR did not move');
+
+  assert.ok((await buildStatus(dir)).issues.some((i) => /^\.ai-factory\/LIVE\.md: not found: .*adr-live-seed/.test(i.split(path.sep).join('/'))));
+  assert.ok(!existsSync(LIVE(dir)), 'no command created the file');
+
+  const accepted = await writeAdr(dir, { id: 'adr-unseeded-acc', status: 'accepted', live: undefined });
+  assert.ok((await validateAdr(accepted, { projectDir: dir })).errors.some((e) => /^live:/.test(e)), 'the accepted gate holds without LIVE.md too');
+});
+
+test('supersede of an active pair works on a LIVE.md that holds only the sentinel', async () => {
+  const dir = await mkProject();
+  const old = await writeAdr(dir, { id: 'adr-s-old', status: 'active', evidence: 'implemented' });
+  const neu = await writeAdr(dir, { id: 'adr-s-new', status: 'active', evidence: 'implemented' });
+  const res = await supersede(old, neu, { projectDir: dir });
+  assert.match(res.superseded, /superseded/);
+  assert.deepEqual(parseLive(await readFile(LIVE(dir), 'utf8')).entries, []);
 });
 
 // --- supersede ---
@@ -488,7 +516,8 @@ test('an apply that changes nothing leaves LIVE.md byte-identical and unstaged',
 
 test('adr live init creates the sentinel file, lists accepted ADRs without live:, and refuses a second run', async () => {
   const dir = await mkProject();
-  await writeAdr(dir, { id: 'adr-in-flight', status: 'accepted' });
+  await unlink(LIVE(dir));
+  await writeAdr(dir, { id: 'adr-in-flight', status: 'accepted', live: undefined });
   await writeAdr(dir, { id: 'adr-ready', status: 'accepted', live: { none: 'r' } });
 
   const res = await initLive({ projectDir: dir });
@@ -523,7 +552,7 @@ test('a standalone apply on an active ADR runs once and is refused the second ti
 test('adr live check reports every code on a fixture', async () => {
   const dir = await mkProject();
   await writeAdr(dir, { id: 'adr-live-ok', status: 'active', evidence: 'implemented', live: { none: 'seeded' } });
-  await writeAdr(dir, { id: 'adr-no-live', status: 'active', evidence: 'implemented' });
+  await writeAdr(dir, { id: 'adr-no-live', status: 'active', evidence: 'implemented', live: undefined });
   await writeAdr(dir, { id: 'adr-unapplied', status: 'active', evidence: 'implemented', live: added('u') });
   await writeAdr(dir, { id: 'adr-draft-ref', status: 'draft' });
   await writeAdr(dir, { id: 'adr-gone', status: 'superseded', replaced_by: 'adr-live-ok' });
@@ -537,7 +566,8 @@ test('adr live check reports every code on a fixture', async () => {
     '- id: c-stale', '  summary: C.', '  refs: adr-gone',
     '- id: d-unfinished', '  summary: D.', '  refs: adr-draft-ref, open-plan',
     '- id: e-norefs', '  summary: E.', '  refs:',
-    '- id: f-creep', '  summary: F.', '  refs: adr-live-ok, adr-twice, adr-gone, adr-no-live',
+    '- id: f-creep', '  summary: F.', '  refs: adr-gone, open-plan, src/a.js, src/b.js',
+    '- id: f-many-adrs', '  summary: F.', '  refs: adr-live-ok, adr-no-live, adr-unapplied, adr-twice',
     '- id: g-long', '  summary: One. Two. Three.', '  refs: adr-live-ok',
     '- id: h-format', '  summary: It ensures things.', '  refs: adr-live-ok',
     '- id: i-quoted', '  summary: "It does things."', '  refs: adr-live-ok',
@@ -555,14 +585,16 @@ test('adr live check reports every code on a fixture', async () => {
   assert.equal(issues.filter((i) => i.code === 'ref-to-unfinished' && i.target === 'd-unfinished').length, 2, 'the draft ADR and the open plan');
   assert.ok(has('no-refs', 'e-norefs'));
   assert.ok(has('ref-creep', 'f-creep'));
+  assert.ok(!has('ref-creep', 'f-many-adrs'), 'active ADR refs do not count toward the limit');
   assert.ok(has('summary-too-long', 'g-long'));
   assert.ok(has('missing-delta', 'adr-no-live'));
   assert.ok(has('unapplied-delta', 'adr-unapplied'));
   assert.ok(!has('missing-delta', 'adr-live-ok') && !has('unapplied-delta', 'adr-live-ok'));
 });
 
-test('adr live check without LIVE.md reports nothing', async () => {
+test('checkLive without LIVE.md reports that it is missing and no issue; the CLI turns that into exit 1', async () => {
   const dir = await mkProject();
+  await unlink(LIVE(dir));
   await writeAdr(dir, { id: 'adr-x', status: 'active', evidence: 'implemented' });
   const res = await checkLive({ projectDir: dir });
   assert.equal(res.exists, false);
@@ -622,7 +654,9 @@ test('an applied: written before finalize fails the accepted gate and validate',
   await assert.rejects(() => transition(draft, 'accepted', { projectDir: dir }), /`applied:` is written by finalize/);
   const accepted = await writeAdr(dir, { id: 'adr-early-acc', status: 'accepted', live });
   assert.match((await validateAdr(accepted, { projectDir: dir })).errors.join(), /`applied:` is written by finalize/);
-  assert.deepEqual((await initLive({ projectDir: await mkProject() })).acceptedWithoutDelta, []);
+  const bare = await mkProject();
+  await unlink(LIVE(bare));
+  assert.deepEqual((await initLive({ projectDir: bare })).acceptedWithoutDelta, []);
 });
 
 test('check reports broken LIVE.md frontmatter and a missing since: without crashing or flagging old plans', async () => {

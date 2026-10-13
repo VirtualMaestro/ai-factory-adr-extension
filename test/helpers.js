@@ -59,10 +59,15 @@ risks:
 - none: the fixture carries no decision of its own
 `;
 
-/** Write an ADR into its status directory. Returns the absolute file path. */
+/**
+ * Write an ADR into its status directory. Returns the absolute file path. An accepted or active ADR
+ * gets `live: none:` unless the caller passes `live` (`live: undefined` writes none).
+ */
 export async function writeAdr(dir, { id, status, type = 'adr', body = CLEAN_BODY, ...fm }) {
   const file = path.join(dir, 'docs/adr', DIR_BY_STATUS[status], `${id}.md`);
   await mkdir(path.dirname(file), { recursive: true });
+  if (!('live' in fm) && ['accepted', 'active'].includes(status)) fm.live = { none: 'the fixture changes no capability' };
+  if (fm.live === undefined) delete fm.live;
   await writeFile(file, serialize({ id, type, status, ...fm }, body), 'utf8');
   return file;
 }

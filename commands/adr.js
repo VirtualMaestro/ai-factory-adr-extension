@@ -17,7 +17,7 @@ import { runAudit } from '../src/audit.js';
 import { createProposal } from '../src/artifacts/create.js';
 import { importAdr } from '../src/artifacts/import.js';
 import { liveFile } from '../src/config/paths.js';
-import { applySource, applyPending, initLive, liveError } from '../src/live/apply.js';
+import { applySource, applyPending, initLive, liveMissing } from '../src/live/apply.js';
 import { checkLive } from '../src/live/check.js';
 
 /**
@@ -36,7 +36,7 @@ export function register(program) {
 
   adr
     .command('init')
-    .description('Create the ADR directory structure and default configuration (idempotent)')
+    .description('Create the ADR directory structure, the default configuration and an empty LIVE.md (idempotent)')
     .option('--json', 'Machine-readable output')
     .action((opts) => guard(opts, async () => {
       const { items } = await init();
@@ -297,7 +297,7 @@ export function register(program) {
     .action((opts) => guard(opts, async () => {
       const file = await liveFile(process.cwd());
       if (!existsSync(file)) {
-        throw liveError('LIVE.md not found.', { expected: 'a LIVE.md in this project', detected: `${file} is missing`, next: 'run `ai-factory adr live init`' });
+        throw liveMissing({ projectDir: process.cwd(), livePath: file });
       }
       const content = await readFile(file, 'utf8');
       out(opts, { command: 'live', path: file, content }, () => process.stdout.write(content));
@@ -308,7 +308,7 @@ export function register(program) {
 
   live
     .command('init')
-    .description('Create LIVE.md with no capability recorded yet; the project opts in by having it')
+    .description('Create LIVE.md with no capability recorded yet; adr-live-seed fills it in a project with ADRs')
     .option('--json', 'Machine-readable output')
     .action((opts) => guard(liveOpts(opts), async () => {
       const res = await initLive({ projectDir: process.cwd() });
@@ -356,12 +356,12 @@ export function register(program) {
 
   live
     .command('check')
-    .description('Broken, ambiguous and stale refs in LIVE.md, and every delta that never reached it (exit 0)')
+    .description('Broken, ambiguous and stale refs in LIVE.md, and every delta that never reached it (exit 0; exit 1 without LIVE.md)')
     .option('--json', 'Machine-readable output')
     .action((opts) => guard(liveOpts(opts), async () => {
       const res = await checkLive({ projectDir: process.cwd() });
+      if (!res.exists) throw liveMissing({ projectDir: process.cwd(), livePath: await liveFile(process.cwd()) });
       out(opts, { command: 'live check', ...res }, () => {
-        if (!res.exists) return console.log(`No ${res.live}: this project does not keep LIVE.md.`);
         res.issues.forEach((i) => console.error(`  ${i.code}  ${i.target}: ${i.message}`));
         console.log(res.issues.length ? `${res.issues.length} issue(s).` : 'LIVE.md is consistent.');
       });

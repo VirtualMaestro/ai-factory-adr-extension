@@ -55,7 +55,7 @@ workflow:
 5. record the exact pre-existing plan and QA paths: stage only this run's changed files later, not unrelated artifacts already present
 6. run `adr.acceptance.command` once when it is set, and stop when it fails: the run did not cause that failure
 7. stop when `adr.acceptance.exploratory.instructions` names a missing file; use its `rounds` limit when configured
-8. read `ai-factory adr live` when LIVE.md exists, and read `ai-factory adr decisions`; record an absent LIVE.md as opt-out
+8. read `ai-factory adr live` and `ai-factory adr decisions`; stop and report its `next:` line when `ai-factory adr live` exits 1
 9. stop on an input fast plan or a plan with `implements:`, and name the route from `forbidden_behaviors`
 10. inspect the topic or existing plan against the active decisions: stop and recommend `adr-propose` when it binds work beyond this change
 11. name an active ADR whose capability the change alters or removes, and continue: live apply records removal debt, which the report routes to `adr-auto-plan`
@@ -138,7 +138,7 @@ report_format:
 status_footer:
   format: "✔ adr-auto-change <plan, implement or full>: <capability-id, ...> · plan: <stem> · untested: <k> · stopped at: <step or none> · pushed: <branch or no>"
   source: the step 46 apply output for capability ids, or the step 20 dry run in a `plan` run; git for the branch, and this run's records for untested
-  note: use `none` for capability ids on a no-op, opt-out or stop before apply; report the actual stop step and count every untested case, even on a stopped run
+  note: use `none` for capability ids on a no-op or stop before apply; report the actual stop step and count every untested case, even on a stopped run
 
 invocation:
 - Claude Code: `/adr-auto-change [plan|implement] <topic or @full-plan or @ultra-bundle>`

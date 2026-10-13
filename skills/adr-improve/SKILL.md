@@ -77,7 +77,7 @@ workflow:
 13. record every conflict with an accepted or active ADR, naming the block of the other ADR it contradicts
 14. ask only questions that materially block the decision
 15. update the ADR
-16. run `ai-factory adr live`, and when it prints `LIVE.md`, write or correct frontmatter `live:` as `live_delta` states, against the decision this pass leaves
+16. run `ai-factory adr live`, stop and report its `next:` line when it exits 1, and write or correct frontmatter `live:` as `live_delta` states, against the decision this pass leaves
 17. run `ai-factory adr live apply <file> --dry-run` and rewrite the delta until it passes: output that opens with `skipped:` means there is nothing to apply
 18. when this pass changed no `decision:`, `scope:`, `constraints:` or `rules:` line, refinement is done: recommend `adr-accept` and run no further pass
 19. run `ai-factory adr validate <file>` again on the edited file and fix what it reports: the run at step 1 judged the file you replaced
@@ -96,7 +96,7 @@ transitions:
   action: transition back to draft
 
 live_delta:
-- the delta applies only when the project keeps `LIVE.md`: `ai-factory adr live` prints it, and exits 1 when there is none
+- every project keeps `LIVE.md`: `ai-factory adr live` prints it, and its exit 1 routes the project to `adr-live-seed`
 - `live:` holds `changes:`, 1 record per capability the decision adds, modifies or removes: `capability`, `change`, `summary`
 - `change` is `added`, `modified` or `removed`; a rename is a `removed` plus an `added`
 - `capability` is a kebab-case id: reuse the id `LIVE.md` already carries for it rather than name a second one

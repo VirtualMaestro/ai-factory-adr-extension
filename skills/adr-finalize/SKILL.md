@@ -34,7 +34,7 @@ outputs:
 - verification result
 - `evidence:` and `code:` recorded in the ADR frontmatter
 - activated ADR and archived plan
-- `LIVE.md` with the ADR's `live:` delta applied, when the project keeps one
+- `LIVE.md` with the ADR's `live:` delta applied
 
 quality_rules:
 - the architectural decision is already made: do not re-litigate it
@@ -70,8 +70,9 @@ command_behaviour:
 - it then atomically moves the ADR to `active/`
 - it archives the plan following `aif-archive` semantics: to `paths.archive/plans/`, `status: done`, `archived: YYYY-MM-DD`, filename preserved
 - it stages both the ADR move and the plan archival in Git, so each one lands as a rename
-- when the project keeps `LIVE.md`, it applies the `live:` delta in the same rollback, writes `live.applied` into the ADR, and stages `LIVE.md`
-- it refuses an ADR without a `live:` that holds `changes:` or `none:` once `LIVE.md` exists, and changes nothing
+- it applies the `live:` delta to `LIVE.md` in the same rollback, writes `live.applied` into the ADR, and stages `LIVE.md`
+- it refuses an ADR without a `live:` that holds `changes:` or `none:`, and changes nothing
+- it refuses a project without `LIVE.md`, and changes nothing
 
 documentation_only_adrs:
 - an ADR with `evidence: documentation-only` or `documentation-only decision` in its frontmatter skips verification and the plan steps entirely

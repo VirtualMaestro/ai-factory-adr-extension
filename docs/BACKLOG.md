@@ -2,11 +2,29 @@
 
 Open items only. The MVP build log and original PRD remain in Git history.
 
-**Current state:** 4.9.0 · 20 skills · 195 tests pass, none skipped. The live runs behind
+**Current state:** 5.0.0 · 20 skills · 196 tests pass, none skipped. The live runs behind
 4.8.2 are in
 [validation-audit-2026-10-12.md](validation-audit-2026-10-12.md).
 The `plan` and `implement` modes of `adr-auto-change` in 4.9.0 ran live once in Claude Code,
 on a plan with no principled question; their stop on a principled question and Codex were not run.
+
+5.0.0 makes `LIVE.md` mandatory. Its live runs, each on a todo-CLI fixture:
+- **4.x project, Claude Code:** 3 active ADRs, 1 accepted, 1 archived plan, no `LIVE.md`.
+  `status --check` was red with the 5 issues. `adr-live-seed` stopped with the list, then
+  after "approve" wrote 5 records and `live:` on 4 ADRs. It made 1 commit and pushed, and
+  both checks exited 0.
+- **4.x project, Codex 0.162.1:** the same fixture. Codex stopped for approval, then wrote
+  the seed, and both checks exited 0. It cited 2 refs on 1 capability. The commit was
+  skipped because `-s workspace-write` mounts `.git` read-only, and the skill reported
+  `commit: skipped`.
+- **MADR corpus, Claude Code:** `adr-migrate` rewrote 2 ADRs and stopped at the seed's
+  approval. After "approve" it made 1 commit holding the migration, the seed and
+  `AGENTS.md`, and pushed. Both checks exited 0.
+- **Partly seeded project, Claude Code:** `LIVE.md` held 1 record, and no ADR had `live:`.
+  `adr-live-seed` did not stop at step 2. It kept the record and proposed the other 4,
+  then stopped for approval. That run was not taken past the approval.
+- **Not run:** a capability with more than 3 active ADR refs, the stop on a correction
+  instead of an approval, and `adr-migrate` in Codex.
 CNL-P comes from `cnlp-kit`; this repository owns `skill`, `live` and `plan`.
 Adopting projects read them through `ai-factory adr format`.
 

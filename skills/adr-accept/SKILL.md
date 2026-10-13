@@ -23,7 +23,7 @@ preconditions:
 - no blocking questions remain
 - the ADR resolves or explicitly addresses every conflict with an active ADR
 - artifact metadata is valid
-- when the project keeps `LIVE.md`, frontmatter `live:` holds `changes:` or `none:`, which `adr-improve` writes
+- frontmatter `live:` holds `changes:` or `none:`, which `adr-improve` writes
 
 forbidden_behaviors:
 - do not accept when any precondition fails: stop and recommend `adr-improve`

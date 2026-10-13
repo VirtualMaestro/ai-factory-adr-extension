@@ -36,12 +36,13 @@ forbidden_behaviors:
 - do not invent an accepted rule when it is unclear whether a legacy item is a real decision: migrate it as `proposed`
 - do not invent new rules when repointing instruction files: point to the skills
 - do not treat a prior external index or wiki as the source of truth: the Markdown ADR files in Git are, and they supersede it
-- do not create a branch and do not commit: leave the migration in the working tree for the operator, who branches, commits or reverts as they see fit
+- do not create a branch
+- do not commit a migration that writes no seed: leave it in the working tree for the operator, who commits or reverts it
 
 outputs:
 - the mapping of old file to new id and resulting status, one row per legacy file
 - the reconciliation for each file: every subsection and every rule of the original, and the block it now lives in
-- the migrated ADRs in the working tree, uncommitted
+- the migrated ADRs in the working tree, or in 1 commit with the seed when step 22 applies it
 - repointed instruction files
 
 workflow:
@@ -49,7 +50,7 @@ workflow:
 2. read `adr.root` from `.ai-factory/adr-extension.yaml`, default `docs/adr`, and use that root everywhere below
 3. run `ai-factory adr format --path` and `ai-factory adr format adr --path`, then read both: they are the rules and the block set every migrated file is rewritten into
 4. scan `adr/`, `docs/adr/`, `docs/decisions/`, and `architecture/decisions/` for ADR files written in a format this extension did not produce
-5. run `ai-factory adr status --check` over the configured root: an ADR already filed there that fails is legacy in place, written for a pre-1.6 or a pre-CNL-P version of this extension, and one that passes needs no migration
+5. run `ai-factory adr status --check` over the configured root: an ADR there that fails on an issue other than `live:` is legacy in place, written for a pre-1.6 or a pre-CNL-P version; one that fails only on `live:` waits for step 22
 6. report both lists, each path with its file count, before reading any of them
 7. ask the operator where the legacy ADRs live when both lists come up empty, or when what they hold is not the corpus they meant: no scan covers every project layout
 8. read every legacy file found, noting its format and any existing status, date, and title
@@ -66,13 +67,15 @@ workflow:
 19. migrate both sides of a replace pair at their live status before superseding: `ai-factory adr supersede` requires the old ADR to be `accepted` or `active`
 20. run `ai-factory adr supersede <old-file> <new-file> [--archive-plan | --delete-plan]` for each pair, in preference to hand-linking
 21. place any legacy plan doc under the configured `paths.plans` and link it: `ai-factory adr link-plan <adr-file> <plan-file>`
-22. run `ai-factory adr live`, and when it prints `LIVE.md`, write frontmatter `live:` on each migrated ADR as `live_delta` states: the strict run below fails on a proposed, draft or accepted ADR without it
-23. run `ai-factory adr live apply <file>` on each migrated `active` ADR whose `live:` holds `changes:`: an imported active ADR has no finalize to apply it
-24. run `ai-factory adr validate <file> --strict` on each migrated ADR and fix until it exits 0: a warning is work left undone here, whatever the status says
-25. run `ai-factory adr status --check` and fix until it exits 0, then run `ai-factory adr live check` and fix each `missing-delta` on a migrated active ADR
-26. replace each stale ADR-process block in `AGENTS.md`, `CLAUDE.md`, `CONTRIBUTING.md`, and `README.md` with the `instruction_pointer` below
-27. substitute the configured `adr.root` for "the configured ADR root" in that pointer
-28. emit the mapping, the reconciliation, then the status footer
+22. apply steps 2 to 23 of `adr-live-seed` inline, with its stop for the operator's approval; its step 2 ends it at once in a project already seeded
+23. write `live:` as `live_delta` states on each migrated proposed or draft ADR, and on every other migrated ADR still without one
+24. run `ai-factory adr live apply <file>` on each migrated `active` ADR whose `live:` holds `changes:` without `applied:`: an imported active ADR has no finalize to apply it
+25. run `ai-factory adr validate <file> --strict` on each migrated ADR and fix until it exits 0: a warning is work left undone here, whatever the status says
+26. run `ai-factory adr status --check` and fix until it exits 0, then run `ai-factory adr live check` and fix each `missing-delta` on a migrated active ADR
+27. replace each stale ADR-process block in `AGENTS.md`, `CLAUDE.md`, `CONTRIBUTING.md`, and `README.md` with the `instruction_pointer` below
+28. substitute the configured `adr.root` for "the configured ADR root" in that pointer
+29. stage, commit and push every file this run changed as steps 24 to 27 of `adr-live-seed` state, when step 22 wrote the seed
+30. emit the mapping, the reconciliation, then the status footer
 
 status_mapping:
 - the overlays below are independent of this list: a file gets exactly 1 status here
@@ -136,7 +139,7 @@ documentation_only_overlay:
 - leave `plan:` empty
 
 live_delta:
-- the delta applies only when the project keeps `LIVE.md`: `ai-factory adr live` prints it, and exits 1 when there is none
+- every project keeps `LIVE.md`: `ai-factory adr live` prints it, and its exit 1 routes the project to `adr-live-seed`
 - `live:` holds `changes:`, 1 record per capability the decision adds, modifies or removes: `capability`, `change`, `summary`
 - `change` is `added`, `modified` or `removed`; a rename is a `removed` plus an `added`
 - `capability` is a kebab-case id: reuse the id `LIVE.md` already carries for it rather than name a second one
@@ -162,7 +165,7 @@ instruction_pointer:
 ```
 
 status_footer:
-  format: "✔ adr-migrate · 4 ADRs → 2 active, 1 accepted, 1 superseded · uncommitted"
+  format: "✔ adr-migrate · 4 ADRs → 2 active, 1 accepted, 1 superseded · seeded: <yes or no> · commit: <sha or uncommitted>"
   source: `ai-factory adr status --json`
   note: the footer carries counts only; the migrated ids are in the mapping output, one row per file
 

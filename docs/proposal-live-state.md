@@ -330,7 +330,7 @@ All are subcommands of `adr`, so `extension.json` keeps 1 command (`test/extensi
 | `stale-superseded-ref` | a ref names a superseded ADR whose `replaced_by` chain reaches an `active` ADR | ADR refs |
 | `ref-to-unfinished` | a ref names a `proposed`, `draft` or `accepted` ADR, or a plan with an open `- [ ]` task | ADR and plan refs |
 | `no-refs` | an entry has no ref | every entry except the `- none:` sentinel |
-| `ref-creep` | an entry has more than 3 refs | every entry |
+| `ref-creep` | an entry has more than 3 refs (5.0: refs to active ADRs do not count) | every entry |
 | `summary-too-long` | a summary has more than 2 sentences | every entry except the sentinel |
 | `missing-delta` | no `live:` | every active ADR |
 | `missing-delta` | no `adr-live` fence | plans without `implements:`: archived on or after `since:` (full plan: frontmatter `archived:`; ultra: `<!-- aif:archived:DATE -->`), and completed plans still in `paths.plans` (no `- [ ]` outside a code fence in the entrypoint; ultra keeps progress only in `index.md`, `ULTRA-FORMAT.md:31`) |

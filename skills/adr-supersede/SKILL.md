@@ -52,7 +52,7 @@ command_behaviour:
 - sets `replaced_by: <new-id>` in the old ADR's frontmatter
 - atomically moves the old ADR to `superseded/`, staged in Git as a rename
 - disposes the plan per the flag
-- rewrites every `LIVE.md` ref to the old id into the new id and stages `LIVE.md`, when the project keeps one and the replacement is already `active`
+- rewrites every `LIVE.md` ref to the old id into the new id and stages `LIVE.md`, when the replacement is already `active`; it refuses a project without `LIVE.md`
 - leaves `LIVE.md` alone while the replacement is `accepted`: its finalize rewrites the refs, and until then the old code still runs
 - changes nothing if a precondition fails (PRD §27): fix the cause and retry
 

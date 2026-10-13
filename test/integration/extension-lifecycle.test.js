@@ -3,7 +3,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
-import { mkdtemp, writeFile, readFile, mkdir, readdir } from 'node:fs/promises';
+import { mkdtemp, writeFile, readFile, mkdir, readdir, unlink } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -83,6 +83,16 @@ test('live apply CLI accepts plan entrypoints and pending failures exit 1 after 
   const dir = await newProject('codex');
   aif(['extension', 'add', EXT_ROOT], dir);
   aif(['adr', 'init'], dir);
+  const livePath = path.join(dir, '.ai-factory', 'LIVE.md');
+  assert.ok(existsSync(livePath), 'adr init creates LIVE.md');
+  assert.match(aifResult(['adr', 'live', 'init'], dir).stderr, /already exists/);
+  await unlink(livePath);
+  // adr-live-seed step 3 reads this text to decide on `live init`.
+  assert.match(aifResult(['adr', 'live'], dir).stderr, /LIVE\.md not found/);
+  const unseeded = aifResult(['adr', 'live', 'check'], dir);
+  assert.equal(unseeded.status, 1, 'live check exits 1 without LIVE.md');
+  assert.match(unseeded.stderr, /LIVE\.md not found[\s\S]*adr-live-seed/);
+  assert.equal(aifResult(['adr', 'status', '--check'], dir).status, 1, 'status --check is red without LIVE.md');
   assert.equal(JSON.parse(aif(['adr', 'live', 'init', '--json'], dir)).command, 'live init');
   spawnSync('git', ['init', '-q'], { cwd: dir });
   const plans = path.join(dir, '.ai-factory', 'plans');
@@ -188,7 +198,7 @@ test('wave-1 lifecycle: propose → refine (draft) → accept, driven by the rea
   // (keep status: proposed) so the ADR validates clean once accepted (inv 6).
   await writeFile(proposed, [
     '---', 'id: adr-test-decision', 'type: adr', 'status: proposed', 'owners: [maintainer]',
-    'depends_on: []', 'affects: []', 'supersedes: []', '---', '',
+    'depends_on: []', 'affects: []', 'supersedes: []', 'live:', '  none: "the test decision changes no capability"', '---', '',
     ...cnlpBody('Test decision'),
   ].join('\n'), 'utf8');
 
@@ -345,7 +355,8 @@ async function seedAccepted(dir, id, title) {
   await mkdir(path.dirname(file), { recursive: true });
   await writeFile(file, [
     '---', `id: ${id}`, 'type: adr', 'status: accepted', 'owners: [maintainer]',
-    'depends_on: []', 'affects: []', 'supersedes: []', 'evidence: pending', '---', '',
+    'depends_on: []', 'affects: []', 'supersedes: []', 'evidence: pending',
+    'live:', '  none: "the test decision changes no capability"', '---', '',
     ...cnlpBody(title),
   ].join('\n'), 'utf8');
   return file;

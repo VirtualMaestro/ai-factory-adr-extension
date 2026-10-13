@@ -9,7 +9,7 @@ import { resolveInside, atomicWrite } from '../util/safe-path.js';
 import { stageMove } from '../util/git.js';
 import { liveFile } from '../config/paths.js';
 import { deltaProblems } from '../live/delta.js';
-import { gateProblem, gateError } from '../live/apply.js';
+import { gateProblem, gateError, liveMissing } from '../live/apply.js';
 
 class TransitionError extends Error {}
 
@@ -92,9 +92,11 @@ export async function transition(file, toStatus, { projectDir = process.cwd(), m
     }
   }
 
-  // D5: once a project keeps LIVE.md, an ADR states its delta before it becomes a rule, so a
-  // run never reaches implementation with nothing to apply at finalize.
-  if (toStatus === 'accepted' && existsSync(await liveFile(projectDir))) {
+  // D5: an ADR states its delta before it becomes a rule, so a run never reaches implementation
+  // with nothing to apply at finalize.
+  if (toStatus === 'accepted') {
+    const livePath = await liveFile(projectDir);
+    if (!existsSync(livePath)) throw liveMissing({ projectDir, livePath });
     const delta = data.live ?? null;
     const problem = gateProblem(delta, delta == null ? [] : deltaProblems(delta, { adr: true }), { unapplied: true });
     if (problem) throw gateError(data.id, problem);

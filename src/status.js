@@ -5,6 +5,8 @@ import { read } from './artifacts/frontmatter.js';
 import { validateAdr } from './lifecycle/validate.js';
 import { resolvePlans } from './artifacts/plan.js';
 import { STATUS_BY_DIR } from './lifecycle/status.js';
+import { existsSync } from 'node:fs';
+import { liveFile } from './config/paths.js';
 
 export async function listAdrs(root) {
   const out = [];
@@ -60,6 +62,10 @@ export async function buildStatus(projectDir = process.cwd()) {
   const root = await adrRoot(projectDir);
   const rel = (f) => path.relative(projectDir, f);
   const report = { proposals: [], drafts: [], acceptedNoPlan: [], acceptedWithPlan: [], active: [], superseded: [], issues: [] };
+  const livePath = await liveFile(projectDir);
+  if (!existsSync(livePath)) {
+    report.issues.push(`${rel(livePath)}: not found: every project keeps LIVE.md; run adr-live-seed when the project has an active ADR; otherwise run \`ai-factory adr live init\``);
+  }
 
   for (const { dir, file } of await listAdrs(root)) {
     let data;

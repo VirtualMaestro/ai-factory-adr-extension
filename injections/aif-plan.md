@@ -1,6 +1,7 @@
 ## LIVE.md delta — ADR extension
 
-When the project has `LIVE.md` (default `.ai-factory/LIVE.md`, configured by `adr.live`):
+Every project with this extension keeps `LIVE.md` (default `.ai-factory/LIVE.md`, configured by `adr.live`).
+When `ai-factory adr live` exits 1, tell the operator its `next:` line, and keep planning by the rules below:
 
 - Read `ai-factory adr live`, `ai-factory adr decisions` and `ai-factory adr format` before planning. Reuse capability ids from LIVE.md.
 - Name any active ADR whose capability the change removes or alters. Tell the operator which obligation it contradicts; the change may proceed and the apply records removal debt.

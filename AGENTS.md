@@ -6,7 +6,7 @@ everything (`node --test`), including an integration suite against the global `a
 
 ## Work in progress
 
-All 4 phases of `docs/proposal-live-state.md` are complete. `docs/BACKLOG.md` tracks open work;
+All 4 phases of `docs/proposal-live-state.md` are complete. Since 5.0 `LIVE.md` is mandatory: its opt-in in §3.6 is history. `docs/BACKLOG.md` tracks open work;
 `docs/validation-backlog-2026-10-11.md` records follow-up live runs, the plan profile and code context.
 
 ## Rules of this repository

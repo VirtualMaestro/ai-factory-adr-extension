@@ -77,6 +77,20 @@ while running: your ADR root with all its documents, your plans, and
 `.ai-factory/adr-extension.yaml`. Adding the extension again therefore needs no
 second `ai-factory adr init`.
 
+### Upgrading from 4.x to 5.0
+
+In 5.0 `LIVE.md` is mandatory. A 4.x project without it fails `ai-factory adr status --check`
+after the update, and so does every skill that runs that check. In each project:
+
+```bash
+ai-factory extension update ai-factory-adr-extension
+```
+
+then run `/adr-live-seed` (Codex: `$adr-live-seed`). Approve the capability list, or send
+corrections first, and the seed writes `LIVE.md`, adds `live:` to the ADRs and commits.
+`ai-factory adr status --check` then exits 0. A project whose ADRs were never in this
+extension's format runs `/adr-migrate` instead: it ends with the same seed.
+
 ### Upgrading from 3.x
 
 Every skill lost its `aif-` prefix in 4.0.0 (`aif-adr-propose` is now `adr-propose`), and
@@ -131,8 +145,8 @@ Off the linear flow:
 | `adr-check-consistency` | checks the accepted and active ADRs against each other, reporting contradiction, redundancy and shared areas | read-only; reads every ADR of each named pair in full |
 | `adr-reconcile <target>` | adjudicates a second reviewer's proposed improvements, adopting and rejecting each with a reason | never advances status, never implements |
 | `adr-next` | reads the `depends_on` graph and recommends what to implement next | ready means `accepted` with all dependencies `active`; also reports order, blocked ADRs, cycles |
-| `adr-migrate` | brings a project's pre-existing legacy ADRs into this lifecycle | one-time; run it before authoring new ADRs there |
-| `adr-live-seed` | seeds `LIVE.md` with the capabilities the product has today, and backfills `live:` on every active and accepted ADR | one-time; writes nothing before the operator approves the capability list |
+| `adr-migrate` | brings a project's pre-existing legacy ADRs into this lifecycle | one-time; ends with `adr-live-seed`, which stops at once in a project it already seeded |
+| `adr-live-seed` | seeds `LIVE.md` with the capabilities the product has today, backfills `live:` on every active and accepted ADR, and commits | once per project with ADRs, such as after an update from 4.x; writes nothing before the operator approves the capability list |
 
 Running a whole phase in one call:
 
@@ -259,7 +273,7 @@ beforehand if you want the migration isolated.
 | Command | Purpose |
 |---|---|
 | `version` | Print the installed extension version (`ai-factory adr --version` prints the AI Factory CLI version instead) |
-| `init` | Scaffold the ADR directory structure (idempotent) |
+| `init` | Scaffold the ADR directory structure and an empty `LIVE.md` (idempotent) |
 | `new <topic>` | Scaffold a `proposed` ADR from the template |
 | `import <topic> --status <s> [--id <id>]` | Scaffold a conformant ADR skeleton at any status (used by migration) |
 | `validate <file>` | Check one ADR against the lifecycle invariants |
@@ -277,7 +291,7 @@ beforehand if you want the migration isolated.
 | `live init` | Create `LIVE.md` and list the accepted ADRs that still need a `live:` delta |
 | `live apply <file> [--dry-run]` | Apply an active ADR or a full, ultra or fast plan delta; `--dry-run` previews any ADR status or plan without writing |
 | `live apply --pending` | Apply every reported unapplied delta in completion order; keep successes, list failures and exit 1 if any failed |
-| `live check` | Broken, ambiguous and stale refs in `LIVE.md`, and every delta that never reached it; always exits 0 |
+| `live check` | Broken, ambiguous and stale refs in `LIVE.md`, and every delta that never reached it; exits 0 on issues, 1 without `LIVE.md` |
 
 The lifecycle skills wrap these commands — prefer the skills for authoring work
 and reserve raw commands for scripting and CI.
@@ -296,14 +310,28 @@ The body stays pure decision content.
 
 ### `LIVE.md` — what the product does now
 
-In a project that already has ADRs, run `/adr-live-seed` (Codex: `$adr-live-seed`)
-instead of the bare command below: it proposes the current capabilities, and after your
-approval writes them and backfills `live:` on every active and accepted ADR.
+`LIVE.md` is part of the flow, not an option: every project with this extension keeps
+it. It lives at `.ai-factory/LIVE.md` (or the path in `adr.live` of
+`.ai-factory/adr-extension.yaml`) and holds 1 record per capability the product has
+today: a 1–2 sentence summary, and refs to the ADRs, plans or files that describe it.
+A record names every active ADR that shapes the capability; other refs stop at 3.
+Agents read it before they plan, so they start from what the product does now.
 
-`ai-factory adr live init` creates `.ai-factory/LIVE.md` (or the path in
-`adr.live` of `.ai-factory/adr-extension.yaml`): 1 record per capability, a
-1–2 sentence summary, and refs to the ADRs, plans or files that describe it.
-A project opts in by having the file; without it nothing below happens.
+- **A new project:** `ai-factory adr init` creates an empty `LIVE.md`, and each
+  finalize and each completed plan fills it.
+- **A project that already has ADRs**, such as one updated from 4.x: run
+  `/adr-live-seed` (Codex: `$adr-live-seed`) once. It reads every ADR, the archived plans
+  and the code, then shows you the list of capabilities it would write, with the ADRs each
+  one rests on. It stops there. Reply with corrections, or approve. Then it writes
+  `LIVE.md`, adds `live:` to every active and accepted ADR, and commits both in 1 commit.
+  An accepted ADR is not in `LIVE.md` yet: its finalize adds it.
+
+Without the file, `ai-factory adr status --check` fails and names `adr-live-seed`, and so
+does every skill that runs it. It fails the same way on an active ADR that has no `live:`,
+which marks a project the seed has not reached, even after a partial start: the seed keeps
+the records `LIVE.md` already holds and fills in the rest. `transition … accepted`,
+`finalize`, `supersede` and `live check` refuse without the file. `live apply` only
+skips: the `aif-implement` injection runs it in every project.
 
 Each ADR states its delta up front, in frontmatter:
 
@@ -316,8 +344,7 @@ live:
 ```
 
 or `live: { none: "<reason>" }` for a decision that only constrains how code is
-written. Once `LIVE.md` exists, `transition … accepted` and `finalize` refuse an
-ADR without one. `finalize` applies the delta inside its rollback, checks the
+written. `transition … accepted` and `finalize` refuse an ADR without one. `finalize` applies the delta inside its rollback, checks the
 result against the `live` profile before writing, and stages `LIVE.md`, so the
 entry lands in the same commit as the code. `supersede` rewrites refs to the old
 ADR once its replacement is active.

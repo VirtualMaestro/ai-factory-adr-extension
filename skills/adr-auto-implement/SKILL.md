@@ -91,7 +91,7 @@ report_format:
 | `<adr-id>` | untested | — | <k>: <case> — needs <harness> or manual; or none |
 | `<adr-id>` | docs | — | `README.md`, or none |
 | `<adr-id>` | memory | — | 1 fact, or none |
-| `<adr-id>` | finalize | — | `active`; `LIVE.md`: <op> <capability-id>, or skipped: <reason> |
+| `<adr-id>` | finalize | — | `active`; `LIVE.md`: <op> <capability-id>, or no change |
 | `<adr-id>` | commit | — | `<sha>` |
 | `<adr-id>` | push | — | `<branch>`, or skipped: <reason> |
 ```

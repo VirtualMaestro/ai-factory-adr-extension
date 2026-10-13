@@ -4,7 +4,7 @@ import { parse, read } from '../artifacts/frontmatter.js';
 import { liveContext } from './apply.js';
 import { deltaProblems, splitRefs, summaryProblem } from './delta.js';
 import { readPlans, linkedAdrs, hasOpenTask } from './plans.js';
-import { resolveRef } from './refs.js';
+import { normaliseRef, resolveRef } from './refs.js';
 import { parseLive, liveIssues } from './state.js';
 
 const UNFINISHED = new Set(['proposed', 'draft', 'accepted']);
@@ -48,7 +48,10 @@ export async function checkLive({ projectDir = process.cwd() } = {}) {
 
   for (const e of entries) {
     if (!e.refs.length) add('no-refs', e.id, 'the entry has no ref: name the ADR, plan or path that describes it');
-    if (e.refs.length > MAX_REFS) add('ref-creep', e.id, `${e.refs.length} refs, more than ${MAX_REFS}: the capability is 2 capabilities, or its refs name history`);
+    // An active ADR ref is current by construction (supersede rewrites it), so a capability names every
+    // active ADR that shapes it; plan, path and non-active ADR refs count toward the limit.
+    const other = e.refs.filter((r) => ctx.adrs.get(normaliseRef(r))?.status !== 'active');
+    if (other.length > MAX_REFS) add('ref-creep', e.id, `${other.length} refs that name no active ADR, more than ${MAX_REFS}: the capability is 2 capabilities, or its refs name history`);
     const summaryIssue = summaryProblem(e.summary);
     if (summaryIssue) add('summary-too-long', e.id, summaryIssue);
     for (const ref of e.refs) {

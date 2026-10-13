@@ -6,7 +6,7 @@ import { transition, transitionTarget } from './move.js';
 import { archivePlan, archivePlanTarget } from './archive.js';
 import { resolveInside, atomicWrite, withFileRollback } from '../util/safe-path.js';
 import { stageMove } from '../util/git.js';
-import { liveContext, computeLive, withLiveLock, ignoredWarnings } from '../live/apply.js';
+import { liveContext, liveMissing, computeLive, withLiveLock, ignoredWarnings } from '../live/apply.js';
 
 const REPLACEABLE = ['accepted', 'active'];
 
@@ -37,7 +37,8 @@ export async function supersede(oldFile, newFile, { projectDir = process.cwd(), 
   // `supersedes:` yet, and the refs to the old id are rewritten here instead. In the other order
   // the successor's own finalize does it, and the old ADR's code still runs until then.
   const ctx = await liveContext(projectDir);
-  const rewrites = ctx.exists && newAdr.data.status === 'active';
+  if (!ctx.exists) throw liveMissing(ctx);
+  const rewrites = newAdr.data.status === 'active';
   const replace = async () => {
     const live = rewrites
       ? await computeLive(ctx, { changes: [], kind: 'adr', ref: newAdr.data.id, supersedes: [oldAdr.data.id], label: newAdr.data.id })
