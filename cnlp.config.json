@@ -1,11 +1,7 @@
 {
-  "profiles": "cnlp/profiles",
+  "profiles": "profiles",
   "docsets": "docs/docsets",
   "corpus": [
-    {
-      "profile": "guide",
-      "glob": "AGENTS.md"
-    },
     {
       "profile": "skill",
       "glob": "skills/*/SKILL.md"

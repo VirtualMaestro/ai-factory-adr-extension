@@ -4,6 +4,18 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and the project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [5.0.1] — 2026-10-13
+
+### Changed
+
+- **`cnlp-kit` 3.1.3 → 3.9.1**, bundled. The standard now treats an HTML comment and a
+  tool-marked region as markup, not structure. Every skill still conforms, and
+  `ai-factory adr decisions` reads the same blocks.
+- `yaml` 2.9.0 → 2.9.1, and `ajv` 8.17.1 → 8.20.0 for the tests. The lockfile takes the
+  patched `fast-uri` 3.1.8, so `npm audit` reports 0 vulnerabilities.
+- `cnlp.config.json` checks the skills against `profiles/skill.md` of this repository, so
+  `npx cnlp check` passes on all 20.
+
 ## [5.0.0] — 2026-10-13
 
 ### Breaking
