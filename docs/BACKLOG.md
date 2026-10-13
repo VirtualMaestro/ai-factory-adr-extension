@@ -2,9 +2,11 @@
 
 Open items only. The MVP build log and original PRD remain in Git history.
 
-**Current state:** 4.8.2 · 20 skills · 194 tests pass, none skipped. The live runs behind
+**Current state:** 4.9.0 · 20 skills · 195 tests pass, none skipped. The live runs behind
 4.8.2 are in
 [validation-audit-2026-10-12.md](validation-audit-2026-10-12.md).
+The `plan` and `implement` modes of `adr-auto-change` in 4.9.0 ran live once in Claude Code,
+on a plan with no principled question; their stop on a principled question and Codex were not run.
 CNL-P comes from `cnlp-kit`; this repository owns `skill`, `live` and `plan`.
 Adopting projects read them through `ai-factory adr format`.
 

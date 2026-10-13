@@ -140,15 +140,7 @@ Running a whole phase in one call:
 |---|---|---|
 | `adr-auto-plan <topic or adr> ...` | propose, improve, accept and plan for a batch of ADRs, update the docs, commit and push | stops only for principled questions and the acceptance decision; a rejected draft interrupts it until the operator says how to proceed |
 | `adr-auto-implement [adr ...]` | implement, write tests, run the optional acceptance step, verify and review in fresh subagents, fix each finding after a test that fails on it, update the docs, finalize, commit and push | asks nothing and stops on a blocker; 1 commit per ADR on the current branch, with a body line per untested case |
-| `adr-auto-change <topic or plan>` | plan, improve, implement, test, verify, review, apply LIVE.md, archive and commit a change without an ADR | accepts full plans and ultra bundles; rejects fast and linked plans; no questions, 1 commit, configured push |
-
-`adr-auto-change` accepts a topic, `@<full-plan>` or `@<ultra-bundle>` for a change
-that creates no standing decision. It reads active obligations first, makes no ADR,
-and refuses the configured fast plan or a plan with `implements:`. The run suppresses
-the injected implementation apply, checks the final delta after verification, then
-applies LIVE.md and archives the plan before its single commit. Active-ADR removal
-debt goes into the report with `adr-auto-plan` as the next step. A dirty LIVE.md,
-failing baseline, unresolved finding or failed staging stops the run without a commit.
+| `adr-auto-change [plan\|implement] <topic or plan>` | plan, improve, implement, test, verify, review, apply LIVE.md, archive and commit a change without an ADR | 1 run for both phases, or 2: `plan` commits the improved plan, `implement` builds it; see [A change without an ADR](#a-change-without-an-adr-adr-auto-change) |
 
 The two phases stay separate on purpose. Planning often covers several ADRs at once, and one
 decision can wait on another's answer, so a batch rarely reaches implementation in the same
@@ -177,6 +169,76 @@ a dependency, an obligation later work is measured against). One decision is one
 obligations that follow from it are lines of `rules:` inside it, not sibling ADRs. And
 refinement ends on a condition, not on taste: a pass that changes no `decision:`, `scope:`,
 `constraints:` or `rules:` line is the last one, and the ADR goes to `adr-accept`.
+
+### A change without an ADR: `adr-auto-change`
+
+`adr-auto-change` is the automated path for work that needs no ADR: a feature, a fix or a
+refactor whose rollback is a `git revert`. It reads the active ADRs and `LIVE.md` before it
+plans, writes no ADR, and changes no ADR's status. Its input is a topic, `@<full-plan>` or
+`@<ultra-bundle>`, with an optional mode word before it:
+
+```text
+/adr-auto-change add CSV export to the report page            # both phases, 1 run
+/adr-auto-change plan add CSV export to the report page       # plan only, then stop
+/adr-auto-change implement @.ai-factory/plans/csv-export.md   # build an approved plan
+```
+
+The first word counts as a mode only when it is exactly `plan` or `implement`. A topic
+that starts with either word needs another word in front of it.
+
+**No mode word: both phases in 1 run, no questions.**
+
+1. **Checks.** The run stops when the working tree has changes outside the plans and QA
+   directories, `LIVE.md` is dirty, or the optional acceptance command already fails. It
+   also stops on the fast plan (`paths.plan`) or a plan with `implements:`, which belongs to
+   `adr-auto-implement`. When the work binds later work, it stops and names `adr-propose`.
+2. **Plan.** It writes a full plan by `aif-plan full` rules, or takes the plan you gave it,
+   and adds 1 `adr-live` fence: the `LIVE.md` capabilities the change adds, alters or removes.
+3. **Improve, in a loop.** It applies `aif-improve` up to 5 times and runs
+   `ai-factory adr live apply --dry-run` after each pass. The loop ends at the first pass
+   that changes no task. If tasks still change after pass 5, the run stops.
+4. **Questions.** A minor question gets the scoped default, and the report lists the pick
+   with its reason: an edge case, a task order, a test case, a name. A principled question
+   stops the run with its options at any step, because no one is there to answer it. A principled
+   question changes what the plan rests on: the architecture, a tool or dependency, a
+   public API, a data schema, a module boundary, a protocol, or the goal or scope of the
+   request. Approving a destructive action is one too.
+5. **Implement and test.** It works through every task, then writes automated tests from
+   `aif-qa` test cases and runs the suite and the optional acceptance command.
+6. **Verify and review.** Two fresh read-only subagents check the change: one against the
+   plan (`aif-verify`), one for bugs and security (`aif-review`). An optional exploratory
+   subagent drives the running product. A finding gets a test that fails first, then a fix.
+   The run repeats this at most 3 rounds, and stops without a commit if findings remain.
+7. **Close.** It updates the docs and project memory, applies the fence to `LIVE.md` once,
+   and archives the plan by `aif-archive` rules, with `git mv` for a tracked plan.
+8. **Commit.** Code, tests, QA, docs, the archived plan and `LIVE.md` go into 1 commit,
+   staged by name, with 1 `Untested:` body line per case no harness can check. It pushes
+   unless `git.skip_push_after_commit` is set.
+
+**`plan`: steps 1 to 4, then a commit of the plan.** This mode is for a plan you want to
+read before any code is written. It skips the acceptance baseline, since it runs no code. It
+asks you each principled question as it comes up, applies your answer and restarts the
+improve loop with a fresh limit of 5 passes. Minor questions still get defaults. When the
+loop converges, it commits the plan files alone, pushes by the same setting, and stops. A
+plan already committed and left unchanged gets no new commit. The run writes no code, tests,
+docs or `LIVE.md`.
+
+**`implement`: steps 1 and 2 without the improve loop, then steps 5 to 8.** Its input must
+be `@<full-plan>` or `@<ultra-bundle>`: a bare topic stops the run. It runs the checks,
+adds the `adr-live` fence when the plan has none, and dry-runs it, then builds the plan as
+written. It does not improve the plan and asks nothing. A principled question at any step
+stops the run without a commit: answer it in a `plan` run on the same plan, then run
+`implement` again. A finding the plan cannot meet also stops it, after at most 3 rounds.
+It works on a committed plan from a `plan` run and on an uncommitted one.
+
+With `git.enabled: false` in `.ai-factory/config.yaml`, no mode stages, commits or pushes;
+the report says so in its skipped rows.
+
+Each run ends with a table of 1 row per stage, pass and round, a row with the reason for
+each skipped stage, and a footer:
+`✔ adr-auto-change <plan, implement or full>: <capability-ids> · plan: <stem> · untested: <k> · stopped at: <step or none> · pushed: <branch or no>`.
+When the change alters or removes a capability an active ADR still owns, the report names
+`adr-auto-plan` as the next step, to supersede that ADR.
 
 ### Migrating an existing ADR workflow
 

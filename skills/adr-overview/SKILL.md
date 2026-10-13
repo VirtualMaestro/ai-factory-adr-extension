@@ -55,7 +55,7 @@ off_flow_skills:
 | `adr-live-seed` | seeds `LIVE.md` with the capabilities the product has today, and backfills `live:` on every active and accepted ADR | one-time; writes nothing before the operator approves the capability list |
 | `adr-auto-plan <topic or adr> ...` | runs propose, improve, accept, plan, docs, commit and push for a batch of ADRs in 1 call | asks only principled questions, and the operator approves each acceptance; a rejection interrupts the run |
 | `adr-auto-implement [adr ...]` | runs implement, tests, verify, review, fix, docs, finalize, commit and push in 1 call | asks nothing, stops on a blocker, and makes 1 commit per ADR on the current branch |
-| `adr-auto-change <topic or plan>` | runs plan, improve, implement, checks, docs, live apply, archive, commit and push without an ADR | accepts full plans and ultra bundles without `implements:`; rejects fast plans; asks nothing |
+| `adr-auto-change [plan\|implement] <topic or plan>` | runs plan, improve, implement, checks, docs, live apply, archive, commit and push without an ADR | rejects fast and linked plans; only `plan` asks, principled questions only |
 
 status_directories:
 - each status maps to one directory under the ADR root, default `docs/adr/`: `proposals/`, `drafts/`, `accepted/`, `active/`, `superseded/`

@@ -94,6 +94,7 @@ custom_sections:
 - report_format
 - retrieval_order_afterwards
 - rules_that_always_hold
+- run_modes
 - status_directories
 - status_mapping
 - targeting_rationale

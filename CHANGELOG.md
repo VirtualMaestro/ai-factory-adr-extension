@@ -4,6 +4,22 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and the project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [4.9.0] — 2026-10-13
+
+### Added
+
+- **`adr-auto-change` splits into 2 runs on request.** `adr-auto-change plan <topic or plan>`
+  improves the plan in a loop, asks the operator each principled question, commits the plan
+  alone and pushes by the configured setting. `adr-auto-change implement @<plan>` builds an
+  approved plan without improving it and asks nothing. Like the full run, it archives the
+  plan and commits the change in 1 commit, with `git mv` for a plan already committed. A
+  run without a mode word still covers both phases in 1 run.
+- A principled question for a change without an ADR changes what the plan rests on:
+  architecture, a tool or dependency, a public API, a data schema, a module boundary, a
+  protocol, or the goal or scope of the request. The run without a mode word now stops on
+  one instead of picking a default.
+- The README describes how `adr-auto-change` runs, step by step and per mode.
+
 ## [4.8.2] — 2026-10-12
 
 ### Fixed
