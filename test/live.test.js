@@ -281,6 +281,7 @@ test('render keeps every line before capabilities: byte for byte and sorts the r
   const out = renderLive(state);
   assert.ok(out.startsWith(prefix), 'prefix survives');
   assert.ok(out.indexOf('- id: alpha') < out.indexOf('- id: zeta'), 'sorted by id');
+  assert.match(out, /  refs: adr-a\r\n\r\n- id: zeta/, 'one blank line separates records with the detected EOL');
 });
 
 test('parseLive refuses a line after capabilities: that the render would drop', () => {

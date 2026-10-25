@@ -45,7 +45,8 @@ export function parseLive(content) {
 export function renderLive({ prefix, eol = '\n', entries }) {
   const lines = ['capabilities:'];
   if (!entries.length) lines.push(SENTINEL);
-  for (const e of [...entries].sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))) {
+  for (const [index, e] of [...entries].sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0)).entries()) {
+    if (index > 0) lines.push('');
     lines.push(`- id: ${e.id}`, `  summary: ${e.summary}`, e.refs.length ? `  refs: ${e.refs.join(', ')}` : '  refs:');
   }
   return prefix + lines.join(eol) + eol;

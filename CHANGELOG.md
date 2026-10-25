@@ -4,6 +4,13 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and the project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [5.0.2] — 2026-10-25
+
+### Fixed
+
+- `adr live apply` and `finalize` keep one blank line between `LIVE.md` capability records,
+  including files that use CRLF line endings.
+
 ## [5.0.1] — 2026-10-13
 
 ### Changed
