@@ -16,7 +16,9 @@ test('init creates the five status dirs, the config and an empty LIVE.md, report
   for (const d of STATUS_DIRS) assert.ok(existsSync(path.join(dir, 'docs/adr', d)), `missing ${d}`);
   assert.ok(existsSync(path.join(dir, '.ai-factory/adr-extension.yaml')));
   assert.match(await readFile(path.join(dir, '.ai-factory/LIVE.md'), 'utf8'), /^type: live$[\s\S]*^- none: no capability recorded yet$/m);
-  assert.equal(items.filter((i) => i.status === 'created').length, STATUS_DIRS.length + 2);
+  assert.ok(existsSync(path.join(dir, 'cnlp.config.json')));
+  assert.match(await readFile(path.join(dir, 'AGENTS.md'), 'utf8'), /`ai-factory adr cnlp check`/);
+  assert.equal(items.filter((i) => i.status === 'created').length, STATUS_DIRS.length + 4);
 });
 
 test('init is idempotent — second run reports present and overwrites neither config nor LIVE.md', async () => {

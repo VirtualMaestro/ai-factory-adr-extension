@@ -3,6 +3,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { detectAif, AifError } from '../src/aif/detect.js';
 import { bodyIssues, loadProfile, profileNames, resolveDoc } from '../src/artifacts/cnlp.js';
 import { init } from '../src/init.js';
+import { runCnlp, syncCorpus } from '../src/cnlp-setup.js';
 import { validateAdr } from '../src/lifecycle/validate.js';
 import { verifyAnchors } from '../src/lifecycle/verify.js';
 import { transition } from '../src/lifecycle/move.js';
@@ -288,6 +289,19 @@ export function register(program) {
       out(opts, { command: 'format', name: doc, path: file, content }, () => {
         console.log(opts.path ? file : content);
       });
+    }));
+
+  adr
+    .command('cnlp')
+    .description('Run the cnlp-kit CLI bundled with this extension (`npx cnlp` does not reach it); `check` adds the ADR corpus first')
+    .argument('[args...]', 'arguments for cnlp, e.g. `check`, `print format`, `init`')
+    .helpOption(false)
+    .allowUnknownOption()
+    .action((args) => guard({}, async () => {
+      if (args[0] === 'check') await syncCorpus();
+      const res = runCnlp(args);
+      if (res.error) throw res.error;
+      process.exitCode = res.status ?? 1;
     }));
 
   const live = adr

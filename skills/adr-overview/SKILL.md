@@ -83,7 +83,7 @@ document_roles:
 | active ADRs | why each obligation exists | nobody: a new ADR supersedes one |
 | archived plans | how a change was made | history |
 | `.ai-factory/DESCRIPTION.md` | purpose and stack, which rarely change | `aif-docs` |
-| `AGENTS.md` | the code map only | `aif-docs` |
+| `AGENTS.md` | the code map, and the marked CNL-P rule block | `aif-docs`; the block: `ai-factory adr init` |
 | `.ai-factory/ROADMAP.md` | the future only | `aif-roadmap` |
 
 live_events:

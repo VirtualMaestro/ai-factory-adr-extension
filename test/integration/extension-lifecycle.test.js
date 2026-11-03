@@ -77,6 +77,11 @@ test('add installs all 20 skills for each configured runtime and registers `adr`
 
   aif(['adr', 'init'], dir);
   assert.ok(existsSync(path.join(dir, 'docs/adr/active')), 'adr init created the structure');
+  assert.match(await readFile(path.join(dir, 'AGENTS.md'), 'utf8'), /`ai-factory adr cnlp check`/, 'agent block written');
+  assert.ok(existsSync(path.join(skillsDir(dir, 'claude'), 'cnlp-glossary', 'SKILL.md')), 'cnlp-kit skills installed');
+  const check = aifResult(['adr', 'cnlp', 'check'], dir);
+  assert.equal(check.status, 0, check.stderr);
+  assert.match(check.stdout, /1 file\(s\) conform/, 'the bundled cnlp checks LIVE.md');
 });
 
 test('live apply CLI accepts plan entrypoints and pending failures exit 1 after staging successes', opts, async () => {

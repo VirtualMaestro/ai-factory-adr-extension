@@ -41,7 +41,10 @@ ai-factory adr init
 ```
 
 `adr init` is idempotent: re-running it reports `present` for what already
-exists, `created` for what it added, and overwrites nothing.
+exists, `created` for what it added, and overwrites nothing. It also sets up the
+CNL-P tooling — see [The ADR body format](#the-adr-body-format-cnl-p): the corpus
+in `cnlp.config.json`, the `cnlp-*` skills, and a marked block of 4 rules in
+`AGENTS.md`.
 
 If your ADRs live outside `docs/adr`, set `adr.root` **before** running this —
 see [Configuration](#configuration).
@@ -59,6 +62,14 @@ ai-factory extension update --force                       # refresh even if vers
 Updating **preserves** your ADR documents and `.ai-factory/adr-extension.yaml`.
 Re-running `add` does not duplicate skills or extension entries.
 
+An update can bring a new `cnlp-kit`, which ships inside the extension. Run
+`ai-factory adr init` after every update: it brings the `cnlp-*` skills, the
+`AGENTS.md` block and the corpus to the bundled version. Until then
+`ai-factory adr cnlp check` reports the skills as stale and names `cnlp init` —
+that message comes from `cnlp-kit` itself. Answer it with `ai-factory adr init`,
+not `ai-factory adr cnlp init`: the latter refreshes the skills only, leaves the
+`AGENTS.md` block as it was, and creates an empty `cnlp/profiles/`.
+
 An update copies the new version over the install directory rather than replacing
 it, so a file a newer release no longer ships stays behind. Those leftovers are
 inert — the extension resolves every CNL-P document it does not own inside the
@@ -75,7 +86,8 @@ Removal takes the 20 skills out of each runtime's skills directory and deletes
 the extension's own install directory. It leaves everything the extension wrote
 while running: your ADR root with all its documents, your plans, and
 `.ai-factory/adr-extension.yaml`. Adding the extension again therefore needs no
-second `ai-factory adr init`.
+second `ai-factory adr init`. Removing it for good also means deleting the marked
+CNL-P block in `AGENTS.md` and `cnlp.config.json`: both call the extension.
 
 ### Upgrading from 4.x to 5.0
 
@@ -273,7 +285,7 @@ beforehand if you want the migration isolated.
 | Command | Purpose |
 |---|---|
 | `version` | Print the installed extension version (`ai-factory adr --version` prints the AI Factory CLI version instead) |
-| `init` | Scaffold the ADR directory structure and an empty `LIVE.md` (idempotent) |
+| `init` | Scaffold the ADR directory structure, an empty `LIVE.md` and the CNL-P tooling: `cnlp.config.json`, the `cnlp-*` skills, the `AGENTS.md` block (idempotent) |
 | `new <topic>` | Scaffold a `proposed` ADR from the template |
 | `import <topic> --status <s> [--id <id>]` | Scaffold a conformant ADR skeleton at any status (used by migration) |
 | `validate <file>` | Check one ADR against the lifecycle invariants |
@@ -287,6 +299,7 @@ beforehand if you want the migration isolated.
 | `order` | Dependency-ordered plan: what is ready to implement next, the topological order, blocked ADRs, and cycles (non-zero exit on a cycle) |
 | `decisions` | What every accepted and active ADR obliges — `decision:`, `constraints:`, `scope:`, `rules:` — so a new decision can be written against the whole corpus; reports per-file `issues` and always exits 0 |
 | `format [name]` | Print the CNL-P standard or a profile; `--path` prints its location; `format plan --check <file>` checks a plan body and fails on any issue |
+| `cnlp [args...]` | Run the bundled `cnlp` CLI (`check`, `print`, `init`, `docs`); `check` first adds the ADR corpus entry once an ADR exists. `--version` prints the AI Factory CLI version, as with `adr --version` |
 | `live` | Print `LIVE.md`, what the product does now |
 | `live init` | Create `LIVE.md` and list the accepted ADRs that still need a `live:` delta |
 | `live apply <file> [--dry-run]` | Apply an active ADR or a full, ultra or fast plan delta; `--dry-run` previews any ADR status or plan without writing |
@@ -407,13 +420,33 @@ ai-factory adr format plan --check .ai-factory/plans/example.md
 ai-factory adr format --path   # where it resolved, if you want to open it
 ```
 
-**There is nothing to initialize.** `ai-factory adr init` is the only setup a
-project needs, and it survives `extension remove` — reinstalling does not call
-for a second run. CNL-P adds no project-level files: no `cnlp init`, no
-`cnlp.config.json`, no `cnlp/profiles/`, no `cnlp-*` skills. Those belong to a
-repository that checks its own documents with the `cnlp` CLI; here the checker is
-embedded in `adr validate`, which the CLI cannot replace because it alone knows
-an ADR's lifecycle status.
+**`ai-factory adr init` sets up the `cnlp` CLI too.** `npx cnlp` cannot reach the
+copy bundled under `.ai-factory/extensions/`: it finds a global install of another
+version, or asks the registry for a package named `cnlp`. Call the bundled one
+through the extension instead:
+
+```bash
+ai-factory adr cnlp check          # every document the corpus names
+ai-factory adr cnlp print format   # the standard, same as `adr format`
+```
+
+After an extension update, refresh the tooling with `ai-factory adr init` — see
+[Upgrade](#upgrade).
+
+`adr init` writes 3 things for it, and a re-run refreshes them:
+
+- **`cnlp.config.json`**: the corpus — `LIVE.md` against the `live` profile, and the
+  ADRs against `adr` once 1 exists. `adr cnlp check` adds the ADR entry on its own
+  when the first ADR appears. Entries you add stay as they are.
+- **The `cnlp-*` skills** for each agent in `.ai-factory.json`: `.claude/skills/`
+  and `.agents/skills/`. The AI Factory skills beside them stay untouched.
+- **The cnlp-kit agent block in `AGENTS.md`**, between
+  `<!-- ai-factory-adr-extension:cnlp -->` markers, with `npx cnlp` replaced by
+  `ai-factory adr cnlp`. `AGENTS.md` is created when absent; a re-run replaces only
+  the marked block.
+
+`adr validate` stays the check of an ADR: it alone knows the lifecycle status that
+makes a format issue a warning or an error.
 
 The extension takes `adr` from the package as-is and owns `skill`, `live` and
 `plan`. New ADR implementation plans carry `format: cnlp-plan`; the plan

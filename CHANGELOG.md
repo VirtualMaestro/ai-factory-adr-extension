@@ -4,6 +4,28 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and the project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [5.1.0] — 2026-11-03
+
+### Added
+
+- **`ai-factory adr cnlp [args...]`** runs the bundled `cnlp` CLI. `npx cnlp` in a project does
+  not reach the copy bundled under `.ai-factory/extensions/`. It finds a global install of
+  another version, or asks the registry for a package named `cnlp`, which does not exist.
+  `adr cnlp check` first adds the ADR corpus entry once an ADR exists.
+- **`ai-factory adr init` sets up the CNL-P tooling.** It writes the corpus in
+  `cnlp.config.json`: `LIVE.md`, and the ADRs once 1 exists. It installs the `cnlp-*` skills
+  for the agents in `.ai-factory.json`. It writes the cnlp-kit agent block into `AGENTS.md`
+  between `<!-- ai-factory-adr-extension:cnlp -->` markers, calling `ai-factory adr cnlp`.
+  A re-run refreshes all 3, and replaces only the marked block. An existing project gets them
+  from 1 more `ai-factory adr init`.
+
+### Changed
+
+- **`cnlp-kit` 3.9.1 → 3.10.0**, bundled. The standard adds a project glossary,
+  `GLOSSARY.md`, whose `avoid:` words `cnlp check` rejects. This repository has no glossary,
+  so every skill still conforms. `cnlp init` adds the `cnlp-glossary` skill to `.claude/skills/`.
+- The lockfile takes `fast-uri` 3.1.9, so `npm audit` reports 0 vulnerabilities.
+
 ## [5.0.2] — 2026-10-25
 
 ### Fixed
