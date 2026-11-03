@@ -28,8 +28,8 @@ export function runCnlp(args, { cwd = process.cwd(), stdio = 'inherit' } = {}) {
 export const agentBlock = () => AGENT_BLOCK.map((l) => l.replaceAll('npx cnlp', 'ai-factory adr cnlp'));
 
 /**
- * Add to `cnlp.config.json` the corpus entries this extension owns — `LIVE.md` and the ADRs — once a
- * file matches each: `cnlp check` refuses a glob matching no file. Entries the project wrote stay as
+ * Add to `cnlp.config.json` the corpus entries this extension owns — `LIVE.md` and the accepted and
+ * active ADRs — once a file matches each: `cnlp check` refuses a glob matching no file. Entries the project wrote stay as
  * they are. A config is created only when 1 entry matches, since an empty corpus fails the check too.
  */
 export async function syncCorpus(projectDir = process.cwd()) {
@@ -39,9 +39,18 @@ export async function syncCorpus(projectDir = process.cwd()) {
   const cfg = existed ? JSON.parse(await readFile(at, 'utf8')) : { profiles: ours, corpus: [] };
   cfg.corpus ??= [];
   const rel = (abs) => posix(path.relative(projectDir, abs));
-  const owned = [{ profile: 'adr', glob: `${rel(await adrRoot(projectDir))}/{${STATUS_DIRS.join(',')}}/*.md` }];
+  const root = rel(await adrRoot(projectDir));
+  // `adr validate` makes a format issue an error only once an ADR is accepted or active; `cnlp check`
+  // fails on every issue, so a proposal still being improved stays out of the corpus.
+  const owned = [{ profile: 'adr', glob: `${root}/{accepted,active}/*.md` }];
   // `live` is a profile of this extension: only a config reading its profiles directory reaches it.
   if (cfg.profiles === ours) owned.unshift({ profile: 'live', glob: rel(await liveFile(projectDir)) });
+
+  // 5.1.0 wrote an ADR entry over every status directory; it gives way to the entry above.
+  const legacy = `${root}/{${STATUS_DIRS.join(',')}}/*.md`;
+  const kept = cfg.corpus.filter((e) => e.glob !== legacy);
+  const removed = cfg.corpus.length - kept.length;
+  cfg.corpus = kept;
 
   const added = [];
   for (const entry of owned) {
@@ -49,11 +58,12 @@ export async function syncCorpus(projectDir = process.cwd()) {
     if ((await filesFor(entry, projectDir)).length) added.push(entry);
   }
   if (!existed && !added.length) return { path: at, status: 'skipped', added };
-  if (added.length) {
+  const changed = added.length > 0 || removed > 0;
+  if (changed) {
     cfg.corpus.push(...added);
     await atomicWrite(at, `${JSON.stringify(cfg, null, 2)}\n`);
   }
-  return { path: at, status: existed ? (added.length ? 'updated' : 'present') : 'created', added };
+  return { path: at, status: existed ? (changed ? 'updated' : 'present') : 'created', added };
 }
 
 /**

@@ -2,7 +2,7 @@
 
 Open items only. The MVP build log and original PRD remain in Git history.
 
-**Current state:** 5.1.0 · 20 skills · 200 tests pass, none skipped. The live runs behind
+**Current state:** 5.1.1 · 20 skills · 201 tests pass, none skipped. The live runs behind
 4.8.2 are in
 [validation-audit-2026-10-12.md](validation-audit-2026-10-12.md).
 The `plan` and `implement` modes of `adr-auto-change` in 4.9.0 ran live once in Claude Code,

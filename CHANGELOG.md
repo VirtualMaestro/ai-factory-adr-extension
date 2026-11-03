@@ -4,6 +4,16 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and the project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [5.1.1] — 2026-11-03
+
+### Fixed
+
+- **The CNL-P corpus holds only accepted and active ADRs.** 5.1.0 named every status
+  directory, so `ai-factory adr cnlp check` failed on a proposal still being improved.
+  `adr validate` only warns on the format of a `proposed`, `draft` or `superseded` ADR.
+  `ai-factory adr init` and `ai-factory adr cnlp check` replace the 5.1.0 entry in
+  `cnlp.config.json` on their own.
+
 ## [5.1.0] — 2026-11-03
 
 ### Added

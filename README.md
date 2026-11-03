@@ -299,7 +299,7 @@ beforehand if you want the migration isolated.
 | `order` | Dependency-ordered plan: what is ready to implement next, the topological order, blocked ADRs, and cycles (non-zero exit on a cycle) |
 | `decisions` | What every accepted and active ADR obliges — `decision:`, `constraints:`, `scope:`, `rules:` — so a new decision can be written against the whole corpus; reports per-file `issues` and always exits 0 |
 | `format [name]` | Print the CNL-P standard or a profile; `--path` prints its location; `format plan --check <file>` checks a plan body and fails on any issue |
-| `cnlp [args...]` | Run the bundled `cnlp` CLI (`check`, `print`, `init`, `docs`); `check` first adds the ADR corpus entry once an ADR exists. `--version` prints the AI Factory CLI version, as with `adr --version` |
+| `cnlp [args...]` | Run the bundled `cnlp` CLI (`check`, `print`, `init`, `docs`); `check` first adds the ADR corpus entry once an accepted or active ADR exists. `--version` prints the AI Factory CLI version, as with `adr --version` |
 | `live` | Print `LIVE.md`, what the product does now |
 | `live init` | Create `LIVE.md` and list the accepted ADRs that still need a `live:` delta |
 | `live apply <file> [--dry-run]` | Apply an active ADR or a full, ultra or fast plan delta; `--dry-run` previews any ADR status or plan without writing |
@@ -436,8 +436,10 @@ After an extension update, refresh the tooling with `ai-factory adr init` — se
 `adr init` writes 3 things for it, and a re-run refreshes them:
 
 - **`cnlp.config.json`**: the corpus — `LIVE.md` against the `live` profile, and the
-  ADRs against `adr` once 1 exists. `adr cnlp check` adds the ADR entry on its own
-  when the first ADR appears. Entries you add stay as they are.
+  accepted and active ADRs against `adr` once 1 exists. `adr cnlp check` adds the
+  ADR entry on its own when the first one appears. A proposal, a draft and a
+  superseded ADR stay out: `adr validate` only warns on their format, and
+  `cnlp check` fails on every issue. Entries you add stay as they are.
 - **The `cnlp-*` skills** for each agent in `.ai-factory.json`: `.claude/skills/`
   and `.agents/skills/`. The AI Factory skills beside them stay untouched.
 - **The cnlp-kit agent block in `AGENTS.md`**, between
