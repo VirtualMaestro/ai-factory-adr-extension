@@ -370,4 +370,5 @@ test('the claim guard lets a fast plan and a bundle directory through, and reads
   const index = ['---', 'type: plan', 'branch: change/bundle', 'base: master', 'started: 2026-11-17', '---', '# Bundle', ''];
   await writeFile(path.join(bundle, 'index.md'), index.join('\n'), 'utf8');
   await assert.rejects(assertClaimBranch(bundle, { projectDir: dir, command: 'live apply' }), /in work on change\/bundle/);
+  assert.equal((await checkClaim(bundle, { projectDir: dir })).claim.branch, 'change/bundle', 'the commands the guard names take the directory too');
 });

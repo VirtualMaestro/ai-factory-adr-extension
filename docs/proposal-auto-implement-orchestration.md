@@ -803,3 +803,10 @@ Not fixed (low): a rejected base push costs a gate round before the next fetch; 
 local claim commit that cannot fast-forward; a `wip` commit of a gate fix resumes at step 20; the `adr-auto-plan`
 route for an accepted ADR with a plan and steps 26 and 28 disagree; stale step numbers in §3.2 and §4.7;
 `.git/adr-auto/<id>/` is never cleaned.
+
+### 13.5 Check of 6.0.1
+
+Codex `gpt-6.1-sol` medium over the fix commit: no findings. A CLI run of `live apply` in the scratch project: a fast
+plan and a bundle directory apply, a bundle claimed on another branch is refused, and the same bundle applies on its
+own branch. The run found that `adr claim` and `adr unclaim` failed with `EISDIR` on the bundle directory the guard
+names; 6.0.2 reads its `index.md`.

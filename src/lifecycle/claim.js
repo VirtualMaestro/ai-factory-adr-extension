@@ -46,7 +46,8 @@ async function inPlansDir(abs, projectDir) {
 }
 
 async function load(file, projectDir) {
-  const abs = resolveInside(projectDir, file);
+  let abs = resolveInside(projectDir, file);
+  if (existsSync(abs) && statSync(abs).isDirectory()) abs = path.join(abs, 'index.md'); // an ultra bundle
   if (!existsSync(abs)) {
     throw fail('File not found.', { expected: 'an ADR or a plan file', detected: `${file} is missing`, next: 'check the path' });
   }

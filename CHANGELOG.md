@@ -4,6 +4,14 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and the project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [6.0.2] — 2026-11-17
+
+### Fixed
+
+- **`ai-factory adr claim` and `ai-factory adr unclaim` take an ultra bundle directory.** They
+  read its `index.md`, as `live apply` does; 6.0.1 failed with `EISDIR` on the
+  `adr unclaim <directory>` that its own guard names as the next step.
+
 ## [6.0.1] — 2026-11-17
 
 ### Fixed
