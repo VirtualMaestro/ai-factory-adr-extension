@@ -70,6 +70,7 @@ sections:
 
 custom_sections:
 - code_intelligence
+- coder_brief
 - command_behaviour
 - document_roles
 - documentation_only_adrs
@@ -91,13 +92,21 @@ custom_sections:
 - pre_1_6_overlay
 - pre_cnlp_overlay
 - principled_questions
+- release_procedure
+- remote_policy
 - report_format
 - retrieval_order_afterwards
+- roles
+- routes
 - rules_that_always_hold
 - run_modes
+- run_states
+- runtimes
 - status_directories
 - status_mapping
+- stop_procedure
 - targeting_rationale
+- task_rules
 - verdicts
 - when_to_supersede_instead_of_editing
 

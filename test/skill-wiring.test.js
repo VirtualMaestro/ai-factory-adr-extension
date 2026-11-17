@@ -79,11 +79,11 @@ test('adr-migrate carries over by hand and proves it', async () => {
 // A test written after its fix never saw the bug: it passes on the fixed code and proves nothing.
 test('adr-auto-implement sees a test fail before it fixes a finding', async () => {
   const body = await skillBody('adr-auto-implement');
-  const steps = body.split(/\r?\n/).filter((l) => /^\d+\. /.test(l));
-  const red = steps.findIndex((l) => /^\d+\. write a test that reproduces/.test(l) && /see it fail/.test(l));
-  const fix = steps.findIndex((l) => /^\d+\. fix every listed finding/.test(l));
-  assert.ok(red >= 0 && fix >= 0, 'both the failing-test step and the fix step must exist');
-  assert.ok(red < fix, 'the failing test must come before the fix');
+  // The Coder writes the fixes, so the rule sits in its brief and in the triage that hands it a finding.
+  assert.match(body, /coder_brief:[\s\S]*each fixed defect gets a test that fails on the code without the fix/);
+  const triage = body.split(/\r?\n/).find((l) => /^\d+\. triage each finding against the code/.test(l));
+  assert.ok(triage, 'no triage step');
+  assert.match(triage, /confirmed goes to the Coder with a test that fails without the fix/);
 });
 
 test('adr-auto-implement fixes no anomaly that no test reproduces', async () => {
@@ -118,13 +118,13 @@ test('adr-auto-change modes take exactly the steps of their phase', async () => 
   span(/^\d+\. stop on an `implement` input/, /^\d+\. stop on an `implement` input/, ['implement']);
   span(/^\d+\. read `\.ai-factory\/config\.yaml`/, /^\d+\. record the exact pre-existing/, ALL);
   span(/^\d+\. run `adr\.acceptance\.command` once/, /^\d+\. stop when `adr\.acceptance\.exploratory/, BUILD);
-  span(/^\d+\. read `ai-factory adr live`/, /^\d+\. read `ai-factory adr format`/, ALL);
-  span(/^\d+\. apply `aif-improve`/, /^\d+\. stop improvement after/, IMPROVE);
+  span(/^\d+\. read `ai-factory adr live`/, /^\d+\. let the Author read `ai-factory adr format`/, ALL);
+  span(/^\d+\. plan round:/, /^\d+\. stop improvement after/, IMPROVE);
   span(/^\d+\. ask the operator each principled question/, /^\d+\. ask the operator each principled question/, ['plan']);
   span(/^\d+\. stop on a principled question/, /^\d+\. stop on a principled question/, ['full']);
   span(/--dry-run` before the plan commit or implementation/, /--dry-run` before the plan commit or implementation/, ALL);
   span(/^\d+\. stage by name the plan entrypoint/, /^\d+\. push the plan commit/, ['plan']);
-  span(/^\d+\. apply `aif-implement`/, /^\d+\. skip step \d+ when `git\.skip_push_after_commit`/, BUILD);
+  span(/^\d+\. stop unless `git\.enabled` is true: the implementation phase/, /^\d+\. when the remote base holds the merge/, BUILD);
   span(/^\d+\. record 1 row per stage/, /^\d+\. report the status footer/, ALL);
   const taken = (name) => {
     const line = lines.find((l) => l.startsWith(`- ${name}: run steps `));

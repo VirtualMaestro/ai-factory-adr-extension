@@ -40,7 +40,7 @@ quality_rules:
 - disagreement alone is not new information
 
 workflow:
-1. run `ai-factory adr resolve-plan <adr-file>`, which resolves via the plan's `implements` frontmatter
+1. run `ai-factory adr claim --check <adr-file>` and stop on a refusal, then run `ai-factory adr resolve-plan <adr-file>`, which resolves via the plan's `implements` frontmatter
 2. stop and fix first when it exits non-zero: more than 1 non-archived plan matches (inv 7)
 3. run `ai-factory adr status <adr-file>` to check dependency readiness
 4. state every dependency warning it reports to the operator and confirm they want to continue before implementing

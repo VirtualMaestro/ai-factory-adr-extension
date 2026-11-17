@@ -30,13 +30,14 @@ order_fields:
 - `blocked`: ADRs no order can reach yet, because a dependency is `superseded` or they sit behind a cycle
 - `cycles`: dependency cycles, if any
 - `active`: already-implemented decisions, as context
+- `inWork`: claimed ADRs, in work on their branch; `next` leaves them out
 
 workflow:
 1. run `ai-factory adr order`; add `--json` for the raw structure
 2. report the cycle and stop when `cycles` is non-empty: no valid order exists
 3. recommend breaking the cycle by revisiting one decision via `adr-improve` or replacing one via `adr-supersede`, then re-running
 4. pick from `next` the ADR that unblocks the most downstream ADRs, scanning `order` and `blocked` for entries waiting on it
-5. state the pick and why, then hand off: `adr-plan`, then `adr-implement`, then `adr-finalize`
+5. state the pick and why, name each ADR of `inWork` with its branch, then hand off: `adr-plan`, then `adr-implement`, then `adr-finalize`
 6. recommend finalizing the named dependency when `next` is empty but `order` or `blocked` is not
 7. recommend `adr-improve` or `adr-accept` instead when that blocker is still `draft` or `proposed`
 8. report the status footer

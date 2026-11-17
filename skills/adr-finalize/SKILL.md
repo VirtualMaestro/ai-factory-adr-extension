@@ -8,7 +8,7 @@ mode: adr_finalization
 purpose:
 - verify the implementation and activate the decision (PRD §19.6), moving an `accepted` ADR to `active`
 - own the judgment — strict verification and the contradiction check — that must pass first
-- leave the deterministic file mechanics to `ai-factory adr finalize`: evidence, atomic move, plan archival
+- leave the deterministic file mechanics to `ai-factory adr finalize`: evidence, atomic move, plan archival, and the release of a claim
 
 inputs:
 - adr_file
@@ -49,7 +49,7 @@ quality_rules:
 - disagreement alone is not new information
 
 workflow:
-1. run `ai-factory adr resolve-plan <adr-file>`: verification must target one plan unambiguously
+1. run `ai-factory adr claim --check <adr-file>` and stop on a refusal, then run `ai-factory adr resolve-plan <adr-file>`: verification must target one plan unambiguously
 2. apply strict `aif-verify` semantics in this run and require a non-blocking pass
 3. check that the implementation matches the ADR `## Decision` and, where testable, its known Consequences and risks
 4. stop and leave the ADR `accepted` on a verification failure, reporting what failed
@@ -60,7 +60,7 @@ workflow:
 9. run `ai-factory adr validate <adr-file>` and fix what it reports: `finalize` moves the ADR to `active`, where a body issue becomes an error, so this checks the file while fixing it is still cheap
 10. run `ai-factory adr live apply <adr-file> --dry-run`: output that opens with `skipped:` means there is nothing to apply
 11. correct frontmatter `live:` when the implementation diverged from it, or when the dry run prints a warning: a capability the successor of a superseded ADR dropped needs `change: removed`
-12. run `ai-factory adr finalize <adr-file>`
+12. run `ai-factory adr finalize <adr-file>`: it removes `branch:`, `base:` and `started:`, so an ADR finalized on its branch reaches the base without a claim
 13. run `ai-factory adr status --check` and resolve any failures
 14. run `ai-factory adr live check` and report the issues it lists
 15. report the status footer

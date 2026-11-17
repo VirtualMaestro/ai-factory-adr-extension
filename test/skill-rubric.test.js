@@ -66,3 +66,15 @@ test('non-target skills carry no rubric section', async () => {
     assert.ok(!body.includes(HEADING), `${name}: must not contain "${HEADING}"`);
   }
 });
+
+test('task_rules are identical in adr-plan and adr-plan-improve, which write and improve plans', async () => {
+  const block = (body) => {
+    const lines = body.split(/\r?\n/);
+    const start = lines.indexOf('task_rules:');
+    const end = lines.findIndex((l, i) => i > start && SECTION_KEY.test(l));
+    return start < 0 ? null : lines.slice(start, end).join('\n').trimEnd();
+  };
+  const [plan, improve] = await Promise.all(['adr-plan', 'adr-plan-improve'].map(async (n) => block(await skillBody(n))));
+  assert.ok(plan, 'adr-plan: no task_rules: section');
+  assert.equal(improve, plan);
+});

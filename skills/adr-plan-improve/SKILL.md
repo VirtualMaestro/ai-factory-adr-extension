@@ -27,7 +27,7 @@ forbidden_behaviors:
 - do not change the ADR's status: improving a plan never advances the decision
 - do not guess the plan filename: resolve it from the ADR
 - do not invoke `aif-improve` as a nested skill: apply its semantics in this run
-- do not touch the plan's frontmatter, so the reciprocal `implements` and `depends_on` links survive
+- do not touch the plan's frontmatter, so the reciprocal `implements` and `depends_on` links and a claim survive
 
 outputs:
 - improved plan body
@@ -55,11 +55,17 @@ quality_rules:
 - revise a recommendation only on a new fact, a new constraint, a found reasoning error, a clarified goal, or an explicit operator decision, and name what changed
 - disagreement alone is not new information: a flip with no new grounds means the original was ungrounded
 
+task_rules:
+- a task is worth a full implementation cycle of writer, review, checks, 1 commit and a push: a rename, a config line or a one-file edit joins a neighbouring task
+- a task leaves the test suite green: its commit is the checkpoint that the next task and a resumed run build on, so the code and the test of 1 behaviour sit in 1 task
+- a task states its `acceptance`, and the reviewer of the task checks the diff against it
+- leave `branch:`, `base:` and `started:` alone: `ai-factory adr claim` writes them for a run in work
+
 workflow:
-1. run `ai-factory adr resolve-plan <adr-file>`, which resolves via the plan's `implements` frontmatter; add `--json` for the plan's `file`
+1. run `ai-factory adr claim --check <adr-file>` and stop on a refusal, then run `ai-factory adr resolve-plan <adr-file>`, which resolves via the plan's `implements` frontmatter; add `--json` for the plan's `file`
 2. stop and recommend `adr-plan` first when there is no active plan: there is nothing to improve yet
 3. report the error and stop when more than 1 active plan exists: the command exits non-zero, and the author clears that before improving
-4. improve the resolved plan by applying `aif-improve` semantics; for `format: cnlp-plan`, read `ai-factory adr format plan` and preserve its body blocks and core checkboxes
+4. improve the resolved plan by applying `aif-improve` semantics, and merge or split each task that breaks a rule of `task_rules:`; for `format: cnlp-plan`, read `ai-factory adr format plan` and preserve its body blocks and core checkboxes
 5. run `ai-factory adr format plan --check <plan-file>` for `format: cnlp-plan`; re-verify exactly 1 resolved plan and clean `ai-factory adr status --check`
 6. leave the ADR `accepted`
 7. report the status footer

@@ -48,7 +48,7 @@ quality_rules:
 - disagreement alone is not new information
 
 workflow:
-1. run `ai-factory adr validate <file>`
+1. run `ai-factory adr claim --check <file>` and stop on a refusal, then run `ai-factory adr validate <file>`
 2. run `ai-factory adr status --check`, which resolves `adr.root` and passes it to the artifact audit
 3. resolve any audit failures before continuing
 4. run `ai-factory adr decisions` and read every line: this is the step that checks the precondition "the ADR resolves every conflict with an active ADR" against the corpus rather than assuming it

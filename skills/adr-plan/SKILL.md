@@ -63,14 +63,20 @@ quality_rules:
 - revise a recommendation only on a new fact, a new constraint, a found reasoning error, a clarified goal, or an explicit operator decision, and name what changed
 - disagreement alone is not new information: a flip with no new grounds means the original was ungrounded
 
+task_rules:
+- a task is worth a full implementation cycle of writer, review, checks, 1 commit and a push: a rename, a config line or a one-file edit joins a neighbouring task
+- a task leaves the test suite green: its commit is the checkpoint that the next task and a resumed run build on, so the code and the test of 1 behaviour sit in 1 task
+- a task states its `acceptance`, and the reviewer of the task checks the diff against it
+- leave `branch:`, `base:` and `started:` alone: `ai-factory adr claim` writes them for a run in work
+
 workflow:
-1. run `ai-factory adr status <adr-file>` and inspect the accepted and relevant active ADRs; apply `code_intelligence` from `adr-overview` for affected code
+1. run `ai-factory adr claim --check <adr-file>` and stop on a refusal, then run `ai-factory adr status <adr-file>` and inspect the accepted and relevant active ADRs; apply `code_intelligence` from `adr-overview` for affected code
 2. run `ai-factory adr decisions` and read every line: the plan implements 1 decision and breaks none of the others
 3. stop when that command reports an `issues:` entry for this ADR, and recommend `adr-improve`: a plan built on a decision that failed to parse rests on nothing
 4. name any `issues:` entry for another ADR to the operator, then continue
 5. open in full the ADRs whose `decision:`, `constraints:`, `scope:` or `rules:` touch the work this plan will do
 6. state every dependency warning it reports to the operator and confirm they want to continue before creating the plan
-7. read `ai-factory adr format` and `ai-factory adr format plan`; apply `aif-plan full` semantics with the frontmatter above and 1 test task per user-visible scenario
+7. read `ai-factory adr format` and `ai-factory adr format plan`; apply `aif-plan full` semantics with the frontmatter above, 1 test task per user-visible scenario, and every rule of `task_rules:`
 8. write the body in that profile, preserving core task ids and checkboxes; name in each test task the failure it prevents
 9. run `ai-factory adr link-plan <adr-file> <plan-file>`: it sets the ADR's `plan:` field to the plan id and adds `implements` and `depends_on` to the plan, leaving the ADR body untouched
 10. leave `evidence:` empty
