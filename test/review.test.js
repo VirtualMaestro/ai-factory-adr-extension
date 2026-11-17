@@ -228,3 +228,16 @@ test('the snapshot hashes the files after a submodule directory', async () => {
   await writeFile(path.join(dir, 'z.txt'), 'two\n', 'utf8');
   assert.notEqual(review.snapshot(dir), before);
 });
+
+test('the snapshot sees a branch switch, a new branch and a new tag', async () => {
+  const { dir } = await repo();
+  const base = review.snapshot(dir);
+  git(dir, 'branch', 'other');
+  const branched = review.snapshot(dir);
+  assert.notEqual(branched, base);
+  git(dir, 'switch', '-q', 'other');
+  assert.notEqual(review.snapshot(dir), branched);
+  const switched = review.snapshot(dir);
+  git(dir, 'tag', 't1');
+  assert.notEqual(review.snapshot(dir), switched);
+});

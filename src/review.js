@@ -116,6 +116,8 @@ export function snapshot(projectDir) {
     return res;
   };
   add('rev-parse', 'HEAD');
+  add('symbolic-ref', '-q', 'HEAD'); // a switch to another branch at the same commit
+  add('for-each-ref', '--format=%(refname) %(objectname)', 'refs/heads', 'refs/tags');
   add('status', '--porcelain', '-uall');
   add('diff', 'HEAD', '--binary');
   add('diff', '--cached', '--binary');

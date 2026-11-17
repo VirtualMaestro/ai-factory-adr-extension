@@ -292,7 +292,7 @@ export function register(program) {
 
   adr
     .command('unclaim <file>')
-    .description('On the base: release a claim, commit `chore(adr): release <id>` and push the base')
+    .description('On the base: release a claim, commit `chore(adr|plan): release <id>` and push the base')
     .option('--delete-branch', 'Also delete the claimed branch locally and on the remote')
     .option('--json', 'Machine-readable output')
     .action((file, opts) => guard(opts, async () => {

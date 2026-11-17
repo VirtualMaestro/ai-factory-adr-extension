@@ -786,3 +786,20 @@ resumed part: 22 turns, 6 minutes, $2.26.
 Left over: `cnlp.config.json` uncommitted after `cnlp check`. The fixture's ADR was accepted by the 5.x code, which did
 not add the corpus entry at accept; a 6.0.0 accept adds and stages it. A project upgraded with an accepted ADR and no
 ADR corpus entry gets it from `ai-factory adr init` or 1 `adr cnlp check` committed before the run.
+
+### 13.4 Code review, round 3 (Fable medium, over the 6.0.0 commits)
+
+1 high, 3 medium, 10 low. Fixed in 6.0.1:
+
+- High: the claim guard of `live apply` refused the fast `.ai-factory/PLAN.md` and a bundle directory. A file without
+  `branch:` now passes; a bundle reads its claim on `index.md`.
+- Medium: `adr-auto-plan` holds the Authors while a review is open, since any write fails `end`; `adr-auto-change`
+  refuses its implementation phase on a work branch without `--resume`; both implementing skills read the base of a
+  resume from the claim commit once the claim on the branch is gone.
+- Low: the snapshot hashes the symbolic HEAD and the branch and tag refs; `inline` in a fallback runs through
+  `--runtime subagent` and `--result`; the CHANGELOG and the `unclaim` help say what the code does.
+
+Not fixed (low): a rejected base push costs a gate round before the next fetch; a protected base that moves keeps a
+local claim commit that cannot fast-forward; a `wip` commit of a gate fix resumes at step 20; the `adr-auto-plan`
+route for an accepted ADR with a plan and steps 26 and 28 disagree; stale step numbers in §3.2 and §4.7;
+`.git/adr-auto/<id>/` is never cleaned.

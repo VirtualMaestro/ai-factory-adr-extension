@@ -357,3 +357,17 @@ test('an accept whose corpus sync fails rolls the move back', async () => {
   assert.equal((await read(adr)).data.status, 'draft', 'the draft is back in place');
   assert.equal(existsSync(accepted), false, "no accepted copy is left");
 });
+
+test('the claim guard lets a fast plan and a bundle directory through, and reads a bundle claim on its index', async () => {
+  const { dir } = await gitProject({ remote: false });
+  const fast = path.join(dir, '.ai-factory', 'PLAN.md');
+  await writeFile(fast, '# Fast plan\n\n- [ ] one\n', 'utf8');
+  await assertClaimBranch(fast, { projectDir: dir, command: 'live apply' });
+
+  const bundle = path.join(dir, 'bundle');
+  await mkdir(bundle);
+  await assertClaimBranch(bundle, { projectDir: dir, command: 'live apply' }); // no index.md
+  const index = ['---', 'type: plan', 'branch: change/bundle', 'base: master', 'started: 2026-11-17', '---', '# Bundle', ''];
+  await writeFile(path.join(bundle, 'index.md'), index.join('\n'), 'utf8');
+  await assert.rejects(assertClaimBranch(bundle, { projectDir: dir, command: 'live apply' }), /in work on change\/bundle/);
+});

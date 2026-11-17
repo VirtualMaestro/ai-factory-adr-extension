@@ -1,5 +1,5 @@
 import path from 'node:path';
-import { existsSync } from 'node:fs';
+import { existsSync, statSync } from 'node:fs';
 import { read, serialize } from '../artifacts/frontmatter.js';
 import { resolveInside, atomicWrite } from '../util/safe-path.js';
 import { git, currentBranch, branchExists, upstreamOf, push } from '../util/git.js';
@@ -123,8 +123,14 @@ export async function checkClaim(file, { projectDir = process.cwd() } = {}) {
 
 /** Throw unless `checkClaim` passes: the CLI guard of §4.6 for commands that change a claimed file. */
 export async function assertClaimBranch(file, { projectDir = process.cwd(), command } = {}) {
-  if (!file || !existsSync(resolveInside(projectDir, file))) return; // the command reports its own missing file
-  const res = await checkClaim(file, { projectDir });
+  if (!file) return;
+  let abs = resolveInside(projectDir, file);
+  if (!existsSync(abs)) return; // the command reports its own missing file
+  // A bundle directory carries its claim on its index; a file without `branch:`, such as the fast
+  // `.ai-factory/PLAN.md`, is in work nowhere.
+  if (statSync(abs).isDirectory()) abs = path.join(abs, 'index.md');
+  if (!existsSync(abs) || (await read(abs)).data.branch == null) return;
+  const res = await checkClaim(abs, { projectDir });
   if (res.ok) return;
   throw fail(`${res.id} is in work on ${res.claim.branch}.`, {
     expected: `the checkout of ${res.claim.branch} for \`adr ${command}\``,

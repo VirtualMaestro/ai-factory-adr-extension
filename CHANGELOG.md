@@ -4,6 +4,23 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and the project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [6.0.1] — 2026-11-17
+
+### Fixed
+
+- **`ai-factory adr live apply` takes a fast plan and a bundle directory again.** The 6.0.0
+  claim guard refused a file with no `type:` outside the plans directory, such as
+  `.ai-factory/PLAN.md`, and a directory. A file without `branch:` is in work nowhere; a
+  bundle carries its claim on its `index.md`.
+- **The review snapshot sees a branch switch, a new branch and a new tag**, so a reviewer that
+  moves a ref fails `ai-factory adr review end`.
+- `adr-auto-implement` and `adr-auto-change` read the base of a resume from the claim commit
+  once finalize released the claim on the branch. `adr-auto-change` refuses to start its
+  implementation phase on a work branch without `--resume`. `adr-auto-plan` holds the Authors
+  while a review is open. A review whose fallback reaches `inline` runs in the session through
+  `--runtime subagent` and `--result`.
+- The `adr unclaim` help names `chore(plan): release` for a plan.
+
 ## [6.0.0] — 2026-11-16
 
 ### Changed
@@ -29,8 +46,8 @@ All notable changes to this project are documented here. The format follows
   mark it in work. `ai-factory adr claim <file> --base|--check|--release` and
   `ai-factory adr unclaim <file> [--delete-branch]` manage them; `transition`, `link-plan`,
   `finalize`, `supersede` and `live apply` refuse to change a claimed file from another branch.
-  `adr status` and `adr order` list the items in work and warn on a stale claim; `adr next` skips
-  them. Leaving `accepted` or finalizing removes the claim.
+  `adr status` and `adr order` list the items in work, and `adr status` warns on a stale claim;
+  `adr order` leaves a claimed ADR out of its next ADR. Leaving `accepted` or finalizing removes the claim.
 - **`ai-factory adr review begin|run|end`** runs a read-only review through a subagent, the
   `codex-cli` or the `claude-cli` runtime, and rejects a review whose run changed the tree.
 - **`ai-factory adr auto config [--check]`** resolves `adr.auto` in

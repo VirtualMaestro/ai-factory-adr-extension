@@ -38,6 +38,7 @@ roles:
 - a role whose runtime cannot run: take the next runtime of its fallback; with no subagents, do the role inline and state in the report that a check in the writing context is weaker
 
 runtimes:
+- `inline`, the last step of a fallback, is no runtime of `ai-factory adr review`: begin the review with `--runtime subagent`, answer it in this session, and pass the answer to `end` with `--result`
 - `subagent`: start the host's subagent with the role's model and effort when the host takes them, and continue it by message, such as `SendMessage` to its id in Claude Code
 - `codex-cli`: start `codex exec --json -s workspace-write -` with the brief on stdin, adding `-m <model>` and `-c model_reasoning_effort=<effort>` when set, and read `thread_id`
 - continue a `codex-cli` writer with `codex exec resume <thread_id> -` and the message on stdin; do not start a writer with `--ephemeral`, which no resume reaches
@@ -61,6 +62,7 @@ remote_policy:
 
 run_states:
 - derive the state by the first row that matches, in this order
+- take the base of a resume from `base:` of the claim; once step 50 released it on the branch, run `git log -1 --format=%H --grep '^chore(plan): start <plan-stem> on'` and read it from the entrypoint of that commit
 - stale: the claim names a branch that exists neither locally nor on the remote; stop and name `ai-factory adr unclaim <plan-file>`
 - merged: the plan sits in the archive on the base and the base contains the branch; push the base when its remote lacks the merge, then go on from step 57
 - dirty: the tree has changes on the change branch; commit them as `wip(change): <plan-stem> — recovered`, then derive the state again
@@ -76,6 +78,7 @@ stop_procedure:
 - in the planning phase, and before the claim, commit nothing
 
 forbidden_behaviors:
+- do not start the implementation phase without `--resume` on a branch under `branch.prefix` or `change/`, or on the branch of a claim: step 25 would take it as the base
 - do not ask the operator anything outside step 16: pick the scoped default for a minor question and report it
 - do not pick a default for a principled question outside a `plan` run, at any step: stop, report it with its options, and commit nothing
 - do not ask a minor question in step 16, such as a planning preference, a commit checkpoint or whether to push
