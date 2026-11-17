@@ -4,6 +4,20 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and the project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [6.0.3] — 2026-11-17
+
+### Fixed
+
+- **`ai-factory adr review end` removes the work directory of a review it counts**, so
+  `.git/adr-auto/` no longer grows with every review; a failed review stays for diagnosis.
+- **A protected base no longer stops every later run.** When the base refuses the claim commit
+  with `[remote rejected]`, `adr-auto-implement` and `adr-auto-change` drop it from the local base;
+  the branch keeps it, so the base fast-forwards again.
+- The gate of both skills fetches the base first, so a rejected base push does not spend a gate
+  round on a stale base. A `wip` commit made during a gate fix resumes at the gate.
+- The `adr-auto-plan` route for an accepted ADR with a plan starts its Author and reviews that
+  plan.
+
 ## [6.0.2] — 2026-11-17
 
 ### Fixed

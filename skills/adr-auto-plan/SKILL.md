@@ -42,7 +42,7 @@ routes:
 - a topic: steps 5 to 44
 - a `proposed` or `draft` ADR: steps 5 to 44 without step 6
 - an `accepted` ADR without a plan: steps 25 to 44
-- an `accepted` ADR with a plan: steps 28 to 44, on that plan
+- an `accepted` ADR with a plan: step 5, then steps 26 to 44, with that plan as the plan of step 25
 - a claimed ADR: stop at step 3
 
 forbidden_behaviors:

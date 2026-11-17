@@ -381,6 +381,8 @@ export async function end(id, { result = null, projectDir = process.cwd() } = {}
     }
   }
   const ok = reasons.length === 0;
+  // A counted review has handed its findings over; a failed one stays for diagnosis.
+  if (ok) await rm(dir, { recursive: true, force: true });
   return {
     id,
     role: meta.role,

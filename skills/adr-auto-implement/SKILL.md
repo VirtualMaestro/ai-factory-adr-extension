@@ -43,6 +43,7 @@ coder_brief:
 - its report lists the changed files, how each requirement is met or why not, the tests it added, its `aif-qa` records, and the check commands with their results
 
 remote_policy:
+- a claim commit the base refuses with `[remote rejected]`: a protection rule guards the base; drop the commit from it with `git branch -f <base> <base>~1`, since the branch keeps it, and record it
 - run a remote operation, such as a fetch, a push of the base, or a push or deletion of an ADR branch, only when `git.enabled` is true, the base has an upstream, and `git.skip_push_after_commit` is not true
 - otherwise the run is local: the claim locks only this clone, and the report says so
 - push with `git push --porcelain`: `[rejected]` means the remote moved, and the step that pushed says what to redo; `[remote rejected]` is a policy, and the run does not retry it
@@ -54,7 +55,7 @@ run_states:
 - stale: the claim names a branch that exists neither locally nor on the remote; stop and name `ai-factory adr unclaim <adr-file>`
 - merged: the ADR is `active` on the base and the base contains the branch; push the base when its remote lacks the merge, then go on from step 46
 - dirty: the tree has changes on the ADR branch; commit them as `wip(adr): <adr-id> — recovered`, then derive the state again
-- wip: HEAD of the branch is a `wip(adr):` commit; keep it, and let the Coder continue the task it names on top of it, from step 20
+- wip: HEAD of the branch is a `wip(adr):` commit; keep it, and let the Coder continue the task it names on top of it, from step 20; with no unchecked task, it is a gate fix: let the Coder finish it, then go on from step 32
 - tasks: the ADR on the branch is `accepted` and an unchecked task remains; go on from step 20 with the first unchecked task
 - gate: the plan has no unchecked task and the ADR is `accepted`; go on from step 32
 - finalized: the ADR on the branch is `active` and the remote lacks the finalize commit; go on from step 41
@@ -114,7 +115,7 @@ workflow:
 16. claim: under `remote_policy:`, fetch the base; run `ai-factory adr claim <adr-file> --base <base>`, which prints the branch, and commit only the ADR file on the base as `chore(adr): start <adr-id> on <branch>`
 17. switch: when the branch exists from an earlier `ai-factory adr unclaim`, switch to it and merge the base into it; otherwise run `git switch -c <branch>`
 18. push the branch with `-u` under `remote_policy:`; on `[rejected]`, another clone holds it: switch to the base, delete the local branch, run `git reset --keep HEAD~1`, and skip the ADR as in step 12
-19. push the base under `remote_policy:`; on `[rejected]`, undo steps 16 to 18 on both sides and repeat from step 16 once; on `[remote rejected]`, keep the claim local and record it
+19. push the base under `remote_policy:`; on `[rejected]`, undo steps 16 to 18 on both sides and repeat from step 16 once; on `[remote rejected]`, act by `remote_policy:` for a claim commit
 20. take each unchecked task of the plan in plan order, and start a Coder with the `coder` role and a brief by `coder_brief:`
 21. write the Reviewer_1 brief to a file outside the tree: the task and its `acceptance`, the changed files, `git diff HEAD` and the untracked files, and the Coder's contested decisions and checks, each as a claim to verify
 22. run `ai-factory adr review begin --role reviewer_1 --prompt <brief> --json`; for a CLI runtime run `ai-factory adr review run <id>`, and for a `subagent` start a fresh read-only subagent and write its answer to a file outside the tree
@@ -127,7 +128,7 @@ workflow:
 29. stop by `stop_procedure:` when the review rounds or the red-check rounds of the task exceed `max_rounds`
 30. on green, release the Coder, tick the task in the plan, run `ai-factory adr format plan --check <plan-file>` for `format: cnlp-plan`, and commit by name the files of the task and the plan
 31. write the commit body with 1 line `Untested: <case> — <needs harness or manual>` per record of the Coder, stop by `stop_procedure:` when `git status --porcelain` is not empty, and push the branch under `remote_policy:`
-32. gate: merge the base into the branch; on a conflict, run `git merge --abort` and stop by `stop_procedure:`; from here the branch holds the tree the base will receive
+32. gate: under `remote_policy:`, fetch the base and fast-forward it, then merge it into the branch; on a conflict, run `git merge --abort` and stop by `stop_procedure:`; from here the branch holds the tree the base will receive
 33. run `checks.full`, or the project test suite when it is empty, and `adr.acceptance.command`; a red check is a fix cycle of step 37
 34. on green, in parallel and read-only, through `ai-factory adr review`: a fresh subagent with `--runtime subagent` applies `adr-verify` without its anchor steps, and a fresh Reviewer_2 reviews `git diff <base>...HEAD`
 35. after both reviews end, when `adr.acceptance.exploratory` is set and rounds remain, start the exploratory subagent with the instructions file, the `decision:`, `scope:` and `rules:` blocks and the scenario tasks: it never overlaps a snapshot

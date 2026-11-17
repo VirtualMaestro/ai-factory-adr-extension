@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
+import { existsSync } from 'node:fs';
 import { mkdir, mkdtemp, readFile, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
@@ -131,11 +132,16 @@ test('run drives a CLI reviewer and end reads its exit, its timeout and its resu
   assert.match(seen.opts.input, /read-only reviewer/);
   assert.equal(seen.opts.timeout, 1800 * 1000);
   assert.equal(ran.exit, 0);
-  assert.equal((await review.end(codex.id, { projectDir: dir })).ok, true);
 
   // A rerun that leaves no result must not pass on the result of the run before it.
   await review.run(codex.id, { projectDir: dir, resolve, exec: async () => ({ status: 0, stdout: 'garbage', stderr: '', timedOut: false, error: null }) });
   assert.match((await review.end(codex.id, { projectDir: dir })).reasons.join(), /no result/);
+
+  // A counted review removes its work directory; the failed one above stays for diagnosis.
+  await review.run(codex.id, { projectDir: dir, exec: fakeCodex, resolve });
+  const ended = await review.end(codex.id, { projectDir: dir });
+  assert.equal(ended.ok, true);
+  assert.equal(existsSync(path.join(dir, '.git', 'adr-auto', codex.id)), false);
 
   const slow = await review.begin({ role: 'reviewer_1', prompt, projectDir: dir });
   await review.run(slow.id, { projectDir: dir, resolve, exec: async () => ({ status: null, stdout: '', stderr: '', timedOut: true, error: null }) });

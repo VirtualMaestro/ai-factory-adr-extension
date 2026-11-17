@@ -184,7 +184,7 @@ A rejected push is read from `git push --porcelain` (§12 P8):
    that ADR, and take the base from its claim's `base:`. Otherwise stop and name the branch: a crash left the
    checkout there, and recording it as the base would merge into the wrong branch.
 4. A dirty tree: with `--resume` on the ADR branch, it is the `dirty` state of §4.3. Otherwise stop, name the
-   uncommitted files, and say to commit them: the planning phase commits ADRs and plans (`adr-auto-plan` step 22).
+   uncommitted files, and say to commit them: the planning phase commits ADRs and plans (`adr-auto-plan` step 39).
 5. Stop when any path the run commits is ignored by git (`gitIgnored` in `src/util/git.js`): the ADR root, the plans
    and archived plans directories, `LIVE.md`, the QA directory, and the memory file when it lives in the repository.
    `stageMove` ignores a failed `git add` (`src/util/git.js:17`), so an ignored output would leave its commit
@@ -381,7 +381,7 @@ is `in_progress` until its archive sets `done` (`src/lifecycle/archive.js:35`), 
 
 - The claim is released (`claim --release`) right before the archive step, so the archive commit carries the plan
   without it.
-- `LIVE.md` apply (its step 46) and the archive (its step 48) run on the branch after the sync, like `adr-finalize`.
+- `LIVE.md` apply (its step 49) and the archive (its step 50) run on the branch after the sync, like `adr-finalize`.
   Until the merge, the commit that holds them is not pushed and can be dropped, as in §3.3 step 11.
 - `profiles/plan.md` lists `branch`, `base` and `started` in `frontmatter_fields`. That list documents; it does not
   check: `format plan --check` reads only the body (§12 P7). `status --check` checks plan claims.
@@ -810,3 +810,15 @@ Codex `gpt-6.1-sol` medium over the fix commit: no findings. A CLI run of `live 
 plan and a bundle directory apply, a bundle claimed on another branch is refused, and the same bundle applies on its
 own branch. The run found that `adr claim` and `adr unclaim` failed with `EISDIR` on the bundle directory the guard
 names; 6.0.2 reads its `index.md`.
+
+### 13.6 The lows of §13.4, fixed in 6.0.3
+
+- `adr review end` removes the directory of a review it counts; a failed review stays for diagnosis.
+- The gate step of `adr-auto-implement` (32) and `adr-auto-change` (41) fetches and fast-forwards the base before it
+  merges, so a rejected base push no longer spends a gate round on a stale base.
+- A claim commit a protected base refuses is dropped from the local base (`git branch -f <base> <base>~1`); the
+  branch keeps it, so the base can fast-forward again. The run goes on, and step 45 hands the merge to the operator.
+- A `wip` commit with no unchecked task is a gate fix: the run resumes at the gate step.
+- The `adr-auto-plan` route for an accepted ADR with a plan starts its Author (step 5) and runs steps 26 to 44 with that
+  plan as the plan of step 25.
+- The step numbers of §3.2 and §4.7 match the skills.
