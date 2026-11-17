@@ -4,6 +4,42 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and the project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [6.0.0] — 2026-11-16
+
+### Changed
+
+- **`adr-auto-implement` orchestrates instead of writing.** The session starts a Coder per plan
+  task and a read-only Reviewer_1 per task, escalates to a fresh Reviewer_2 on a finding at or above
+  `escalate_at`, on a red check and at the gate, and owns every commit, push and merge. Each task is
+  1 commit pushed to the ADR branch.
+- **Each ADR lives on its own branch** (`adr/<id>` by default). The base receives an ADR only
+  through a local `git merge --no-ff` after its gate and `adr-finalize` pass on a tree that holds
+  the current base. A stop leaves the partial work on the ADR branch, and `--resume <adr-file>`
+  continues it by the state of `run_states:`. The run opens no pull request.
+- **`adr-auto-plan`** splits the same way: an Author writes each ADR and plan, read-only reviewers
+  check them, and the operator still answers the principled questions and approves each draft.
+- **`adr-auto-change`** creates a `change/<plan-stem>` branch only for its implementation phase.
+- `adr-auto-implement` and `adr-auto-change` need `git.enabled: true`.
+- Accepting the first ADR adds the ADR corpus entry to `cnlp.config.json` and stages it, so the
+  entry lands in the planning commit. A broken `cnlp.config.json` stops the accept before any move.
+
+### Added
+
+- **Claims.** `branch:`, `base:` and `started:` in the frontmatter of an accepted ADR or a plan
+  mark it in work. `ai-factory adr claim <file> --base|--check|--release` and
+  `ai-factory adr unclaim <file> [--delete-branch]` manage them; `transition`, `link-plan`,
+  `finalize`, `supersede` and `live apply` refuse to change a claimed file from another branch.
+  `adr status` and `adr order` list the items in work and warn on a stale claim; `adr next` skips
+  them. Leaving `accepted` or finalizing removes the claim.
+- **`ai-factory adr review begin|run|end`** runs a read-only review through a subagent, the
+  `codex-cli` or the `claude-cli` runtime, and rejects a review whose run changed the tree.
+- **`ai-factory adr auto config [--check]`** resolves `adr.auto` in
+  `.ai-factory/adr-extension.yaml`: the roles with their runtime, model, effort and timeout,
+  `escalate_at`, `max_rounds`, `checks`, `branch` and `release`.
+- **`adr-auto-implement --release`** runs `release.command` after the last merge, once a fresh
+  review of the run's whole diff confirms no finding.
+- `adr-plan` and `adr-plan-improve` share `task_rules:`, which keep each plan task substantial.
+
 ## [5.1.1] — 2026-11-03
 
 ### Fixed
