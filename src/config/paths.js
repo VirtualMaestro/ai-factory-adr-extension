@@ -36,6 +36,19 @@ export async function liveFile(projectDir = process.cwd()) {
   return path.resolve(projectDir, cfg?.adr?.live || DEFAULT_LIVE);
 }
 
+/** `adr.auto.branch.prefix`, the branch an ADR claim names; defaults to `adr/`. */
+export async function branchPrefix(projectDir = process.cwd()) {
+  const cfg = await extensionConfig(projectDir);
+  const prefix = cfg?.adr?.auto?.branch?.prefix;
+  return typeof prefix === 'string' && prefix.trim() ? prefix : 'adr/';
+}
+
+/** The git switches of AI Factory's config.yaml: `git.enabled` defaults to true, the push skip to false. */
+export async function readAifGit(projectDir = process.cwd()) {
+  const cfg = await readYaml(path.join(projectDir, '.ai-factory', 'config.yaml'));
+  return { enabled: cfg?.git?.enabled !== false, skipPush: cfg?.git?.skip_push_after_commit === true };
+}
+
 /**
  * Plans + archived-plans locations, read only from AI Factory's config.yaml (§26 — never duplicated
  * in extension config). Falls back to documented defaults when `paths.*` are absent.

@@ -6,7 +6,34 @@ import { validateAdr } from './lifecycle/validate.js';
 import { resolvePlans } from './artifacts/plan.js';
 import { STATUS_BY_DIR } from './lifecycle/status.js';
 import { existsSync } from 'node:fs';
-import { liveFile } from './config/paths.js';
+import { liveFile, readAifPaths } from './config/paths.js';
+import { readClaim, isStale, planInProgress } from './lifecycle/claim.js';
+
+async function listPlans(projectDir) {
+  const { plans, archivePlans } = await readAifPaths(projectDir);
+  const out = [];
+  for (const dir of [plans, archivePlans]) {
+    let entries = [];
+    try {
+      entries = await readdir(dir, { withFileTypes: true });
+    } catch {
+      /* directory absent */
+    }
+    for (const e of entries) {
+      if (e.isFile() && e.name.endsWith('.md')) out.push(path.join(dir, e.name));
+      // an ultra bundle keeps its frontmatter in `index.md`
+      else if (e.isDirectory() && existsSync(path.join(dir, e.name, 'index.md'))) out.push(path.join(dir, e.name, 'index.md'));
+    }
+  }
+  return out;
+}
+
+/** A claim as status reports it, with the stale warning of §4.3 when its branch is gone. */
+function claimEntry(projectDir, id, kind, claimed) {
+  return { id, kind, branch: claimed.branch, base: claimed.base, started: claimed.started, stale: isStale(projectDir, claimed) };
+}
+
+const staleWarning = (rel, c) => `${rel}: claim names ${c.branch}, which exists neither locally nor on a remote: run \`ai-factory adr unclaim\``;
 
 export async function listAdrs(root) {
   const out = [];
@@ -61,7 +88,7 @@ function checkDependencies(data, index) {
 export async function buildStatus(projectDir = process.cwd()) {
   const root = await adrRoot(projectDir);
   const rel = (f) => path.relative(projectDir, f);
-  const report = { proposals: [], drafts: [], acceptedNoPlan: [], acceptedWithPlan: [], active: [], superseded: [], issues: [] };
+  const report = { proposals: [], drafts: [], acceptedNoPlan: [], acceptedWithPlan: [], active: [], superseded: [], inWork: [], issues: [], warnings: [] };
   const livePath = await liveFile(projectDir);
   if (!existsSync(livePath)) {
     report.issues.push(`${rel(livePath)}: not found: every project keeps LIVE.md; run adr-live-seed when the project has an active ADR; otherwise run \`ai-factory adr live init\``);
@@ -80,6 +107,12 @@ export async function buildStatus(projectDir = process.cwd()) {
 
     const status = STATUS_BY_DIR[dir];
     const id = data.id ?? rel(file);
+    const claimed = readClaim(data);
+    if (claimed) {
+      const entry = claimEntry(projectDir, id, 'adr', claimed);
+      report.inWork.push(entry);
+      if (entry.stale) report.warnings.push(staleWarning(rel(file), claimed));
+    }
     if (status === 'proposed') report.proposals.push(id);
     else if (status === 'draft') report.drafts.push(id);
     else if (status === 'active') report.active.push(id);
@@ -88,6 +121,25 @@ export async function buildStatus(projectDir = process.cwd()) {
       const { active } = await resolvePlans(data.id, { projectDir });
       (active.length ? report.acceptedWithPlan : report.acceptedNoPlan).push(id);
     }
+  }
+
+  // Plan claims (§4.7): only a plan in progress is in work.
+  for (const file of await listPlans(projectDir)) {
+    let data;
+    try {
+      ({ data } = await read(file));
+    } catch {
+      continue;
+    }
+    const claimed = readClaim(data);
+    if (!claimed) continue;
+    if (!planInProgress(data)) {
+      report.issues.push(`${rel(file)}: claim on a done plan: only a plan in progress is in work; remove it with \`ai-factory adr claim --release\``);
+      continue;
+    }
+    const entry = claimEntry(projectDir, data.id ?? rel(file), 'plan', claimed);
+    report.inWork.push(entry);
+    if (entry.stale) report.warnings.push(staleWarning(rel(file), claimed));
   }
   return report;
 }
@@ -102,6 +154,9 @@ export async function buildFileStatus(file, projectDir = process.cwd()) {
     await indexAdrsById(await adrRoot(projectDir)),
   );
   const evidence = String(data.evidence ?? '').trim() || null;
+  const claimed = readClaim(data);
+  const claim = claimed ? claimEntry(projectDir, data.id, 'adr', claimed) : null;
+  if (claim?.stale) warnings.push(staleWarning(path.relative(projectDir, path.resolve(file)), claimed));
   const replacedBy = String(data.replaced_by ?? '').trim() || null;
   return {
     id: data.id,
@@ -115,6 +170,7 @@ export async function buildFileStatus(file, projectDir = process.cwd()) {
     depends_on: data.depends_on ?? [],
     affects: data.affects ?? [],
     supersedes: data.supersedes ?? [],
+    claim,
     errors,
     warnings: [...warnings, ...dependencyWarnings],
   };

@@ -8,6 +8,7 @@ import { bodyIssues, loadProfile } from '../artifacts/cnlp.js';
 import { resolveActivePlan, resolvePlans } from '../artifacts/plan.js';
 import { resolveInside } from '../util/safe-path.js';
 import { deltaProblems } from '../live/delta.js';
+import { CLAIM_KEYS, readClaim } from './claim.js';
 
 /**
  * ADR-specific invariant checks (§21). Deliberately does NOT re-check what `audit-artifacts` owns
@@ -90,6 +91,14 @@ export async function validateAdr(file, { projectDir = process.cwd() } = {}) {
   if (data.status === 'active') {
     const problems = data.live == null ? ['no `live:` delta: stop and run adr-live-seed, which writes `live:` on every active ADR after the operator approves; do not write it by hand'] : deltaProblems(data.live, { adr: true });
     for (const p of problems) errors.push(`live: ${p}`);
+  }
+
+  // A claim marks an accepted ADR in work on a branch; finalize removes it on the way to active.
+  const claimed = CLAIM_KEYS.filter((k) => data[k] != null);
+  if (claimed.length && data.status !== 'accepted') {
+    errors.push(`claim (${claimed.join(', ')}) on a ${data.status} ADR: only an accepted ADR is in work; remove it with \`ai-factory adr claim --release\``);
+  } else if (claimed.length && !readClaim(data)) {
+    errors.push('claim without `branch:`: write the whole claim with `ai-factory adr claim`, or remove it with `--release`');
   }
 
   if (data.status === 'superseded' && !String(data.replaced_by ?? '').trim()) {

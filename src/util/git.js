@@ -24,3 +24,42 @@ export function stageMove(...files) {
 export function gitIgnored(file) {
   return spawnSync('git', ['check-ignore', '-q', '--', file], { cwd: path.dirname(file), stdio: 'ignore' }).status === 0;
 }
+
+/** Run git in `cwd`; returns { status, stdout, stderr } with trimmed output. */
+export function git(cwd, ...args) {
+  const res = spawnSync('git', args, { cwd, encoding: 'utf8' });
+  return { status: res.status ?? 1, stdout: (res.stdout ?? '').trim(), stderr: (res.stderr ?? '').trim() };
+}
+
+/** The checked-out branch, or null outside git, on a detached HEAD, or when git is missing. */
+export function currentBranch(cwd) {
+  const res = git(cwd, 'symbolic-ref', '--short', '-q', 'HEAD');
+  return res.status === 0 && res.stdout ? res.stdout : null;
+}
+
+/** Where `name` exists: locally, and under any remote-tracking ref. Reads refs only, so it needs no network. */
+export function branchExists(cwd, name) {
+  const local = git(cwd, 'show-ref', '--verify', '--quiet', `refs/heads/${name}`).status === 0;
+  const remote = git(cwd, 'for-each-ref', '--format=%(refname)', 'refs/remotes/')
+    .stdout.split('\n').some((ref) => ref.replace(/^refs\/remotes\/[^/]+\//, '') === name && ref.startsWith('refs/remotes/'));
+  return { local, remote };
+}
+
+/** The upstream of `branch`, such as `origin/master`, or null. */
+export function upstreamOf(cwd, branch) {
+  const res = git(cwd, 'rev-parse', '--abbrev-ref', '--symbolic-full-name', `${branch}@{upstream}`);
+  return res.status === 0 && res.stdout ? res.stdout : null;
+}
+
+/**
+ * `git push --porcelain` with its rejection read: `[rejected]` means the remote moved and
+ * `[remote rejected]` means a policy, such as a protected branch or a hook, refused it.
+ * Returns { ok, rejected: null | 'moved' | 'policy' | 'other', output }.
+ */
+export function push(cwd, ...args) {
+  const res = git(cwd, 'push', '--porcelain', ...args);
+  const output = `${res.stdout}\n${res.stderr}`.trim();
+  if (res.status === 0) return { ok: true, rejected: null, output };
+  const rejected = /\[remote rejected\]/.test(output) ? 'policy' : /\[rejected\]/.test(output) ? 'moved' : 'other';
+  return { ok: false, rejected, output };
+}

@@ -10,6 +10,9 @@ import { stageMove } from '../util/git.js';
 import { liveFile } from '../config/paths.js';
 import { deltaProblems } from '../live/delta.js';
 import { gateProblem, gateError, liveMissing } from '../live/apply.js';
+import { syncCorpus } from '../cnlp-setup.js';
+import { CLAIM_KEYS } from './claim.js';
+import { readFileSync } from 'node:fs';
 
 class TransitionError extends Error {}
 
@@ -111,6 +114,26 @@ export async function transition(file, toStatus, { projectDir = process.cwd(), m
     );
   }
 
+  // A claim marks an accepted ADR in work; leaving accepted ends it (§4.1), as finalize does.
+  if (toStatus !== 'accepted') for (const key of CLAIM_KEYS) delete data[key];
+
+  // The accept below rewrites cnlp.config.json; a file it cannot parse fails here, before any move.
+  if (toStatus === 'accepted') {
+    const cfg = path.join(projectDir, 'cnlp.config.json');
+    if (existsSync(cfg)) {
+      try {
+        JSON.parse(readFileSync(cfg, 'utf8'));
+      } catch (err) {
+        throw new TransitionError(
+          'cnlp.config.json is not valid JSON.\n' +
+            `  expected: a config the accept can add the ADR corpus entry to\n  detected: ${err.message}\n` +
+            '  files:    nothing was changed\n  next:     fix cnlp.config.json, then retry',
+        );
+      }
+    }
+  }
+
+  const original = readFileSync(source, 'utf8');
   data.status = toStatus;
   await atomicWrite(target, serialize(data, body));
   try {
@@ -121,5 +144,28 @@ export async function transition(file, toStatus, { projectDir = process.cwd(), m
   }
   stageMove(source, target); // git sees a rename, not delete + untracked
 
-  return { id: data.id, from, to: toStatus, source, target };
+  // The first accepted ADR adds the ADR corpus entry to cnlp.config.json. Doing it here lands the
+  // entry in the planning commit; left to `adr cnlp check`, it dirtied the tree mid-implementation.
+  const res = { id: data.id, from, to: toStatus, source, target };
+  if (toStatus === 'accepted') {
+    let corpus;
+    try {
+      corpus = await syncCorpus(projectDir);
+    } catch (err) {
+      // Roll the move back: the ADR is accepted only with its corpus entry.
+      await atomicWrite(source, original);
+      await unlink(target).catch(() => {});
+      stageMove(source, target);
+      throw new TransitionError(
+        'cnlp.config.json could not take the ADR corpus entry.\n' +
+          `  expected: a config the accept can add the ADR corpus entry to\n  detected: ${err.message}\n` +
+          `  files:    nothing was changed; ${path.basename(source)} stays ${from}\n  next:     fix cnlp.config.json, then retry`,
+      );
+    }
+    if (corpus.status === 'created' || corpus.status === 'updated') {
+      stageMove(corpus.path);
+      res.corpus = corpus.path;
+    }
+  }
+  return res;
 }

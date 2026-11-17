@@ -2,6 +2,7 @@ import { adrRoot } from './config/paths.js';
 import { read } from './artifacts/frontmatter.js';
 import { listAdrs } from './status.js';
 import { STATUS_BY_DIR } from './lifecycle/status.js';
+import { readClaim } from './lifecycle/claim.js';
 
 const asArray = (v) => (Array.isArray(v) ? v : v == null ? [] : [v]);
 const byId = (a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
@@ -56,12 +57,13 @@ function findCycles(ids, index, remaining) {
  * Pure/deterministic; Markdown-in-Git is the only input. Cycle *validation* remains `audit-artifacts`'
  * job — this surfaces cycles only to explain why a full order can't be produced.
  *
- * Returns { next, order, blocked, cycles, active }:
- *   next    — ready-now ids: status=accepted AND every dep already active (the "start here" list)
+ * Returns { next, order, blocked, cycles, active, inWork }:
+ *   next    — ready-now ids: status=accepted AND every dep already active AND no claim (the "start here" list)
  *   order   — [{ id, status, ready, blockedBy, wave }] topological order of the schedulable backlog
  *   blocked — [{ id, status, blockedBy, note? }] nodes no order can reach (superseded dep, or behind a cycle)
  *   cycles  — [[id,…]] dependency cycles
  *   active  — already-implemented ids (context)
+ *   inWork  — [{ id, branch }] claimed ADRs, in work on their branch
  */
 export async function buildOrder({ projectDir = process.cwd() } = {}) {
   const root = await adrRoot(projectDir);
@@ -74,7 +76,8 @@ export async function buildOrder({ projectDir = process.cwd() } = {}) {
       continue; // malformed ADRs are reported by status --check / audit-artifacts
     }
     if (data.id == null) continue;
-    nodes.push({ id: data.id, status: STATUS_BY_DIR[dir], deps: asArray(data.depends_on).map(String) });
+    const branch = readClaim(data)?.branch ?? null;
+    nodes.push({ id: data.id, status: STATUS_BY_DIR[dir], deps: asArray(data.depends_on).map(String), branch });
   }
   const index = new Map(nodes.map((n) => [n.id, n]));
 
@@ -101,7 +104,7 @@ export async function buildOrder({ projectDir = process.cwd() } = {}) {
     if (!front.length) break;
     for (const n of front) {
       const blockedBy = unsatisfied(n);
-      order.push({ id: n.id, status: n.status, ready: blockedBy.length === 0, blockedBy, wave });
+      order.push({ id: n.id, status: n.status, ready: blockedBy.length === 0, blockedBy, wave, ...(n.branch ? { branch: n.branch } : {}) });
       scheduled.add(n.id);
       remaining.delete(n.id);
     }
@@ -123,7 +126,9 @@ export async function buildOrder({ projectDir = process.cwd() } = {}) {
     })
     .sort(byId);
 
-  const next = order.filter((o) => o.ready && o.status === 'accepted').map((o) => o.id);
+  // A claimed ADR is in work on its branch (§4.6): it is not next for another run.
+  const next = order.filter((o) => o.ready && o.status === 'accepted' && !o.branch).map((o) => o.id);
+  const inWork = nodes.filter((n) => n.branch).map((n) => ({ id: n.id, branch: n.branch })).sort(byId);
 
-  return { next, order, blocked, cycles, active };
+  return { next, order, blocked, cycles, active, inWork };
 }

@@ -19,6 +19,9 @@ frontmatter_fields:
 - depends_on
 - implements
 - format
+- branch
+- base
+- started
 
 lexicon_exempt:
 - none: the body directs the implementation of the linked decision

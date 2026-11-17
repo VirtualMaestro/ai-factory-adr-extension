@@ -4,6 +4,7 @@ import { transition, transitionTarget } from './move.js';
 import { archivePlan, archivePlanTarget, todayUTC } from './archive.js';
 import { resolveInside, atomicWrite, withFileRollback } from '../util/safe-path.js';
 import { stageMove } from '../util/git.js';
+import { CLAIM_KEYS } from './claim.js';
 import { deltaProblems } from '../live/delta.js';
 import { liveContext, liveMissing, computeLive, gateProblem, gateError, liveError, withLiveLock, ignoredWarnings } from '../live/apply.js';
 
@@ -68,9 +69,12 @@ export async function finalize(file, { projectDir = process.cwd() } = {}) {
     const files = [abs, activeTarget, ctx.livePath];
     if (plan) files.push(plan.file, await archivePlanTarget(plan.file, { projectDir }));
 
+    // The claim ends here: an active ADR is no longer in work (§4.1).
+    for (const key of CLAIM_KEYS) delete data[key];
+
     return withFileRollback(files, async () => {
-      // `transition` re-reads the ADR from disk, so `live.applied` has to be there before it moves.
-      if (evidenceChanged || live.changes.length) await atomicWrite(abs, serialize(data, body));
+      // `transition` re-reads the ADR from disk, so `live.applied` and the released claim have to be there before it moves.
+      await atomicWrite(abs, serialize(data, body));
       // Written before the moves, so an archive collision is a real rollback of LIVE.md too.
       if (live.changed) await atomicWrite(ctx.livePath, live.after);
       const moved = await transition(abs, 'active', { projectDir, managed: true });

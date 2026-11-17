@@ -28,6 +28,20 @@ test('a transition stages the move so git reports a rename (§20)', async () => 
   assert.ok(existsSync(res.target));
 });
 
+test('accepting the first ADR adds the corpus entry to cnlp.config.json and stages it', async () => {
+  const dir = await gitProject();
+  const src = await writeAdr(dir, { id: 'adr-acc', status: 'draft', live: { none: 'the fixture changes no capability' } });
+  git(dir, 'add', '-A');
+  git(dir, 'commit', '-qm', 'init');
+
+  const res = await transition(src, 'accepted', { projectDir: dir });
+
+  assert.ok(res.corpus, 'the accept wrote the corpus entry');
+  const staged = git(dir, 'diff', '--cached', '--name-only').stdout;
+  assert.match(staged, /^cnlp\.config\.json$/m, staged);
+  assert.equal(git(dir, 'diff', '--name-only').stdout.trim(), '', 'nothing left unstaged');
+});
+
 test('a transition outside a git work tree still succeeds (staging is a silent no-op)', async () => {
   const dir = await mkProject();
   const src = await writeAdr(dir, { id: 'adr-nogit', status: 'proposed' });
