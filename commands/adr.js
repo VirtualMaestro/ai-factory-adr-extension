@@ -20,6 +20,9 @@ import { importAdr } from '../src/artifacts/import.js';
 import { liveFile } from '../src/config/paths.js';
 import { applySource, applyPending, initLive, liveMissing } from '../src/live/apply.js';
 import { checkLive } from '../src/live/check.js';
+import { claim, release, checkClaim, unclaim, assertClaimBranch, assertAdrAndPlanBranch } from '../src/lifecycle/claim.js';
+import { readConfig, resolveAutoConfig } from '../src/config/adrConfig.js';
+import * as review from '../src/review.js';
 
 /**
  * Registered by AI Factory via the `commands` manifest entry: `mod.register(program)` where
@@ -114,6 +117,7 @@ export function register(program) {
     .description('Move an ADR to a new lifecycle status (atomic; §17)')
     .option('--json', 'Machine-readable output')
     .action((file, status, opts) => guard(opts, async () => {
+      await assertClaimBranch(file, { projectDir: process.cwd(), command: 'transition' });
       const res = await transition(file, status, { projectDir: process.cwd() });
       out(opts, { command: 'transition', ...res }, () => console.log(`${res.from} → ${res.to}: ${res.target}`));
     }));
@@ -137,6 +141,8 @@ export function register(program) {
     .description('Create reciprocal ADR↔plan links')
     .option('--json', 'Machine-readable output')
     .action((adrFile, planFile, opts) => guard(opts, async () => {
+      await assertClaimBranch(adrFile, { projectDir: process.cwd(), command: 'link-plan' });
+      await assertClaimBranch(planFile, { projectDir: process.cwd(), command: 'link-plan' });
       const res = await linkPlan(adrFile, planFile, { projectDir: process.cwd() });
       out(opts, { command: 'link-plan', ...res }, () => console.log(`Linked ${res.adrId} ↔ ${res.planId}`));
     }));
@@ -146,6 +152,7 @@ export function register(program) {
     .description('Activate an accepted ADR and archive its plan (deterministic core)')
     .option('--json', 'Machine-readable output')
     .action((file, opts) => guard(opts, async () => {
+      await assertAdrAndPlanBranch(file, { projectDir: process.cwd(), command: 'finalize' });
       const res = await finalize(file, { projectDir: process.cwd() });
       out(opts, { command: 'finalize', ...res }, () => {
         console.log(`Activated ${res.id}: ${res.active}`);
@@ -162,6 +169,8 @@ export function register(program) {
     .option('--json', 'Machine-readable output')
     .action((oldFile, newFile, opts) => guard(opts, async () => {
       const planDisposition = opts.archivePlan ? 'archive' : opts.deletePlan ? 'delete' : null;
+      await assertAdrAndPlanBranch(oldFile, { projectDir: process.cwd(), command: 'supersede' });
+      await assertClaimBranch(newFile, { projectDir: process.cwd(), command: 'supersede' });
       const res = await supersede(oldFile, newFile, { projectDir: process.cwd(), planDisposition });
       out(opts, { command: 'supersede', ...res }, () => {
         console.log(`${res.oldId} superseded by ${res.newId}: ${res.superseded}`);
@@ -183,6 +192,7 @@ export function register(program) {
           console.log(`${res.id}  [${res.status}]  ${res.location}`);
           console.log(`  plan:     ${res.activePlan ?? 'none'}`);
           console.log(`  evidence: ${res.evidence ?? '—'}`);
+          if (res.claim) console.log(`  in work:  ${res.claim.branch} (base ${res.claim.base ?? '?'}, since ${res.claim.started ?? '?'})`);
           res.errors.forEach((e) => console.error(`  error:   ${e}`));
           res.warnings.forEach((w) => console.warn(`  warning: ${w}`));
         });
@@ -201,7 +211,9 @@ export function register(program) {
         line('accepted (w/ plan)', report.acceptedWithPlan);
         line('active', report.active);
         line('superseded', report.superseded);
+        line('in work', report.inWork.map((c) => `${c.id} on ${c.branch}`));
         report.issues.forEach((i) => console.error(`  issue: ${i}`));
+        report.warnings.forEach((w) => console.warn(`  warning: ${w}`));
       });
       const auditFailed = audit && audit.code !== 0 && audit.code !== null;
       if (opts.check && (report.issues.length || auditFailed)) process.exitCode = 1;
@@ -217,11 +229,15 @@ export function register(program) {
         console.log('Next to implement (accepted, all deps active):');
         if (res.next.length) res.next.forEach((id, i) => console.log(`  ${i + 1}. ${id}`));
         else console.log('  (none ready)');
+        if (res.inWork.length) {
+          console.log('In work (claimed, on their branch):');
+          for (const c of res.inWork) console.log(`  ${c.id} on ${c.branch}`);
+        }
         console.log('Order (topological):');
         if (res.order.length) {
           for (const o of res.order) {
             const wait = o.blockedBy.length ? `  ← after ${o.blockedBy.join(', ')}` : '';
-            console.log(`  [${o.status}] ${o.id}${wait}`);
+            console.log(`  [${o.status}] ${o.id}${wait}${o.branch ? `  (in work on ${o.branch})` : ''}`);
           }
         } else console.log('  (nothing to order)');
         if (res.blocked.length) {
@@ -234,6 +250,133 @@ export function register(program) {
         }
       });
       if (res.cycles.length) process.exitCode = 1;
+    }));
+
+  adr
+    .command('claim <file>')
+    .description('Mark an accepted ADR or a plan in progress as in work on its branch; --check and --release read or remove the claim')
+    .option('--base <branch>', 'The branch the work merges into')
+    .option('--check', 'Exit 0 when the file has no claim or the current branch is its branch')
+    .option('--release', 'Remove the claim and write the file, without committing')
+    .option('--json', 'Machine-readable output')
+    .action((file, opts) => guard(opts, async () => {
+      const projectDir = process.cwd();
+      if ([opts.base != null, opts.check, opts.release].filter(Boolean).length !== 1) {
+        throw new AifError('Use exactly one of `--base <branch>`, `--check` and `--release`.');
+      }
+      if (opts.check) {
+        const res = await checkClaim(file, { projectDir });
+        out(opts, { command: 'claim check', ...res }, () => {
+          if (!res.claim) return console.log(`${res.id}: no claim.`);
+          if (res.ok) return console.log(`${res.id}: in work on ${res.claim.branch}, the current branch.`);
+          console.error(
+            `${res.id} is in work on ${res.claim.branch}.\n` +
+              `  expected: the checkout of ${res.claim.branch}\n` +
+              `  detected: current branch ${res.current ?? '(none)'}\n` +
+              '  files:    nothing was changed\n' +
+              `  next:     switch to ${res.claim.branch}, or release it with \`ai-factory adr unclaim ${file}\``,
+          );
+        });
+        if (!res.ok) process.exitCode = 1;
+        return;
+      }
+      if (opts.release) {
+        const res = await release(file, { projectDir });
+        out(opts, { command: 'claim release', ...res }, () =>
+          console.log(res.released ? `Released ${res.id} from ${res.claim.branch}; nothing committed.` : `${res.id}: no claim.`));
+        return;
+      }
+      const res = await claim(file, { base: opts.base, projectDir });
+      out(opts, { command: 'claim', ...res }, () => console.log(res.branch));
+    }));
+
+  adr
+    .command('unclaim <file>')
+    .description('On the base: release a claim, commit `chore(adr): release <id>` and push the base')
+    .option('--delete-branch', 'Also delete the claimed branch locally and on the remote')
+    .option('--json', 'Machine-readable output')
+    .action((file, opts) => guard(opts, async () => {
+      const res = await unclaim(file, { projectDir: process.cwd(), deleteBranch: Boolean(opts.deleteBranch) });
+      out(opts, { command: 'unclaim', ...res }, () => {
+        console.log(`Released ${res.id} from ${res.released.branch}: ${res.commit}`);
+        if (res.local) console.log(`  push:   skipped: ${res.local}`);
+        else console.log(`  push:   ${res.pushed ? 'done' : `failed (${res.pushError.rejected}): ${res.pushError.output}`}`);
+        if (res.deleteSkipped) console.log(`  branch: kept: ${res.deleteSkipped}`);
+        else if (opts.deleteBranch) console.log(`  branch: deleted locally ${res.deleted.local ? 'yes' : 'no'}, on the remote ${res.deleted.remote ? 'yes' : 'no'}`);
+      });
+      if (res.pushError) process.exitCode = 1;
+    }));
+
+  const auto = adr.command('auto').description('Configuration of the automated runs (adr-auto-implement, adr-auto-plan, adr-auto-change)');
+  auto
+    .command('config')
+    .description('Print `adr.auto` and `adr.acceptance` resolved with their defaults; --check exits non-zero on an error')
+    .option('--check', 'Non-zero exit on a config error')
+    .option('--json', 'Machine-readable output')
+    .action((opts) => guard(opts, async () => {
+      const res = resolveAutoConfig((await readConfig(process.cwd())) ?? {});
+      out(opts, { command: 'auto config', ...res }, () => {
+        for (const [phase, roles] of Object.entries(res.roles)) {
+          console.log(`${phase}:`);
+          for (const [name, r] of Object.entries(roles)) {
+            const extra = [r.model && `model ${r.model}`, r.effort && `effort ${r.effort}`, r.timeout && `timeout ${r.timeout}s`].filter(Boolean);
+            console.log(`  ${name.padEnd(11)} ${r.runtime}${extra.length ? ` (${extra.join(', ')})` : ''}  fallback: ${r.fallback.join(' → ')}`);
+          }
+        }
+        const a = res.auto;
+        console.log(`escalate_at: ${a.escalate_at} · max_rounds: ${a.max_rounds} · branch: ${a.branch.prefix}<id>, delete after merge: ${a.branch.delete_after_merge}`);
+        console.log(`checks.task: ${a.checks.task.join(' && ') || 'the project test suite'} · checks.full: ${a.checks.full.join(' && ') || 'the project test suite'}`);
+        console.log(`release: ${a.release.command ?? 'none'} · acceptance: ${res.acceptance.command ?? 'none'}${res.acceptance.exploratory ? ` · exploratory: ${res.acceptance.exploratory.instructions}` : ''}`);
+        res.errors.forEach((e) => console.error(`  error: ${e}`));
+      });
+      if (opts.check && res.errors.length) process.exitCode = 1;
+    }));
+
+  const rev = adr.command('review').description('A read-only review bracketed by snapshots of the tree: begin, run (CLI runtimes), end');
+  rev
+    .command('begin')
+    .description('Resolve the role, write the prompt and the schema under .git/adr-auto/<id>/, take the snapshot')
+    .requiredOption('--role <role>', 'reviewer_1 or reviewer_2')
+    .requiredOption('--prompt <file>', 'The review brief; keep it outside the tree')
+    .option('--files <files...>', 'Files under review, instead of the diff the prompt names')
+    .option('--rubric <rubric>', 'adr or plan: append that rubric from the installed skills')
+    .option('--phase <phase>', 'implement (adr.auto.roles) or plan (adr.auto.plan.roles over them)', 'implement')
+    .option('--runtime <runtime>', 'Override the configured runtime, such as a fallback to subagent')
+    .option('--json', 'Machine-readable output')
+    .action((opts) => guard(opts, async () => {
+      const res = await review.begin({ ...opts, projectDir: process.cwd() });
+      out(opts, { command: 'review begin', ...res }, () => {
+        console.log(`${res.id}  ${res.role}  ${res.runtime}${res.model ? ` ${res.model}` : ''}${res.effort ? ` ${res.effort}` : ''}`);
+        console.log(`  prompt: ${res.prompt}`);
+        console.log(`  result: ${res.result}`);
+        console.log(res.runtime === 'subagent'
+          ? `next: start a read-only subagent with the prompt, write its JSON answer to a file outside the tree, then \`adr review end ${res.id} --result <file>\``
+          : `next: \`adr review run ${res.id}\`, then \`adr review end ${res.id}\``);
+      });
+    }));
+  rev
+    .command('run <id>')
+    .description('Run a codex-cli or claude-cli reviewer with the role timeout and write its result')
+    .option('--json', 'Machine-readable output')
+    .action((id, opts) => guard(opts, async () => {
+      const res = await review.run(id, { projectDir: process.cwd() });
+      out(opts, { command: 'review run', ...res }, () =>
+        console.log(`${res.id}  ${res.runtime}: ${res.timedOut ? 'timed out' : `exit ${res.exit}`} in ${res.seconds}s${res.result ? '' : ', no result'}`));
+      if (res.timedOut || res.exit !== 0) process.exitCode = 1;
+    }));
+  rev
+    .command('end <id>')
+    .description('Take the snapshot again, check the run and the result; non-zero exit when the review does not count')
+    .option('--result <file>', 'The answer of a subagent reviewer')
+    .option('--json', 'Machine-readable output')
+    .action((id, opts) => guard(opts, async () => {
+      const res = await review.end(id, { result: opts.result, projectDir: process.cwd() });
+      out(opts, { command: 'review end', ...res }, () => {
+        if (!res.ok) return res.reasons.forEach((r) => console.error(`  error: ${r}`));
+        for (const f of res.findings) console.log(`  ${f.severity.padEnd(8)} ${f.file}${f.line ? `:${f.line}` : ''}  ${f.claim}${f.verified ? '' : '  (not verified)'}`);
+        console.log(`${res.findings.length} finding(s). ${res.verdict}`);
+      });
+      if (!res.ok) process.exitCode = 1;
     }));
 
   adr
@@ -358,6 +501,7 @@ export function register(program) {
         return;
       }
       if (!file) throw new Error('Pass a source file or --pending.');
+      if (!opts.dryRun) await assertClaimBranch(file, { projectDir: process.cwd(), command: 'live apply' });
       const res = await applySource(file, { projectDir: process.cwd(), dryRun: Boolean(opts.dryRun) });
       out(opts, { command: 'live apply', ...res }, () => {
         if (res.skipped) return console.log(`skipped: ${res.skipped}`);
