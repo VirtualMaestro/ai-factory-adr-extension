@@ -4,6 +4,27 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and the project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [6.0.4] — 2026-11-19
+
+### Fixed
+
+- **`ai-factory adr review end` prints the evidence of each finding.** Since 6.0.3 a counted
+  review leaves no `result.json`, so triage judged a finding by its 1-line claim alone.
+
+### Changed
+
+- **An ADR review can send the approach back.** `--rubric adr` requires a `decision`: `sound`,
+  `revise`, `rethink`, `reject` or `insufficient`, picked by an ordered question (no approach can
+  meet the task; the task is already solved; another approach is clearly better; the approach,
+  fixed, still misses the task). `end` validates and returns it. The plan and implementation
+  reviews keep their schema.
+- **`adr-auto-plan` passes the operator's request verbatim into every review brief**, does not
+  dismiss a `rethink` or `reject` without a fresh Reviewer_2, parks the ADR as a principled
+  question when either reviewer holds it, and shows each rejected finding at or above `high` at
+  the stop before acceptance.
+- `docs/proposal-critical-decision-review.md` records the pilot and the experiment behind these
+  changes: 11 hand-made ADRs, 4 contract variants, Codex and Claude reviewers.
+
 ## [6.0.3] — 2026-11-17
 
 ### Fixed

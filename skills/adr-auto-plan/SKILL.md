@@ -20,6 +20,7 @@ principled_questions:
 - a principled question fills a gap no research can close: the goal or the scope of the decision is unknown
 - a contradiction between 2 ADRs of the batch is a principled question
 - a plan finding that changes an accepted decision is a principled question
+- a review `decision` of `rethink` or `reject` that triage confirms, or that a fresh Reviewer_2 holds, is a principled question: the approach itself is in doubt
 - any other question is minor: pick the option the applied skill recommends, and record the pick and its ground for the report
 
 roles:
@@ -47,6 +48,8 @@ routes:
 
 forbidden_behaviors:
 - do not ask a minor question: the run exists so that the operator answers only principled ones
+- do not reject a review `decision` of `rethink` or `reject` alone: start a fresh Reviewer_2 over it as in steps 9 to 12, whatever the severity of its findings, and park the ADR when Reviewer_2 holds it
+- do not present a draft for acceptance without each finding at or above `high`, and each `rethink` or `reject`, that triage rejected or decided in a dispute, with the reviewer's claim
 - do not let an Author write while a review of the batch is open: any write changes the snapshot, and `end` fails as if the reviewer wrote
 - do not accept an ADR without the operator's approval at the stop in step 19: accepting is the decision itself
 - do not accept a draft that the batch read of step 18 has not seen
@@ -71,11 +74,11 @@ workflow:
 6. let the Author apply `adr-propose` to its topic, and drop a topic whose preconditions fail, recording where the fact belongs instead
 7. improve round: let the Author apply the edits of `adr-improve` to its ADR, without the transitions and the convergence check of that skill: this session owns both
 8. run `ai-factory adr validate <adr-file>` and `ai-factory adr live apply <adr-file> --dry-run`; send a failure back to the Author with its output, and repeat step 8
-9. write the review brief to a file outside the tree: the ADR id, what this round changed, and the Author's contested picks, each as a claim to verify
+9. write the review brief outside the tree: the ADR id, what this round changed, the Author's contested picks as claims to verify, and the operator's request verbatim with the answers so far, or "no request on record"
 10. run `ai-factory adr review begin --role reviewer_1 --phase plan --prompt <brief> --files <adr-file> --rubric adr --json`
 11. for a `subagent` runtime, start a fresh read-only subagent with the prompt `begin` printed and write its answer to a file outside the tree; for a CLI runtime, run `ai-factory adr review run <id>`
 12. run `ai-factory adr review end <id>`, with `--result <file>` for a subagent; on a non-zero exit, repeat from step 10 with `--runtime` set to the next runtime of the fallback, and record it
-13. triage each finding against the ADR, `ai-factory adr decisions` and the code: confirmed, rejected with a reason and a reference, disputed, or principled by `principled_questions:`
+13. triage each finding and the review's `decision` against the ADR, `ai-factory adr decisions` and the code: confirmed, rejected with a reason and a reference, disputed, or principled by `principled_questions:`
 14. park the ADR on a principled finding, and continue with the ADRs that do not rest on it
 15. send the confirmed and disputed findings to the same Author by message: it fixes each confirmed one and answers each disputed one with evidence; decide each dispute, and record each minor pick with its ground
 16. start a fresh Reviewer_2 over the ADR, as in steps 9 to 12 with `--role reviewer_2`, when a confirmed finding reaches `escalate_at`, after the Author's fixes; triage its findings by step 13

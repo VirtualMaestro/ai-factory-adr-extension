@@ -71,7 +71,8 @@ test('begin writes the prompt, the schema and the meta under .git/adr-auto and r
   assert.match(text, /## Files under review\n\n- docs\/adr\/drafts\/adr-r\.md/);
   assert.match(text, /quality_rules:/);
   assert.match(text, /read-only reviewer/);
-  assert.deepEqual(JSON.parse(await readFile(res.schema, 'utf8')), review.RESULT_SCHEMA);
+  assert.deepEqual(JSON.parse(await readFile(res.schema, 'utf8')), review.resultSchema('adr'));
+  assert.match(text, /Pick `decision` for the chosen approach itself/);
   assert.equal(git(dir, 'status', '--porcelain', '-uall'), tree, 'begin writes nothing into the tree');
 
   const sub = await review.begin({ role: 'reviewer_1', prompt, runtime: 'subagent', projectDir: dir });
@@ -246,4 +247,35 @@ test('the snapshot sees a branch switch, a new branch and a new tag', async () =
   const switched = review.snapshot(dir);
   git(dir, 'tag', 't1');
   assert.notEqual(review.snapshot(dir), switched);
+});
+
+test('the text of end carries the evidence of each finding: a counted review leaves no result.json for triage', () => {
+  const text = review.formatFindings({
+    findings: [{ severity: 'high', file: 'docs/adr/a.md', line: 12, claim: 'The decision misses the 2-minute bound.', evidence: 'Retries wait\n  up to 1 h.', verified: true }],
+    verdict: 'revise',
+  });
+  assert.match(text, /high\s+docs\/adr\/a\.md:12 {2}The decision misses the 2-minute bound\./);
+  assert.match(text, /evidence: Retries wait up to 1 h\./);
+  assert.match(text, /1 finding\(s\)\. revise$/);
+});
+
+test('--rubric adr asks for a decision on the ADR as a whole, and end returns it', async () => {
+  assert.deepEqual(review.resultSchema('plan'), review.RESULT_SCHEMA);
+  assert.deepEqual(review.resultSchema('adr').required, ['findings', 'checked', 'verdict', 'decision']);
+  assert.deepEqual(review.resultProblems(clean, 'adr'), ['`decision` undefined is not one of sound, revise, rethink, reject, insufficient']);
+  assert.deepEqual(review.resultProblems({ ...clean, decision: 'rethink' }, 'adr'), []);
+  assert.deepEqual(review.resultProblems({ ...clean, decision: 'rethink' }), ['unexpected key `decision`']);
+  assert.match(review.cliCommand({ runtime: 'claude-cli', rubric: 'adr' }, {}).args.join(' '), /"decision"/);
+
+  const { dir, scratch, prompt } = await repo();
+  const adr = await writeAdr(dir, { id: 'adr-d', status: 'draft' });
+  git(dir, 'add', '-A');
+  git(dir, 'commit', '-qm', 'adr');
+  const result = path.join(scratch, 'd.json');
+  await writeFile(result, JSON.stringify({ ...clean, decision: 'reject' }), 'utf8');
+  const b = await review.begin({ role: 'reviewer_2', prompt, files: [path.relative(dir, adr)], rubric: 'adr', phase: 'plan', projectDir: dir });
+  const res = await review.end(b.id, { result, projectDir: dir });
+  assert.equal(res.ok, true, res.reasons.join('; '));
+  assert.equal(res.decision, 'reject');
+  assert.match(review.formatFindings(res), /0 finding\(s\)\. decision: reject\. clean$/);
 });

@@ -44,6 +44,19 @@ export const RESULT_SCHEMA = {
   },
 };
 
+/** The verdict on an ADR as a whole, asked only by `--rubric adr`. */
+export const DECISIONS = ['sound', 'revise', 'rethink', 'reject', 'insufficient'];
+
+/** The result schema of a review: `--rubric adr` adds the required `decision`. */
+export function resultSchema(rubric = null) {
+  if (rubric !== 'adr') return RESULT_SCHEMA;
+  return {
+    ...RESULT_SCHEMA,
+    required: [...RESULT_SCHEMA.required, 'decision'],
+    properties: { ...RESULT_SCHEMA.properties, decision: { type: 'string', enum: DECISIONS } },
+  };
+}
+
 const PACKAGE_ROOT = new URL('..', import.meta.url);
 const skillFile = (name) => new URL(`skills/${name}/SKILL.md`, PACKAGE_ROOT);
 
@@ -94,6 +107,27 @@ const CONTRACT = `
   medium (a gap a test or a rule should catch), low (clarity, naming, small cleanups).
 - Answer with JSON only, matching the schema: { "findings": [...], "checked": [...], "verdict": "..." }.
 `;
+
+/** What `--rubric adr` adds to the contract: a decision on the ADR as a whole. */
+const DECISION_CONTRACT = `- Pick \`decision\` for the chosen approach itself, not for its details. Answer these in order; the first yes decides:
+  1. Can no approach meet the stated requirements under the constraints and the accepted ADRs? \`reject\`.
+  2. Do the code or the accepted ADRs already solve the task? \`reject\`.
+  3. Does another approach meet the stated requirements clearly better than the chosen one? \`rethink\`.
+  4. Would the chosen approach, with your findings fixed, still miss the stated task? \`rethink\`.
+  5. Otherwise: \`revise\` when the ADR needs fixes before acceptance, \`sound\` when it does not.
+  - \`sound\`: the approach stands and the ADR needs no change before acceptance; any finding is low;
+  - \`revise\`: the approach stands, and the ADR needs fixes before acceptance; a defect of a rule, a detail, a test or a
+    migration is \`revise\`, however severe;
+  - \`rethink\`: the approach fails: it does not address the stated task or its cause, or another approach meets the
+    requirements clearly better;
+  - \`reject\`: no new decision is due: the code or the accepted ADRs already solve the task, or no approach meets its
+    requirements under the constraints and the accepted ADRs;
+  - \`insufficient\`: the evidence you could reach does not let you choose; say in \`verdict\` what is missing.
+- For \`rethink\` or \`reject\`, name in \`verdict\` the finding it rests on.
+- Add \`"decision": "..."\` to the JSON answer.
+`;
+
+const contract = (rubric) => (rubric === 'adr' ? CONTRACT + DECISION_CONTRACT : CONTRACT);
 
 function gitDir(projectDir) {
   const res = git(projectDir, 'rev-parse', '--absolute-git-dir');
@@ -196,7 +230,7 @@ export async function begin({ role, prompt, files = [], rubric = null, phase = '
   let text = await readFile(path.resolve(projectDir, prompt), 'utf8');
   if (files.length) text += `\n\n## Files under review\n\n${files.map((f) => `- ${f.replace(/\\/g, '/')}`).join('\n')}\n`;
   if (rubric) text += `\n\n## Rubric\n\n${await rubricText(rubric)}\n`;
-  text += CONTRACT;
+  text += contract(rubric);
 
   const paths = {
     dir,
@@ -205,7 +239,7 @@ export async function begin({ role, prompt, files = [], rubric = null, phase = '
     result: path.join(dir, 'result.json'),
   };
   await writeFile(paths.prompt, text, 'utf8');
-  await writeFile(paths.schema, JSON.stringify(RESULT_SCHEMA, null, 2), 'utf8');
+  await writeFile(paths.schema, JSON.stringify(resultSchema(rubric), null, 2), 'utf8');
   const meta = { id, role, phase, rubric, files, ...resolved, created: new Date().toISOString(), before: snapshot(projectDir), run: null };
   await writeFile(path.join(dir, 'meta.json'), JSON.stringify(meta, null, 2), 'utf8');
   return { id, role, phase, runtime: resolved.runtime, model: resolved.model, effort: resolved.effort, timeout: resolved.timeout ?? null, fallback: resolved.fallback, ...paths };
@@ -221,7 +255,7 @@ export function cliCommand(meta, paths) {
     return { bin: 'codex', args };
   }
   if (meta.runtime === 'claude-cli') {
-    const args = ['-p', '--permission-mode', 'plan', '--output-format', 'json', '--no-session-persistence', '--json-schema', JSON.stringify(RESULT_SCHEMA)];
+    const args = ['-p', '--permission-mode', 'plan', '--output-format', 'json', '--no-session-persistence', '--json-schema', JSON.stringify(resultSchema(meta.rubric))];
     if (meta.model) args.push('--model', meta.model);
     if (meta.effort) args.push('--effort', meta.effort);
     return { bin: 'claude', args };
@@ -324,12 +358,13 @@ export async function run(id, { projectDir = process.cwd(), exec = execTree, res
   return { id, runtime: meta.runtime, ...meta.run, result: existsSync(paths.result) ? paths.result : null };
 }
 
-/** Problems of a parsed result against RESULT_SCHEMA; [] when it conforms. */
-export function resultProblems(r) {
+/** Problems of a parsed result against the schema of its rubric; [] when it conforms. */
+export function resultProblems(r, rubric = null) {
   const p = [];
   if (r == null || typeof r !== 'object' || Array.isArray(r)) return ['the result is not a JSON object'];
   const extra = (obj, schema) => Object.keys(obj).filter((k) => !Object.hasOwn(schema.properties, k));
-  for (const k of extra(r, RESULT_SCHEMA)) p.push(`unexpected key \`${k}\``);
+  for (const k of extra(r, resultSchema(rubric))) p.push(`unexpected key \`${k}\``);
+  if (rubric === 'adr' && !DECISIONS.includes(r.decision)) p.push(`\`decision\` ${JSON.stringify(r.decision)} is not one of ${DECISIONS.join(', ')}`);
   if (!Array.isArray(r.findings)) p.push('`findings` is not a list');
   if (!Array.isArray(r.checked) || r.checked.some((c) => typeof c !== 'string')) p.push('`checked` is not a list of strings');
   if (typeof r.verdict !== 'string' || !r.verdict.trim()) p.push('`verdict` is empty');
@@ -345,12 +380,26 @@ export function resultProblems(r) {
   return p;
 }
 
+/**
+ * The findings of a counted review as text. The evidence is printed too: `end` removes the review directory,
+ * so this output is all that triage has left to judge a finding by.
+ */
+export function formatFindings(res) {
+  const lines = [];
+  for (const f of res.findings) {
+    lines.push(`  ${f.severity.padEnd(8)} ${f.file}${f.line ? `:${f.line}` : ''}  ${f.claim}${f.verified ? '' : '  (not verified)'}`);
+    lines.push(`           evidence: ${f.evidence.replace(/\s*\n\s*/g, ' ')}`);
+  }
+  lines.push(`${res.findings.length} finding(s).${res.decision ? ` decision: ${res.decision}.` : ''} ${res.verdict}`);
+  return lines.join('\n');
+}
+
 /** Strip a Markdown code fence a subagent may wrap its JSON in. */
 const unfence = (text) => text.trim().replace(/^```(?:json)?\s*\n([\s\S]*?)\n```$/, '$1');
 
 /**
  * Close a review: take the snapshot again and check the run and the result. Returns
- * { ok, reasons, findings, checked, verdict, ... }; a review with reasons does not count.
+ * { ok, reasons, findings, checked, verdict, decision, ... }; a review with reasons does not count.
  */
 export async function end(id, { result = null, projectDir = process.cwd() } = {}) {
   const { dir, meta } = await readMeta(projectDir, id);
@@ -374,7 +423,7 @@ export async function end(id, { result = null, projectDir = process.cwd() } = {}
     else {
       try {
         parsed = JSON.parse(unfence(text));
-        for (const p of resultProblems(parsed)) reasons.push(`schema: ${p}`);
+        for (const p of resultProblems(parsed, meta.rubric)) reasons.push(`schema: ${p}`);
       } catch (err) {
         reasons.push(`the result is not JSON: ${err.message}`);
       }
@@ -394,5 +443,6 @@ export async function end(id, { result = null, projectDir = process.cwd() } = {}
     findings: ok ? parsed.findings : [],
     checked: ok ? parsed.checked : [],
     verdict: ok ? parsed.verdict : null,
+    decision: ok ? (parsed.decision ?? null) : null,
   };
 }

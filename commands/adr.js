@@ -373,8 +373,7 @@ export function register(program) {
       const res = await review.end(id, { result: opts.result, projectDir: process.cwd() });
       out(opts, { command: 'review end', ...res }, () => {
         if (!res.ok) return res.reasons.forEach((r) => console.error(`  error: ${r}`));
-        for (const f of res.findings) console.log(`  ${f.severity.padEnd(8)} ${f.file}${f.line ? `:${f.line}` : ''}  ${f.claim}${f.verified ? '' : '  (not verified)'}`);
-        console.log(`${res.findings.length} finding(s). ${res.verdict}`);
+        console.log(review.formatFindings(res));
       });
       if (!res.ok) process.exitCode = 1;
     }));

@@ -208,6 +208,12 @@ before and after: a review whose tree changed, whose CLI failed or timed out, or
 does not match the result schema does not count. The `codex-cli` sandbox prevents a write; the
 snapshot only detects one, and not in ignored files.
 
+An ADR review also gets the operator's request verbatim, and answers with a `decision` on the
+approach itself. `adr-auto-plan` does not dismiss a `rethink` or `reject` on its own: a fresh
+reviewer reads it, and when either holds it, the ADR waits for the operator. At the stop before
+acceptance the run shows each finding at or above `high` that it rejected, with the reviewer's
+claim. The measurements behind this are in `docs/proposal-critical-decision-review.md`.
+
 `adr-auto-implement` works on 1 branch per ADR. Before it switches, it writes a claim into the
 ADR on the base and commits it: `branch:`, `base:` and `started:`. A reader of the base sees
 where the ADR is in work, `ai-factory adr order` lists it as `in work` instead of `next`, and
@@ -345,7 +351,7 @@ beforehand if you want the migration isolated.
 | `claim <file> --check` / `--release` | Exit 0 when the file has no claim or the current branch is its branch / remove the claim without committing |
 | `unclaim <file> [--delete-branch]` | On the base: remove the claim, commit `chore(adr): release <id>`, push the base, and optionally delete the branch; a failed push keeps the branch |
 | `auto config [--check]` | `adr.auto` and `adr.acceptance` resolved with their defaults, each role with its fallback; `--check` fails on a config error |
-| `review begin \| run \| end` | A read-only review bracketed by snapshots of HEAD, the index and the worktree: `begin` writes the prompt under `.git/adr-auto/`, `run` drives a `codex-cli` or `claude-cli` reviewer, `end` fails a review that wrote, timed out or broke the result schema, and removes the directory of a review it counts |
+| `review begin \| run \| end` | A read-only review bracketed by snapshots of HEAD, the index and the worktree: `begin` writes the prompt under `.git/adr-auto/`, `run` drives a `codex-cli` or `claude-cli` reviewer, `end` fails a review that wrote, timed out or broke the result schema, prints each finding with its evidence, and removes the directory of a review it counts; `--rubric adr` also asks for a `decision` on the approach: `sound`, `revise`, `rethink`, `reject` or `insufficient` |
 | `decisions` | What every accepted and active ADR obliges — `decision:`, `constraints:`, `scope:`, `rules:` — so a new decision can be written against the whole corpus; reports per-file `issues` and always exits 0 |
 | `format [name]` | Print the CNL-P standard or a profile; `--path` prints its location; `format plan --check <file>` checks a plan body and fails on any issue |
 | `cnlp [args...]` | Run the bundled `cnlp` CLI (`check`, `print`, `init`, `docs`); `check` first adds the ADR corpus entry once an accepted or active ADR exists. `--version` prints the AI Factory CLI version, as with `adr --version` |
