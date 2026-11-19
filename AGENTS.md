@@ -8,6 +8,8 @@ everything (`node --test`), including an integration suite against the global `a
 
 `docs/proposal-auto-implement-orchestration.md` (6.0.0): the orchestrated auto skills, a branch and a claim per ADR,
 `adr claim`, `adr unclaim`, `adr review`, `adr auto config`. Released in 6.0.0; §13 records the live runs and the reviews.
+`docs/proposal-critical-decision-review.md` (6.0.4): can a reviewer send an ADR's approach back; the pilot, the
+experiment and its 4 contract variants; data outside the repo in `adr-review-experiments/`.
 All 4 phases of `docs/proposal-live-state.md` are complete. Since 5.0 `LIVE.md` is mandatory: its opt-in in §3.6 is history. `docs/BACKLOG.md` tracks open work;
 `docs/validation-backlog-2026-10-11.md` records follow-up live runs, the plan profile and code context.
 
